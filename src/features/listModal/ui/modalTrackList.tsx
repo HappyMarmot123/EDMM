@@ -23,10 +23,11 @@ export default function ModalTrackList() {
   const { closeToggle } = useToggle();
 
   return (
-    <div className="p-4 sm:p-8 md:h-full md:overflow-auto md:custom-scrollbar md:col-span-2">
+    // [auto_1fr]: 첫번쨰 요소 auto, 남온 공간 차지
+    <div className="p-4 sm:p-8 grid grid-rows-[auto_1fr] md:grid-rows-5 md:overflow-hidden md:col-span-2">
       <section
         aria-label="재생 목록 컨트롤"
-        className="mb-6 border-b border-white/10"
+        className="mb-3 border-b border-white/10 md:row-span-1"
       >
         <div className="flex items-center justify-between">
           <div className="relative flex-grow mr-2">
@@ -66,7 +67,10 @@ export default function ModalTrackList() {
         </div>
       </section>
 
-      <section aria-label="음악 리스트" className="space-y-3">
+      <section
+        aria-label="음악 리스트"
+        className="md:overflow-auto md:custom-scrollbar h-full row-span-4 space-y-3"
+      >
         <ModalMusicList
           isLoading={isLoading}
           trackList={trackList}

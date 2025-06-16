@@ -14,15 +14,10 @@ const useRecentPlayStore = create<RecentPlayState>()(
       recentAssetIds: new Set(),
       addRecentAssetId: (assetId) => {
         set((state) => {
-          const newRecentAssetIds = new Set(state.recentAssetIds);
-
-          if (newRecentAssetIds.has(assetId)) {
-            newRecentAssetIds.delete(assetId);
-          }
-          newRecentAssetIds.add(assetId);
+          const newRecentAssetIds = new Set([assetId, ...state.recentAssetIds]);
 
           while (newRecentAssetIds.size > MAX_RECENT_ASSETS) {
-            const oldestAssetId = newRecentAssetIds.values().next().value;
+            const oldestAssetId = Array.from(newRecentAssetIds).pop();
             if (oldestAssetId) {
               newRecentAssetIds.delete(oldestAssetId);
             }
