@@ -19,7 +19,7 @@ export interface HttpClientResponse<T> {
   TODO:
   퍼사드 패턴
   복잡한 시스템을 한곳에 모아 관리하였고 인터페이스(호출부)는 간단하게 사용할 수 있도록 했습니다
-  클라이언트는 이 구현 클래스를 useHttpClient.ts 훅으로 사용할 수 있습니다
+  클라이언트는 이 구현 클래스를 훅으로 사용할 수 있습니다
 */
 
 const RETRY_COUNT = 2;

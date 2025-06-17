@@ -2725,9 +2725,8 @@ h1 {
   overflow: hidden;
   transform: translate3d(0, 0, 0);
   position: fixed;
-  background-color: white; /* Changed from background */
-  filter: invert(1); /* Added for better cross-browser color inversion */
-  mix-blend-mode: difference; /* Kept as a progressive enhancement */
+  background-color: var(--color-primary);
+  mix-blend-mode: difference;
   transition: width 0.25s ease-in-out, height 0.25s ease-in-out;
 }
 .secondary-cursor.regular {

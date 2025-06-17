@@ -4,6 +4,7 @@ import Cursor from "@/shared/components/cursor";
 import DustySnow from "@/features/landing/components/dustySnow";
 import { motion, useScroll, useSpring, useTransform } from "framer-motion";
 import { useRef } from "react";
+import LenisProvider from "@/app/providers/lenisProvider";
 
 interface LandingWrapperProps {
   children: React.ReactNode;
@@ -54,7 +55,7 @@ export default function LandingWrapper({ children }: LandingWrapperProps) {
         <Cursor />
         {/* <Intro /> */}
         <article className="my-gradient fixed w-screen pointer-events-none" />
-        {children}
+        <LenisProvider>{children}</LenisProvider>
       </div>
     </>
   );

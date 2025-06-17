@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useAudioPlayer } from "@/app/providers/audioPlayerProvider";
 import { useAuth } from "@/app/providers/authProvider";
 import { CloudinaryResourceMap } from "@/shared/types/dataType";
@@ -41,7 +41,7 @@ export const useListModal = () => {
     toggleFavorite: storeToggleFavorite,
   } = favoriteStore();
 
-  const [isCursorHidden] = useState(true);
+  const isCursorHidden = useRef(true);
   const [activeButton, setActiveButton] = useState("available");
   const [listTitleText, setListTitleText] = useState("Available Now");
   const [searchTerm, setSearchTerm] = useState("");
@@ -86,14 +86,16 @@ export const useListModal = () => {
 
   useEffect(() => {
     const secondaryCursor = document.querySelector(".secondary-cursor");
-    if (secondaryCursor) {
-      if (isCursorHidden) {
-        secondaryCursor.classList.add("hidden");
-      } else {
-        secondaryCursor.classList.remove("hidden");
-      }
-    }
-  }, [isCursorHidden]);
+    if (!secondaryCursor) return console.error("cursor el not found");
+
+    isCursorHidden.current = true;
+    secondaryCursor.classList.add("hidden");
+
+    return () => {
+      isCursorHidden.current = false;
+      secondaryCursor.classList.remove("hidden");
+    };
+  }, []);
 
   useEffect(() => {
     let newDisplayedList: CloudinaryResourceMap = new Map();
