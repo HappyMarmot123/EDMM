@@ -4,6 +4,8 @@ import { useListModal } from "@/features/listModal/hook/useListModal";
 import TabButtonFactory from "@/features/listModal/components/tabButtonFactory";
 import ModalMusicList from "@/features/listModal/components/modalMusicList";
 import { useToggle } from "@/app/providers/toggleProvider";
+import { useInfiniteScroll } from "@/shared/hooks/useInfiniteScroll";
+import { useCallback } from "react";
 
 export default function ModalTrackList() {
   const {
@@ -21,6 +23,17 @@ export default function ModalTrackList() {
   } = useListModal();
 
   const { closeToggle } = useToggle();
+
+  const handleLoadMore = useCallback(() => {
+    // TODO: 데이터 로딩 로직 구현
+    console.log("Load more tracks...");
+  }, []);
+
+  const { targetRef } = useInfiniteScroll({
+    onIntersect: handleLoadMore,
+    enabled: !isLoading,
+    rootMargin: "100px",
+  });
 
   return (
     // [auto_1fr]: 첫번쨰 요소 auto, 남온 공간 차지
@@ -78,6 +91,7 @@ export default function ModalTrackList() {
           toggleFavorite={toggleFavorite}
           handleSelectTrack={handleSelectTrack}
         />
+        <div ref={targetRef} className="h-4 w-full" />
       </section>
     </div>
   );
