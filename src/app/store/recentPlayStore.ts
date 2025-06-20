@@ -1,31 +1,13 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-
-const MAX_RECENT_ASSETS = 10;
-
-interface RecentPlayState {
-  recentAssetIds: Set<string>;
-  addRecentAssetId: (assetId: string) => void;
-}
+import { addRecentAssetId } from "./service/storeService";
+import { RecentPlayState } from "@/shared/types/dataType";
 
 const useRecentPlayStore = create<RecentPlayState>()(
   persist(
     (set) => ({
       recentAssetIds: new Set(),
-      addRecentAssetId: (assetId) => {
-        set((state) => {
-          const newRecentAssetIds = new Set([assetId, ...state.recentAssetIds]);
-
-          while (newRecentAssetIds.size > MAX_RECENT_ASSETS) {
-            const oldestAssetId = Array.from(newRecentAssetIds).pop();
-            if (oldestAssetId) {
-              newRecentAssetIds.delete(oldestAssetId);
-            }
-          }
-
-          return { recentAssetIds: newRecentAssetIds };
-        });
-      },
+      addRecentAssetId: addRecentAssetId(set),
     }),
     {
       name: "recent-play-store",

@@ -1,18 +1,23 @@
-import { create } from "zustand";
-import {
-  CloudinaryResourceMap,
-  CloudinaryStoreState,
-} from "@/shared/types/dataType";
+import { CloudinaryStoreState } from "@/shared/types/dataType";
+import { createWithEqualityFn } from "zustand/traditional";
+import { setCloudinaryData, setCloudinaryError } from "./service/storeService";
 
-const useCloudinaryStore = create<CloudinaryStoreState>((set) => ({
-  cloudinaryData: new Map(),
-  cloudinaryError: null,
-  isLoadingCloudinary: true,
-  setCloudinaryData: (data: CloudinaryResourceMap) =>
-    set({ cloudinaryData: data, isLoadingCloudinary: false }),
-  setCloudinaryError: (error: Error | null) => set({ cloudinaryError: error }),
-  // setIsLoadingCloudinary: (isLoading: boolean) =>
-  //   set({ isLoadingCloudinary: isLoading }),
-}));
+/*
+TODO:
+  if you use custom equality function such as shallow, 
+  the easiest migration is to use createWithEqualityFn in v5.
+  https://github.com/pmndrs/zustand/blob/HEAD/docs/migrations/migrating-to-v5.md#using-custom-equality-functions-such-as-shallow
+*/
+
+const useCloudinaryStore = createWithEqualityFn<CloudinaryStoreState>(
+  (set) => ({
+    cloudinaryData: new Map(),
+    cloudinaryError: null,
+    isLoadingCloudinary: true,
+
+    setCloudinaryData: setCloudinaryData(set),
+    setCloudinaryError: setCloudinaryError(set),
+  })
+);
 
 export default useCloudinaryStore;

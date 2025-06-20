@@ -357,3 +357,21 @@ export interface ButtonConfig {
   isDisabled(user: User | null): boolean;
   wrapWithTooltip?(button: React.ReactNode, user: User | null): React.ReactNode;
 }
+
+export interface AudioInstanceState {
+  audioInstance: HTMLAudioElement | null;
+  audioContext: AudioContext | null;
+  audioAnalyser: AnalyserNode | null;
+  cleanAudioInstance: () => void;
+}
+
+export interface FavoriteState {
+  favoriteAssetIds: Set<string>;
+  setFavorites: (favorites: Set<string>) => void;
+  toggleFavorite: (assetId: string, userId: string) => Promise<void>;
+}
+
+export interface RecentPlayState {
+  recentAssetIds: Set<string>;
+  addRecentAssetId: (assetId: string) => void;
+}
