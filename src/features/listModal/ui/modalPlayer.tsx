@@ -16,6 +16,9 @@ import TrackSeekBar from "@/shared/components/trackSeekBar";
 import { LikeButton } from "@/shared/components/likeButton";
 import { TrackInfo } from "@/shared/types/dataType";
 import { useAuth } from "@/shared/providers/authProvider";
+import { useInfiniteScroll } from "@/shared/hooks/useInfiniteScroll";
+import { useInfiniteScrollContext } from "@/shared/providers/infiniteScrollProvider";
+import { useViewport } from "@/shared/hooks/useViewport";
 
 export default function ModalPlayer() {
   const {
@@ -38,9 +41,28 @@ export default function ModalPlayer() {
     handleVolumeMouseEnter,
     handleVolumeMouseLeave,
     toggleMute,
+    loadMoreTracks,
+    hasMoreTracks,
   } = useListModal();
   const { role } = useAuth();
   const { seek } = useAudioPlayer();
+  const { isMobile } = useViewport();
+  const { isLoading: infiniteScrollLoading } = useInfiniteScrollContext();
+
+  const handleLoadMore = () => {
+    if (hasMoreTracks && !infiniteScrollLoading) {
+      loadMoreTracks();
+    }
+  };
+
+  const enableInfiniteScroll =
+    isMobile && hasMoreTracks && !infiniteScrollLoading;
+
+  const { targetRef } = useInfiniteScroll({
+    onIntersect: handleLoadMore,
+    enabled: enableInfiniteScroll,
+    rootMargin: "100px",
+  });
 
   if (!currentTrack) return null;
 
@@ -111,7 +133,7 @@ export default function ModalPlayer() {
           </div>
         </section>
 
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md flex flex-col gap-2">
           <motion.h2
             key={`${currentTrack?.assetId}-name`}
             animate={{ y: isPlaying ? [0, -2, 0] : 0 }}
@@ -120,7 +142,7 @@ export default function ModalPlayer() {
               repeat: isPlaying ? Infinity : 0,
               ease: "easeInOut",
             }}
-            className="text-3xl font-bold mb-2 truncate"
+            className="text-3xl font-bold truncate"
           >
             {currentTrack?.name}
           </motion.h2>
@@ -133,7 +155,7 @@ export default function ModalPlayer() {
               ease: "easeInOut",
               delay: 0.2,
             }}
-            className="text-xl text-gray-300 mb-4 truncate"
+            className="text-xl text-gray-300 truncate"
           >
             {currentTrack?.producer}
           </motion.h3>
@@ -144,7 +166,7 @@ export default function ModalPlayer() {
             seek={seek}
           />
 
-          <section aria-label="재생 컨트롤" className="mt-6">
+          <section aria-label="재생 컨트롤">
             <div className="flex items-center justify-between w-full">
               <motion.div
                 whileTap={{ scale: 0.95 }}
@@ -245,6 +267,7 @@ export default function ModalPlayer() {
         </div>
       </div>
       <LoginSection />
+      {isMobile && <div ref={targetRef} className="h-4 w-full" />}
     </div>
   );
 }
