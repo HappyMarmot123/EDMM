@@ -1,9 +1,5 @@
 import { useState, useEffect } from "react";
-
-interface ViewportSize {
-  width: number;
-  height: number;
-}
+import { ViewportSize } from "@/shared/types/dataType";
 
 export const useViewport = () => {
   const [viewport, setViewport] = useState<ViewportSize>({

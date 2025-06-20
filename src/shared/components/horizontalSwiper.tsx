@@ -3,10 +3,7 @@
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, A11y } from "swiper/modules";
 import Card from "../../features/landing/components/card";
-import {
-  CloudinaryResource,
-  CloudinaryResourceMap,
-} from "@/shared/types/dataType";
+import { HorizontalSwiperProps } from "@/shared/types/dataType";
 import "swiper/css";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 
@@ -15,11 +12,6 @@ import { ChevronRight, ChevronLeft } from "lucide-react";
   spaceBetween={16}  마진값으로 들어가는데 가끔 공백 스크롤 슬라이드가 잘 안됨됨
   prev/next 버튼 클래스명을 고유의 값으로 설정정
 */
-
-interface HorizontalSwiperProps {
-  data: CloudinaryResource[];
-  swiperId: string;
-}
 
 export default function HorizontalSwiper({
   data,

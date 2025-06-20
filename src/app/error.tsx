@@ -1,11 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-
-interface ErrorProps {
-  error: Error;
-  reset: () => void;
-}
+import { ErrorProps } from "@/shared/types/dataType";
 
 /* TODO:
   에러 페이지 커스터마이징React의 에러 바운더리(Error Boundary) 기반으로로

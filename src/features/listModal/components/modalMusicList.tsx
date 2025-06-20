@@ -1,7 +1,4 @@
-import {
-  CloudinaryResource,
-  CloudinaryResourceMap,
-} from "@/shared/types/dataType";
+import { CloudinaryResource } from "@/shared/types/dataType";
 import Image from "next/image";
 import clsx from "clsx";
 import React, { useCallback } from "react";
@@ -10,14 +7,7 @@ import { useAuth } from "@/shared/providers/authProvider";
 import LoadingView from "../components/loadingView";
 import EmptyView from "../components/emptyView";
 import { LikeButton } from "@/shared/components/likeButton";
-
-interface ModalMusicListProps {
-  isLoading: boolean;
-  trackList: CloudinaryResourceMap;
-  favoriteAssetIds: Set<string>;
-  toggleFavorite: (assetId: string) => void;
-  handleSelectTrack: (assetId: string) => void;
-}
+import { ModalMusicListProps } from "@/shared/types/dataType";
 
 const ModalMusicList = ({
   isLoading,

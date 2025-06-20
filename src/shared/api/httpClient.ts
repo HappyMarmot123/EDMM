@@ -1,19 +1,6 @@
 import { axiosInstance } from "@/shared/api/axiosInstance";
-import axios, { AxiosError, AxiosRequestConfig, Method } from "axios";
-
-export interface HttpClientRequestConfig<T> {
-  url: string;
-  method: Method;
-  payload?: any;
-  params?: any;
-  headers?: Record<string, string>;
-}
-
-export interface HttpClientResponse<T> {
-  data: T | null;
-  loading: boolean;
-  error: Error | null;
-}
+import axios, { AxiosError, AxiosRequestConfig } from "axios";
+import { HttpClientRequestConfig, HttpClientResponse } from "../types/dataType";
 
 /*
   TODO:

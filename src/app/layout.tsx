@@ -4,7 +4,7 @@ import Script from "next/script";
 import { AuthProvider } from "@/shared/providers/authProvider";
 import { AudioPlayerProvider } from "@/shared/providers/audioPlayerProvider";
 import { DataLoader } from "./api/dataLoader";
-import TrackService from "@/features/track/services/TrackService";
+import TrackService from "@/shared/lib/TrackService";
 import { TanstackProvider } from "../shared/providers/tanstackProvider";
 
 export const metadata: Metadata = {

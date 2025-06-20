@@ -11,11 +11,7 @@ import {
   wrap,
 } from "framer-motion";
 import { useRef } from "react";
-
-interface ParallaxProps {
-  children: React.ReactNode;
-  baseVelocity?: number;
-}
+import { ParallaxProps } from "@/shared/types/dataType";
 
 export default function Parallax({
   children,

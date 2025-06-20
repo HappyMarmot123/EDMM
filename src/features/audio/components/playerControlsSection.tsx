@@ -9,7 +9,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { useVolumeControl } from "@/features/player/hook/useVolumeControl";
+import { useVolumeControl } from "@/shared/hooks/useVolumeControl";
 import { PlayerControlButton } from "@/shared/components/playerControlBtn";
 import { IconToggleButton } from "@/shared/components/iconToggleButton";
 
