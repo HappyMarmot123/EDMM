@@ -11,11 +11,11 @@ import { motion } from "framer-motion";
 import AudioVisualizer from "@/features/listModal/components/audioVisualizer";
 import LoginSection from "@/features/listModal/components/loginSection";
 import { useListModal } from "@/features/listModal/hook/useListModal";
-import { useAudioPlayer } from "@/app/providers/audioPlayerProvider";
+import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import TrackSeekBar from "@/shared/components/trackSeekBar";
 import { LikeButton } from "@/shared/components/likeButton";
 import { TrackInfo } from "@/shared/types/dataType";
-import { useAuth } from "@/app/providers/authProvider";
+import { useAuth } from "@/shared/providers/authProvider";
 
 export default function ModalPlayer() {
   const {

@@ -6,7 +6,7 @@ import Image from "next/image";
 import clsx from "clsx";
 import React, { useCallback } from "react";
 import useTrackStore from "@/app/store/trackStore";
-import { useAuth } from "@/app/providers/authProvider";
+import { useAuth } from "@/shared/providers/authProvider";
 import LoadingView from "../components/loadingView";
 import EmptyView from "../components/emptyView";
 import { LikeButton } from "@/shared/components/likeButton";

@@ -3,7 +3,7 @@
 import { CloudinaryResource } from "@/shared/types/dataType";
 import Image from "next/image";
 import useTrackStore from "@/app/store/trackStore";
-import { useToggle } from "@/app/providers/toggleProvider";
+import { useToggle } from "@/shared/providers/toggleProvider";
 import useCloudinaryStore from "@/app/store/cloudinaryStore";
 import { setFindNewTrack } from "@/shared/lib/audioPlayerUtil";
 

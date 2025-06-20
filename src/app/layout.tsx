@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import "@/shared/styles/global.css?v=2";
 import Script from "next/script";
-import { AuthProvider } from "@/app/providers/authProvider";
-import { ToggleProvider } from "@/app/providers/toggleProvider";
-import { AudioPlayerProvider } from "@/app/providers/audioPlayerProvider";
+import { AuthProvider } from "@/shared/providers/authProvider";
+import { AudioPlayerProvider } from "@/shared/providers/audioPlayerProvider";
 import { DataLoader } from "./api/dataLoader";
 import TrackService from "@/features/track/services/TrackService";
-import { TanstackProvider } from "./providers/tanstackProvider";
+import { TanstackProvider } from "../shared/providers/tanstackProvider";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://edmm.vercel.app"),
@@ -61,9 +60,7 @@ const RootLayout = async ({ children }: { children: React.ReactNode }) => {
         <TrackService tracks={tracks} />
         <AuthProvider>
           <TanstackProvider>
-            <AudioPlayerProvider>
-              <ToggleProvider>{children}</ToggleProvider>
-            </AudioPlayerProvider>
+            <AudioPlayerProvider>{children}</AudioPlayerProvider>
           </TanstackProvider>
         </AuthProvider>
       </body>

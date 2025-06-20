@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useAudioPlayer } from "@/app/providers/audioPlayerProvider";
+import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { PlayerControlsSectionProps } from "@/shared/types/dataType";
 import {
   SkipBack,

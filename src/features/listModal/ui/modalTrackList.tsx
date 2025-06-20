@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useListModal } from "@/features/listModal/hook/useListModal";
 import TabButtonFactory from "@/features/listModal/components/tabButtonFactory";
 import ModalMusicList from "@/features/listModal/components/modalMusicList";
-import { useToggle } from "@/app/providers/toggleProvider";
+import { useToggle } from "@/shared/providers/toggleProvider";
 import { useInfiniteScroll } from "@/shared/hooks/useInfiniteScroll";
 import { useCallback } from "react";
 

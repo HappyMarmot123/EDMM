@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { useAudioPlayer } from "@/app/providers/audioPlayerProvider";
-import { useAuth } from "@/app/providers/authProvider";
+import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
+import { useAuth } from "@/shared/providers/authProvider";
 import { CloudinaryResourceMap } from "@/shared/types/dataType";
 import useCloudinaryStore from "@/app/store/cloudinaryStore";
 import { useFavorites } from "@/features/listModal/hook/useFavorites";

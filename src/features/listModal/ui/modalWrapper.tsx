@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import clsx from "clsx";
 import { useEffect } from "react";
 import { listModalVariants } from "@/shared/lib/util";
-import { useToggle } from "@/app/providers/toggleProvider";
+import { useToggle } from "@/shared/providers/toggleProvider";
 
 /*
   TODO:

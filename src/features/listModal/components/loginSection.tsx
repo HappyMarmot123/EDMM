@@ -1,4 +1,4 @@
-import { useAuth } from "@/app/providers/authProvider";
+import { useAuth } from "@/shared/providers/authProvider";
 import { useState } from "react";
 import LoginModal from "../../../shared/components/loginModal";
 import ShareModal from "../../../shared/components/shareModal";
