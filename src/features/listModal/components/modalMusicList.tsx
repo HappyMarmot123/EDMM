@@ -30,7 +30,7 @@ const ModalMusicList = ({
   const { currentTrack } = useTrackStore();
 
   const handleOnClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>, track: CloudinaryResource) => {
+    (e: React.MouseEvent<HTMLElement>, track: CloudinaryResource) => {
       e.preventDefault();
       handleSelectTrack(track.asset_id);
     },
@@ -55,7 +55,7 @@ const ModalMusicList = ({
   return (
     <>
       {Array.from(trackList.values()).map((track) => (
-        <div
+        <section
           key={track.asset_id}
           onClick={(e) => handleOnClick(e, track)}
           className={clsx(
@@ -86,7 +86,7 @@ const ModalMusicList = ({
             />
             <span className="text-gray-400 text-sm">128</span>
           </div>
-        </div>
+        </section>
       ))}
     </>
   );

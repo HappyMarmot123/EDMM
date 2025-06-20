@@ -121,9 +121,10 @@ function useAudioPlayerLogic() {
 
   const handleSelectTrack = useCallback(
     (assetId: string) => {
-      setFindNewTrack(cloudinaryData, assetId, setTrack);
+      if (assetId === currentTrack?.assetId) return;
+      setFindNewTrack(cloudinaryData, assetId, setTrack, isPlaying);
     },
-    [cloudinaryData]
+    [cloudinaryData, isPlaying, currentTrack]
   );
 
   const setLiveVolume = useCallback(
