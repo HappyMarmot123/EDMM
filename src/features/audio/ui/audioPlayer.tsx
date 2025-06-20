@@ -8,8 +8,8 @@ import Draggable, {
   DraggableEvent,
   type DraggableBounds,
 } from "react-draggable";
-import { useToggle } from "@/app/providers/toggleProvider";
-import { useAudioPlayer } from "@/app/providers/audioPlayerProvider";
+import { useToggle } from "@/shared/providers/toggleProvider";
+import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 
 /* 
   TODO: 

@@ -3,9 +3,10 @@ import { motion } from "framer-motion";
 import { useListModal } from "@/features/listModal/hook/useListModal";
 import TabButtonFactory from "@/features/listModal/components/tabButtonFactory";
 import ModalMusicList from "@/features/listModal/components/modalMusicList";
-import { useToggle } from "@/app/providers/toggleProvider";
+import { useToggle } from "@/shared/providers/toggleProvider";
 import { useInfiniteScroll } from "@/shared/hooks/useInfiniteScroll";
-import { useCallback } from "react";
+import { useInfiniteScrollContext } from "@/shared/providers/infiniteScrollProvider";
+import { useViewport } from "@/shared/hooks/useViewport";
 
 export default function ModalTrackList() {
   const {
@@ -20,18 +21,27 @@ export default function ModalTrackList() {
     favoriteAssetIds,
     toggleFavorite,
     handleSelectTrack,
+    loadMoreTracks,
+    hasMoreTracks,
   } = useListModal();
 
   const { closeToggle } = useToggle();
+  const { isMobile } = useViewport();
 
-  const handleLoadMore = useCallback(() => {
-    // TODO: 데이터 로딩 로직 구현
-    console.log("Load more tracks...");
-  }, []);
+  const { isLoading: infiniteScrollLoading } = useInfiniteScrollContext();
+
+  const handleLoadMore = () => {
+    if (hasMoreTracks && !infiniteScrollLoading) {
+      loadMoreTracks();
+    }
+  };
+
+  const enableInfiniteScroll =
+    !isLoading && !infiniteScrollLoading && hasMoreTracks && !isMobile;
 
   const { targetRef } = useInfiniteScroll({
     onIntersect: handleLoadMore,
-    enabled: !isLoading,
+    enabled: enableInfiniteScroll,
     rootMargin: "100px",
   });
 

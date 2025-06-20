@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { useAudioPlayer } from "@/app/providers/audioPlayerProvider";
-import { useAuth } from "@/app/providers/authProvider";
+import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
+import { useAuth } from "@/shared/providers/authProvider";
 import { CloudinaryResourceMap } from "@/shared/types/dataType";
 import useCloudinaryStore from "@/app/store/cloudinaryStore";
 import { useFavorites } from "@/features/listModal/hook/useFavorites";
@@ -45,11 +45,11 @@ export const useListModal = () => {
   const [activeButton, setActiveButton] = useState("available");
   const [listTitleText, setListTitleText] = useState("Available Now");
   const [searchTerm, setSearchTerm] = useState("");
-
   const [allTracks, setAllTracks] = useState<CloudinaryResourceMap>(new Map());
   const [displayedTrackList, setDisplayedTrackList] =
     useState<CloudinaryResourceMap>(new Map());
 
+  const [displayCount, setDisplayCount] = useState(10);
   const isLoading = isLoadingCloudinary || isLoadingFavorites;
 
   useEffect(() => {
@@ -118,8 +118,21 @@ export const useListModal = () => {
     setDisplayedTrackList(newDisplayedList);
   }, [activeButton, allTracks, favoriteAssetIds, cloudinaryData]);
 
+  useEffect(() => {
+    setDisplayCount(10);
+  }, [activeButton, searchTerm]);
+
+  const loadMoreTracks = useCallback(() => {
+    setDisplayCount((prev) => prev + 10);
+  }, []);
+
   const trackList = useMemo(() => {
-    if (!searchTerm.trim()) return displayedTrackList;
+    if (!searchTerm.trim()) {
+      return new Map(
+        Array.from(displayedTrackList.entries()).slice(0, displayCount)
+      );
+    }
+
     const searchTermLower = searchTerm.toLowerCase();
     const filteredEntries = Array.from(displayedTrackList.entries()).filter(
       ([_, value]) => {
@@ -130,8 +143,24 @@ export const useListModal = () => {
         return titleMatch || producerMatch;
       }
     );
-    return new Map(filteredEntries);
-  }, [displayedTrackList, searchTerm]);
+    return new Map(filteredEntries.slice(0, displayCount));
+  }, [displayedTrackList, searchTerm, displayCount]);
+
+  const hasMoreTracks = useMemo(() => {
+    const total = !searchTerm.trim()
+      ? displayedTrackList.size
+      : Array.from(displayedTrackList.entries()).filter(([_, value]) => {
+          const searchTermLower = searchTerm.toLowerCase();
+          const titleMatch = value.title
+            ?.toLowerCase()
+            .includes(searchTermLower);
+          const producerMatch = value.producer
+            ?.toLowerCase()
+            .includes(searchTermLower);
+          return titleMatch || producerMatch;
+        }).length;
+    return displayCount < total;
+  }, [displayedTrackList, searchTerm, displayCount]);
 
   const toggleFavorite = useCallback(
     (assetId: string) => {
@@ -183,5 +212,7 @@ export const useListModal = () => {
     handleVolumeMouseEnter,
     handleVolumeMouseLeave,
     toggleMute,
+    loadMoreTracks,
+    hasMoreTracks,
   };
 };

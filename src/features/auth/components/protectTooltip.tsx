@@ -1,7 +1,7 @@
 "use client";
 
 import MyTooltip from "@/shared/components/myTooltip";
-import { useAuth } from "@/app/providers/authProvider";
+import { useAuth } from "@/shared/providers/authProvider";
 
 export default function ProtectTooltip({
   children,

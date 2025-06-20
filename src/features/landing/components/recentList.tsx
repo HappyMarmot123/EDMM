@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect } from "react";
-import Horizontal from "@/shared/components/horizontal";
+import HorizontalSwiper from "@/shared/components/horizontalSwiper";
+import SkeletonCardList from "@/shared/components/skeletonCardList";
 import useCloudinaryStore from "@/app/store/cloudinaryStore";
 import useRecentPlayStore from "@/app/store/recentPlayStore";
 import { CloudinaryResource } from "@/shared/types/dataType";
@@ -24,23 +25,18 @@ export default function RecentList() {
 
   return (
     <>
-      <div className="w-full">
+      <section aria-label="Recently Played" className="w-full select-none z-10">
         <h2 className="text-3xl md:text-4xl font-bold grid grid-cols-10">
           <span className="col-start-2 w-max">Recently Played</span>
         </h2>
-        {loading && <p>Loading recently played tracks...</p>}
-        {error && (
-          <p className="text-red-500">
-            Error loading recently played tracks: {error.message}
-          </p>
-        )}
+        {loading && <SkeletonCardList />}
         {!loading && recentTracks.length > 0 && (
-          <Horizontal data={recentTracks} swiperId="recent-list" />
+          <HorizontalSwiper data={recentTracks} swiperId="recent-list" />
         )}
         {!loading && recentAssetIds.size === 0 && (
           <p className="col-start-2 mt-4">최근 재생한 음악이 없습니다.</p>
         )}
-      </div>
+      </section>
     </>
   );
 }

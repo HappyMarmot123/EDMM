@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect } from "react";
-import Horizontal from "@/shared/components/horizontal";
+import HorizontalSwiper from "@/shared/components/horizontalSwiper";
+import SkeletonCardList from "@/shared/components/skeletonCardList";
 import useStore from "@/app/store/cloudinaryStore";
 
 export default function MusicList() {
@@ -17,21 +18,18 @@ export default function MusicList() {
 
   return (
     <>
-      <div className="w-full">
+      <section aria-label="Available Now" className="w-full select-none z-10">
         <h2 className="text-3xl md:text-4xl font-bold grid grid-cols-10">
           <span className="col-start-2 w-max">Available Now</span>
         </h2>
-        {loading && <p>Loading popular tracks...</p>}
-        {error && (
-          <p className="text-red-500">Error loading tracks: {error.message}</p>
-        )}
+        {loading && <SkeletonCardList />}
         {data && (
-          <Horizontal
+          <HorizontalSwiper
             data={Array.from(data.values())}
             swiperId="music-list-swiper"
           />
         )}
-      </div>
+      </section>
     </>
   );
 }

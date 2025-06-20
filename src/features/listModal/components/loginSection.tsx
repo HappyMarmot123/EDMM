@@ -1,4 +1,4 @@
-import { useAuth } from "@/app/providers/authProvider";
+import { useAuth } from "@/shared/providers/authProvider";
 import { useState } from "react";
 import LoginModal from "../../../shared/components/loginModal";
 import ShareModal from "../../../shared/components/shareModal";
@@ -17,7 +17,7 @@ export default function LoginSection() {
       {showShareModal && <ShareModal setShowShareModal={setShowShareModal} />}
       <section
         aria-label="사용자 인증"
-        className="w-full flex items-center justify-center z-10 min-h-[40px]"
+        className="w-full flex items-center justify-center z-10 min-h-[40px] mt-4"
       >
         {isLoadingSession ? (
           <div className="px-3 py-1.5 text-sm text-gray-300 bg-white/10 rounded-lg">

@@ -5,7 +5,7 @@ import { Lenis, ReactLenis } from "lenis/react";
 import type { LenisRef } from "lenis/react";
 import { cancelFrame, frame } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { useToggle } from "@/app/providers/toggleProvider";
+import { useToggle } from "@/shared/providers/toggleProvider";
 import { isEmpty } from "lodash";
 
 interface LenisProviderProps {

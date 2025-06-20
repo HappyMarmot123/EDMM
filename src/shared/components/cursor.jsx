@@ -16,19 +16,23 @@ export default function Cursor() {
   });
 
   React.useEffect(() => {
-    document.addEventListener("mousemove", (event) => {
+    const handleMouseMove = (event) => {
       const { clientX, clientY } = event;
-
       const mouseX = clientX;
       const mouseY = clientY;
 
-      positionRef.current.mouseX =
-        mouseX - secondaryCursor.current.clientWidth / 2;
-      positionRef.current.mouseY =
-        mouseY - secondaryCursor.current.clientHeight / 2;
-    });
+      if (secondaryCursor.current) {
+        positionRef.current.mouseX =
+          mouseX - secondaryCursor.current.clientWidth / 2;
+        positionRef.current.mouseY =
+          mouseY - secondaryCursor.current.clientHeight / 2;
+      }
+    };
 
-    return () => {};
+    document.addEventListener("mousemove", handleMouseMove);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+    };
   }, []);
 
   React.useEffect(() => {
@@ -63,8 +67,10 @@ export default function Cursor() {
       if (secondaryCursor && secondaryCursor.current)
         secondaryCursor.current.style.transform = `translate3d(${destinationX}px, ${destinationY}px, 0)`;
     };
+
     followMouse();
   }, []);
+
   return (
     <div className={`cursor-wrapper default`}>
       <div className="secondary-cursor" ref={secondaryCursor}></div>

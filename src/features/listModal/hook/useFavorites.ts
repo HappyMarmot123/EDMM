@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { favorites } from "@/entities/ToggleFavorite/favoriteSchema";
-import { useAuth } from "@/app/providers/authProvider";
+import { useAuth } from "@/shared/providers/authProvider";
 import { httpClient } from "@/shared/api/httpClient";
 
 export type Favorite = typeof favorites.$inferSelect;

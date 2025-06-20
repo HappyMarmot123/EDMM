@@ -1,6 +1,6 @@
 "use client"; // 클라이언트 컴포넌트로 명시
 
-import { useAuth } from "@/app/providers/authProvider";
+import { useAuth } from "@/shared/providers/authProvider";
 
 export default function AuthButtons() {
   const { user, isLoadingSession, authActions } = useAuth();

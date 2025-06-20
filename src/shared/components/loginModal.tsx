@@ -2,7 +2,7 @@
 
 import { X } from "lucide-react";
 import Image from "next/image";
-import { useAuth } from "@/app/providers/authProvider";
+import { useAuth } from "@/shared/providers/authProvider";
 import { GoogleAuthStrategy } from "@/features/auth/hooks/useAuthActions";
 
 interface LoginModalProps {
