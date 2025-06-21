@@ -2,7 +2,7 @@
 
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, A11y } from "swiper/modules";
-import Card from "../../features/landing/components/card";
+import { CardContainer } from "../../features/landing/components/cardContainer";
 import { HorizontalSwiperProps } from "@/shared/types/dataType";
 import "swiper/css";
 import { ChevronRight, ChevronLeft } from "lucide-react";
@@ -40,7 +40,7 @@ export default function HorizontalSwiper({
             key={item.asset_id}
             className="!select-none !w-auto !pr-4 md:!pr-8"
           >
-            <Card card={item} />
+            <CardContainer card={item} />
           </SwiperSlide>
         ))}
       </Swiper>

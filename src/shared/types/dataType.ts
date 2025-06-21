@@ -445,3 +445,13 @@ export interface zustandPersistSet {
   ): void;
   (arg0: any): any;
 }
+
+export interface CardContextValue {
+  children?: React.ReactNode;
+  card: CloudinaryResource;
+  handleClickCard: (e: React.MouseEvent<HTMLElement>) => void;
+  handleClickButton: (
+    e: React.MouseEvent<HTMLButtonElement>,
+    track: CloudinaryResource
+  ) => void;
+}
