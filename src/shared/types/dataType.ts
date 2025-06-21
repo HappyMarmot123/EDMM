@@ -391,11 +391,11 @@ export interface ToggleContextType {
   closeToggle: () => void;
 }
 
-export interface HttpClientRequestConfig<T = any> {
+export interface HttpClientRequestConfig<T> {
   url: string;
   method: Method;
-  payload?: T;
-  params?: Record<string, any>;
+  payload?: any;
+  params?: any;
   headers?: Record<string, string>;
 }
 

@@ -21,7 +21,7 @@ const fetchAccessToken = async (): Promise<SpotifyTokenResponse> => {
       throw response.error;
     }
 
-    if (!response.data?.accessToken) {
+    if (!response.data?.access_token) {
       throw new Error("Access token not found in API response");
     }
 
@@ -100,10 +100,13 @@ export const useSearchPopularEdmTracks = (limit = 20) => {
   const execute = async () => {
     try {
       setIsLoading(true);
-      if (!tokenData?.accessToken) {
+      if (!tokenData?.access_token) {
         throw new Error("Spotify token not available");
       }
-      const result = await searchPopularEdmTracks(tokenData.accessToken, limit);
+      const result = await searchPopularEdmTracks(
+        tokenData.access_token,
+        limit
+      );
       setData(result);
       setError(null);
     } catch (err) {
@@ -114,7 +117,7 @@ export const useSearchPopularEdmTracks = (limit = 20) => {
   };
 
   useEffect(() => {
-    if (tokenData?.accessToken) {
+    if (tokenData?.access_token) {
       execute();
     }
   }, [tokenData]);

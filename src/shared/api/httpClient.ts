@@ -1,5 +1,5 @@
-import { axiosInstance } from "@/shared/api/axiosInstance";
 import axios, { AxiosError, AxiosRequestConfig } from "axios";
+import { axiosInstance } from "./axiosInstance";
 import { HttpClientRequestConfig, HttpClientResponse } from "../types/dataType";
 
 /*

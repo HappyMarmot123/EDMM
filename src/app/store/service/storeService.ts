@@ -6,6 +6,7 @@ import {
 } from "@/shared/types/dataType";
 import { CLAMP_VOLUME } from "@/shared/lib/util";
 import { handleOnLike } from "@/shared/lib/util";
+import { createJSONStorage } from "zustand/middleware";
 
 const MAX_RECENT_ASSETS = 10;
 
@@ -15,6 +16,29 @@ TODO:
   서비스 레이어를 하나 더 만들어서 추상화 진행
   스토어 영역과 비즈니스 로직 영역 관심사 분리 시도
 */
+
+export const createSetStorage = () => ({
+  replacer: (key: string, value: any) => {
+    if (value instanceof Set) {
+      return {
+        dataType: "Set",
+        value: Array.from(value),
+      };
+    }
+    return value;
+  },
+  reviver: (key: string, value: any) => {
+    if (typeof value === "object" && value !== null) {
+      if (value.dataType === "Set") {
+        return new Set(value.value);
+      }
+    }
+    return value;
+  },
+});
+
+export const createRecentPlayStorage = () =>
+  createJSONStorage(() => localStorage, createSetStorage());
 
 export const setTrack =
   (set: zustandPersistSet) =>
@@ -29,6 +53,12 @@ export const setTrack =
       isBuffering: track.assetId !== "none",
     }));
   };
+
+export const partializeFunction = (state: AudioPlayerState) => ({
+  volume: state.volume,
+  isMuted: state.isMuted,
+  currentTrack: state.currentTrack,
+});
 
 export const togglePlayPause = (set: zustandPersistSet) => () =>
   set((state: AudioPlayerState) => ({ isPlaying: !state.isPlaying }));

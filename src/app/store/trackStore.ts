@@ -12,13 +12,8 @@ import {
   setVolume,
   toggleMute,
   seekTo,
+  partializeFunction,
 } from "./service/storeService";
-
-const partializeFunction = (state: AudioPlayerState) => ({
-  volume: state.volume,
-  isMuted: state.isMuted,
-  currentTrack: state.currentTrack,
-});
 
 const useTrackStore = createWithEqualityFn<AudioPlayerState>()(
   persist(

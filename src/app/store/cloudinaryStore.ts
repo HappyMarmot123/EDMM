@@ -1,5 +1,6 @@
 import { CloudinaryStoreState } from "@/shared/types/dataType";
 import { createWithEqualityFn } from "zustand/traditional";
+import { shallow } from "zustand/shallow";
 import { setCloudinaryData, setCloudinaryError } from "./service/storeService";
 
 /*
@@ -17,7 +18,8 @@ const useCloudinaryStore = createWithEqualityFn<CloudinaryStoreState>(
 
     setCloudinaryData: setCloudinaryData(set),
     setCloudinaryError: setCloudinaryError(set),
-  })
+  }),
+  shallow
 );
 
 export default useCloudinaryStore;
