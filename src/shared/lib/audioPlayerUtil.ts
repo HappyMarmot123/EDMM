@@ -4,15 +4,12 @@ import type {
   SeekLogicParams,
   PlayNextTrackLogicParams,
   PlayPrevTrackLogicParams,
-  AudioPlayerState,
-  zustandPersistSet,
   CloudinaryResourceMap,
 } from "@/shared/types/dataType";
 import useCloudinaryStore from "@/app/store/cloudinaryStore";
 import useTrackStore from "@/app/store/trackStore";
 import useAudioInstanceStore from "@/app/store/audioInstanceStore";
 import { isEmpty } from "lodash";
-import useRecentPlayStore from "@/app/store/recentPlayStore";
 
 export const togglePlayPauseLogic = async ({
   audioContext,
@@ -117,22 +114,6 @@ export const setFindNewTrack = (
     producer: findTrackInData.producer,
   };
   setTrack(newTrackInfo, isPlaying || false);
-};
-
-export const setTrackFunction = (
-  track: TrackInfo,
-  playImmediately: boolean,
-  set: zustandPersistSet
-) => {
-  if (track.assetId) {
-    useRecentPlayStore.getState().addRecentAssetId(track.assetId);
-  }
-  set((state: AudioPlayerState) => ({
-    currentTrack: track,
-    currentTime: 0,
-    isPlaying: playImmediately,
-    isBuffering: track.assetId !== "none",
-  }));
 };
 
 export const useTrackStoreVariables = () => {

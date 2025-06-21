@@ -4,7 +4,7 @@ import { useAuth } from "@/shared/providers/authProvider";
 import { CloudinaryResourceMap } from "@/shared/types/dataType";
 import useCloudinaryStore from "@/app/store/cloudinaryStore";
 import { useFavorites } from "@/features/listModal/hook/useFavorites";
-import { useVolumeControl } from "@/features/player/hook/useVolumeControl";
+import { useVolumeControl } from "@/shared/hooks/useVolumeControl";
 import { toast } from "sonner";
 import favoriteStore from "@/app/store/favoriteStore";
 

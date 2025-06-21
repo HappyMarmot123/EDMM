@@ -1,11 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
-
-interface UseInfiniteScrollProps {
-  onIntersect: () => void;
-  enabled?: boolean;
-  rootMargin?: string;
-  threshold?: number;
-}
+import { UseInfiniteScrollProps } from "@/shared/types/dataType";
 
 export const useInfiniteScroll = ({
   onIntersect,

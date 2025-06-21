@@ -5,13 +5,7 @@ import {
   getAnalyser,
   cleanupAudioInstance,
 } from "@/shared/lib/audioInstance";
-
-interface AudioInstanceState {
-  audioInstance: HTMLAudioElement | null;
-  audioContext: AudioContext | null;
-  audioAnalyser: AnalyserNode | null;
-  cleanAudioInstance: () => void;
-}
+import { AudioInstanceState } from "@/shared/types/dataType";
 
 const useAudioInstanceStore = create<AudioInstanceState>(() => {
   if (typeof window === "undefined") {

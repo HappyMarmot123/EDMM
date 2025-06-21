@@ -2,12 +2,8 @@ import Lottie, { LottieRefCurrentProps } from "lottie-react";
 import { useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import groovyWalkAnimation from "@/../public/popLottie.json";
+import { OnclickEffectProps } from "@/shared/types/dataType";
 const DynamicLottie = dynamic(() => import("lottie-react"), { ssr: false });
-
-interface OnclickEffectProps {
-  play: boolean;
-  onComplete: () => void;
-}
 
 export default function OnclickEffect({
   play,

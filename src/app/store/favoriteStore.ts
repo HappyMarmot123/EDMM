@@ -1,20 +1,16 @@
-import { create } from "zustand";
-import { toast } from "sonner";
-import { handleOnLike } from "@/shared/lib/util";
+import { setFavorites, toggleFavorite } from "./service/storeService";
+import { FavoriteState } from "@/shared/types/dataType";
+import { createWithEqualityFn } from "zustand/traditional";
 
-interface FavoriteState {
-  favoriteAssetIds: Set<string>;
-  setFavorites: (favorites: Set<string>) => void;
-  toggleFavorite: (assetId: string, userId: string) => Promise<void>;
-}
+const useFavoriteStore = createWithEqualityFn<FavoriteState>(
+  (set, get) => ({
+    favoriteAssetIds: new Set(),
 
-const useFavoriteStore = create<FavoriteState>((set, get) => ({
-  favoriteAssetIds: new Set(),
-  setFavorites: (favorites) => set({ favoriteAssetIds: new Set(favorites) }),
-
-  toggleFavorite: async (assetId, userId) => {
-    await handleOnLike(assetId, userId, get, set);
-  },
-}));
+    setFavorites: setFavorites(set),
+    toggleFavorite: toggleFavorite(set, get),
+  }),
+  (prev: any, next: any) =>
+    prev.favoriteAssetIds.size === next.favoriteAssetIds.size
+);
 
 export default useFavoriteStore;

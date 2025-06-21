@@ -3,9 +3,10 @@ import SkeletonCard from "./skeletonCard";
 import { useViewport } from "@/shared/hooks/useViewport";
 
 const SkeletonCardList = () => {
-  const { isMobile } = useViewport();
+  const { isMobile, isClient } = useViewport();
 
-  const skeletonCount = isMobile ? 1 : 3;
+  const skeletonCount = isClient ? (isMobile ? 1 : 3) : 3;
+
   const skeletonCards = Array.from({ length: skeletonCount }, (_, index) => (
     <SkeletonCard key={index} />
   ));

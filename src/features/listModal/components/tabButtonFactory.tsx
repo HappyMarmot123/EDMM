@@ -8,6 +8,7 @@ import {
   ButtonConfig,
   TabButtonMethod,
   TabButtonProps,
+  TabButtonFactoryProps,
 } from "@/shared/types/dataType";
 
 /*
@@ -82,11 +83,6 @@ const availableButtonConfig: ButtonConfig = {
   inactiveColorClasses: "bg-emerald-300/50 hover:bg-emerald-500/60",
   isDisabled: () => false,
 };
-
-interface TabButtonFactoryProps {
-  type: "heart" | "available";
-  props: TabButtonProps;
-}
 
 export default function TabButtonFactory({
   type,

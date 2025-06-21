@@ -1,30 +1,14 @@
 "use client";
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  ReactNode,
-  useCallback,
-} from "react";
-
-interface InfiniteScrollContextType {
-  isLoading: boolean;
-  hasMore: boolean;
-  loadMore: () => void;
-  setLoading: (loading: boolean) => void;
-  setHasMore: (hasMore: boolean) => void;
-  resetInfiniteScroll: () => void;
-}
+import React, { createContext, useContext, useState, useCallback } from "react";
+import {
+  InfiniteScrollContextType,
+  InfiniteScrollProviderProps,
+} from "@/shared/types/dataType";
 
 const InfiniteScrollContext = createContext<
   InfiniteScrollContextType | undefined
 >(undefined);
-
-interface InfiniteScrollProviderProps {
-  children: ReactNode;
-  onLoadMore?: () => void;
-}
 
 export const InfiniteScrollProvider = ({
   children,

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { httpClient } from "@/shared/api/httpClient";
-import { SpotifyTokenResponse, SpotifyError } from "@/shared/types/dataType";
+import { SpotifyTokenResponse } from "@/shared/types/dataType";
 
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
@@ -41,8 +41,8 @@ export async function GET() {
 
     // 토큰과 만료 시간을 클라이언트에 전달 (실제 만료 시간보다 약간 짧게 설정)
     return NextResponse.json({
-      accessToken: response.data.access_token,
-      expiresIn: response.data.expires_in - 60, // 60초 여유
+      access_token: response.data.access_token,
+      expires_in: response.data.expires_in - 60, // 60초 여유
     });
   } catch (error) {
     console.error("Error fetching Spotify token:", error);

@@ -1,12 +1,8 @@
 import React from "react";
-import { AlbumArtworkProps } from "@/shared/types/dataType";
 import { CldImage } from "next-cloudinary";
 import clsx from "clsx";
 import { albumArtClassName } from "@/shared/lib/util";
-
-interface ExtendedAlbumArtworkProps extends AlbumArtworkProps {
-  onClick?: () => void;
-}
+import { ExtendedAlbumArtworkProps } from "@/shared/types/dataType";
 
 const AlbumArtwork: React.FC<ExtendedAlbumArtworkProps> = ({
   isPlaying,

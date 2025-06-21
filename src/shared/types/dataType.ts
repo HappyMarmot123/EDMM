@@ -1,6 +1,60 @@
 import type { Session, User, UserMetadata } from "@supabase/supabase-js";
+import { Method } from "axios";
 import { LucideProps } from "lucide-react";
 import type { RefObject, MouseEvent, ReactNode } from "react";
+
+// 타입 제네릭 추상화 이그젬플
+// 임플리먼트 말고 익스텐즈로 상속 후 확장 구현
+
+export interface FavoriteBase<T> {
+  favoriteAssetIds: Set<string>;
+  toggleFavorite: T;
+}
+
+export interface FavoriteState
+  extends FavoriteBase<(assetId: string, userId: string) => Promise<void>> {
+  setFavorites: (favorites: Set<string>) => void;
+}
+
+export interface ModalMusicListProps
+  extends FavoriteBase<(assetId: string) => void> {
+  isLoading: boolean;
+  trackList: CloudinaryResourceMap;
+  handleSelectTrack: (assetId: string) => void;
+}
+
+export interface BaseResponse {
+  href: string;
+  limit: number;
+  next: string | null;
+  offset: number;
+  previous: string | null;
+  total: number;
+}
+
+export interface BaseObject {
+  external_urls: ExternalUrls;
+  href: string;
+  id: string;
+  type: string;
+  uri: string;
+}
+
+export interface BaseTrack {
+  artists: ArtistObjectSimplified[];
+  disc_number: number;
+  duration_ms: number;
+  explicit: boolean;
+  external_urls: ExternalUrls;
+  href: string;
+  id: string;
+  name: string;
+  preview_url: string | null;
+  track_number: number;
+  type: "track";
+  uri: string;
+  is_local: boolean;
+}
 
 export interface SpotifyTokenResponse {
   access_token: string;
@@ -15,24 +69,12 @@ export interface SpotifyError {
   };
 }
 
-export interface PagingObject<T> {
-  href: string;
+export interface PagingObject<T> extends BaseResponse {
   items: T[];
-  limit: number;
-  next: string | null;
-  offset: number;
-  previous: string | null;
-  total: number;
 }
 
 export interface SearchResponse {
   tracks: PagingObject<TrackObjectFull>;
-  // Include other types like albums, artists if needed
-}
-
-export interface SpotifyTokenResponse {
-  accessToken: string;
-  expiresIn: number;
 }
 
 export interface ExternalUrls {
@@ -45,82 +87,51 @@ export interface ImageObject {
   width: number | null;
 }
 
-export interface ArtistObjectSimplified {
-  external_urls: ExternalUrls;
-  href: string;
-  id: string;
+export interface ArtistObjectSimplified extends BaseObject {
   name: string;
   type: "artist";
-  uri: string;
 }
 
-export interface AlbumObjectSimplified {
+export interface AlbumObjectSimplified extends BaseObject {
   album_type: "album" | "single" | "compilation";
   total_tracks: number;
   available_markets: string[];
-  external_urls: ExternalUrls;
-  href: string;
-  id: string;
   images: ImageObject[];
   name: string;
   release_date: string;
   release_date_precision: "year" | "month" | "day";
   type: "album";
-  uri: string;
   artists: ArtistObjectSimplified[];
 }
 
-export interface TrackObjectFull {
+export interface TrackObjectFull extends BaseTrack {
   album: AlbumObjectSimplified;
-  artists: ArtistObjectSimplified[];
   available_markets: string[];
-  disc_number: number;
-  duration_ms: number;
-  explicit: boolean;
   external_ids: { isrc?: string; ean?: string; upc?: string };
-  external_urls: ExternalUrls;
-  href: string;
-  id: string;
   is_playable?: boolean;
-  name: string;
   popularity: number;
-  preview_url: string | null;
-  track_number: number;
-  type: "track";
-  uri: string;
-  is_local: boolean;
 }
 
-export interface AlbumTrackItem {
-  artists: ArtistObjectSimplified[];
-  disc_number: number;
-  duration_ms: number;
-  explicit: boolean;
-  external_urls: ExternalUrls;
-  href: string;
-  id: string;
+export interface AlbumTrackItem extends BaseTrack {
   is_playable: boolean;
-  name: string;
-  preview_url: string | null;
-  track_number: number;
-  type: "track";
-  uri: string;
-  is_local: boolean;
 }
 
-export interface AlbumTracks {
-  href: string;
-  limit: number;
-  next: string | null;
-  offset: number;
-  previous: string | null;
-  total: number;
+export interface AlbumTracks extends BaseResponse {
   items: AlbumTrackItem[];
 }
 
 export interface Copyright {
   text: string;
   type: string;
+}
+
+export interface TrackInfo {
+  assetId: string;
+  album: string;
+  name: string;
+  artworkId: string;
+  url: string;
+  producer: string;
 }
 
 export interface PlayerTrackDetailsProps {
@@ -142,13 +153,8 @@ export interface PlayerControlsSectionProps {
   currentTrackInfo: TrackInfo | null;
 }
 
-export interface TrackInfo {
-  assetId: string;
-  album: string;
-  name: string;
-  artworkId: string;
-  url: string;
-  producer: string;
+export interface ExtendedAlbumArtworkProps extends AlbumArtworkProps {
+  onClick?: () => void;
 }
 
 export interface CloudinaryResource {
@@ -164,7 +170,6 @@ export interface CloudinaryResource {
     alt: string;
     caption: string;
   };
-  // 가공된 추가 필드
   title: string;
   producer: string;
   album_secure_url: string;
@@ -173,122 +178,12 @@ export interface CloudinaryResource {
 export interface CloudinaryResourceMap
   extends Map<string, CloudinaryResource> {}
 
-export interface ModalMusicListProps {
-  loading: boolean | null;
-  trackList: CloudinaryResourceMap;
-  isFavorite: Set<string>;
-  toggleFavorite: () => void;
-  onTrackSelect?: (assetId: string) => void;
-}
-
 export interface CustomUserMetadata extends UserMetadata {
   uid: string;
   avatar_url: string;
   email: string;
   full_name: string;
 }
-
-export interface AudioVisualizerProps {
-  analyserNode: AnalyserNode | null;
-  isPlaying: boolean;
-  width?: number;
-  height?: number;
-}
-
-export interface EarthProps {
-  width?: number;
-  height?: number;
-  className?: string;
-  baseColor?: [number, number, number];
-  markerColor?: [number, number, number];
-  glowColor?: [number, number, number];
-}
-
-export interface AudioPlayerState {
-  currentTrack: TrackInfo | null;
-  isPlaying: boolean;
-  currentTime: number;
-  duration: number;
-  isBuffering: boolean;
-  volume: number; // 0 to 1
-  isMuted: boolean;
-
-  // Actions
-  setTrack: (track: TrackInfo, playImmediately?: boolean) => void;
-  togglePlayPause: () => void;
-  setIsPlaying: (playing: boolean) => void;
-  setCurrentTime: (time: number) => void;
-  setDuration: (duration: number) => void;
-  setIsBuffering: (buffering: boolean) => void;
-  setVolume: (volume: number) => void;
-  toggleMute: () => void;
-  seekTo: (time: number) => void;
-}
-
-export interface zustandPersistSet {
-  (
-    partial:
-      | AudioPlayerState
-      | Partial<AudioPlayerState>
-      | ((
-          state: AudioPlayerState
-        ) => AudioPlayerState | Partial<AudioPlayerState>),
-    replace?: false
-  ): void;
-  (
-    state: AudioPlayerState | ((state: AudioPlayerState) => AudioPlayerState),
-    replace: true
-  ): void;
-  (arg0: any): any;
-}
-
-export type TogglePlayPauseLogicParams = {
-  audioContext: AudioContext | null;
-  storeTogglePlayPause: () => void;
-};
-
-export type SeekLogicParams = {
-  audio: HTMLAudioElement | null;
-  currentTrack: TrackInfo | null;
-  duration: number | null;
-  time: number;
-  storeSeekTo: (time: number) => void;
-  isSeekingRef: React.MutableRefObject<boolean>;
-};
-
-export type PlayNextTrackLogicParams = {
-  cloudinaryData: CloudinaryResourceMap;
-  currentTrack: TrackInfo | null;
-  setTrack: (track: TrackInfo, playImmediately: boolean) => void;
-  isPlaying: boolean;
-};
-
-export type PlayPrevTrackLogicParams = {
-  cloudinaryData: CloudinaryResourceMap;
-  currentTrack: TrackInfo | null;
-  setTrack: (track: TrackInfo, playImmediately: boolean) => void;
-  isPlaying: boolean;
-};
-
-export interface CloudinaryStoreState {
-  cloudinaryData: CloudinaryResourceMap;
-  cloudinaryError: Error | null;
-  isLoadingCloudinary: boolean;
-  setCloudinaryData: (data: CloudinaryResourceMap) => void;
-  setCloudinaryError: (error: Error | null) => void;
-  // setIsLoadingCloudinary: (isLoading: boolean) => void;
-}
-
-export interface AudioStoreActions {
-  storeSetCurrentTime: (time: number) => void;
-  storeSetDuration: (duration: number) => void;
-  storeSetIsBuffering: (isBuffering: boolean) => void;
-  setTrack: (track: TrackInfo, playImmediately?: boolean) => void;
-}
-
-export type AuthProviderProps = {
-  children: ReactNode;
-};
 
 export interface AuthStrategy {
   signIn(options?: any): Promise<void>;
@@ -308,6 +203,73 @@ export type AuthContextType = {
     KakaoAuthStrategy: AuthStrategy;
   };
 };
+
+export type AuthProviderProps = {
+  children: ReactNode;
+};
+
+export interface AudioPlayerState {
+  currentTrack: TrackInfo | null;
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  isBuffering: boolean;
+  volume: number;
+  isMuted: boolean;
+
+  setTrack: (track: TrackInfo, playImmediately?: boolean) => void;
+  togglePlayPause: () => void;
+  setIsPlaying: (playing: boolean) => void;
+  setCurrentTime: (time: number) => void;
+  setDuration: (duration: number) => void;
+  setIsBuffering: (buffering: boolean) => void;
+  setVolume: (volume: number) => void;
+  toggleMute: () => void;
+  seekTo: (time: number) => void;
+}
+
+export interface AudioInstanceState {
+  audioInstance: HTMLAudioElement | null;
+  audioContext: AudioContext | null;
+  audioAnalyser: AnalyserNode | null;
+  cleanAudioInstance: () => void;
+}
+
+export interface AudioStoreActions {
+  storeSetCurrentTime: (time: number) => void;
+  storeSetDuration: (duration: number) => void;
+  storeSetIsBuffering: (isBuffering: boolean) => void;
+  setTrack: (track: TrackInfo, playImmediately?: boolean) => void;
+}
+
+export interface CloudinaryStoreState {
+  cloudinaryData: CloudinaryResourceMap;
+  cloudinaryError: Error | null;
+  isLoadingCloudinary: boolean;
+  setCloudinaryData: (data: CloudinaryResourceMap) => void;
+  setCloudinaryError: (error: Error | null) => void;
+}
+
+export interface RecentPlayState {
+  recentAssetIds: Set<string>;
+  addRecentAssetId: (assetId: string) => void;
+}
+
+export interface AudioVisualizerProps {
+  analyserNode: AnalyserNode | null;
+  isPlaying: boolean;
+  width?: number;
+  height?: number;
+}
+
+export interface EarthProps {
+  width?: number;
+  height?: number;
+  className?: string;
+  baseColor?: [number, number, number];
+  markerColor?: [number, number, number];
+  glowColor?: [number, number, number];
+}
 
 export interface IconToggleButtonProps {
   id: string;
@@ -356,4 +318,140 @@ export interface ButtonConfig {
   inactiveColorClasses: string;
   isDisabled(user: User | null): boolean;
   wrapWithTooltip?(button: React.ReactNode, user: User | null): React.ReactNode;
+}
+
+export interface ErrorProps {
+  error: Error;
+  reset: () => void;
+}
+
+export interface ParallaxProps {
+  children: React.ReactNode;
+  baseVelocity?: number;
+}
+
+export interface TabButtonFactoryProps {
+  type: "heart" | "available";
+  props: TabButtonProps;
+}
+
+export interface HorizontalSwiperProps {
+  data: CloudinaryResource[];
+  swiperId: string;
+}
+
+export interface MyTooltipProps {
+  children: React.ReactNode;
+  tooltipText: string;
+  showTooltip?: boolean;
+  delayDuration?: number;
+  sideOffset?: number;
+}
+
+export interface OnclickEffectProps {
+  play: boolean;
+  onComplete: () => void;
+}
+
+export interface TrackSeekBarProps {
+  currentTime: number;
+  duration: number;
+  seek: (time: number) => void;
+}
+
+export interface UseInfiniteScrollProps {
+  onIntersect: () => void;
+  enabled?: boolean;
+  rootMargin?: string;
+  threshold?: number;
+}
+
+export interface ViewportSize {
+  width: number;
+  height: number;
+}
+
+export interface InfiniteScrollContextType {
+  isLoading: boolean;
+  hasMore: boolean;
+  loadMore: () => void;
+  setLoading: (loading: boolean) => void;
+  setHasMore: (hasMore: boolean) => void;
+  resetInfiniteScroll: () => void;
+}
+
+export interface InfiniteScrollProviderProps {
+  children: ReactNode;
+  onLoadMore?: () => void;
+}
+
+export interface ToggleContextType {
+  isOpen: boolean;
+  openToggle: () => void;
+  closeToggle: () => void;
+}
+
+export interface HttpClientRequestConfig<T> {
+  url: string;
+  method: Method;
+  payload?: any;
+  params?: any;
+  headers?: Record<string, string>;
+}
+
+export interface HttpClientResponse<T> {
+  data: T | null;
+  loading: boolean;
+  error: Error | null;
+}
+
+export type TogglePlayPauseLogicParams = {
+  audioContext: AudioContext | null;
+  storeTogglePlayPause: () => void;
+};
+
+export type SeekLogicParams = {
+  audio: HTMLAudioElement | null;
+  currentTrack: TrackInfo | null;
+  duration: number | null;
+  time: number;
+  storeSeekTo: (time: number) => void;
+  isSeekingRef: React.MutableRefObject<boolean>;
+};
+
+export type PlayTrackLogicParams<T extends TrackInfo = TrackInfo> = {
+  cloudinaryData: CloudinaryResourceMap;
+  currentTrack: T | null;
+  setTrack: (track: T, playImmediately: boolean) => void;
+  isPlaying: boolean;
+};
+
+export type PlayNextTrackLogicParams = PlayTrackLogicParams;
+export type PlayPrevTrackLogicParams = PlayTrackLogicParams;
+
+export interface zustandPersistSet {
+  (
+    partial:
+      | AudioPlayerState
+      | Partial<AudioPlayerState>
+      | ((
+          state: AudioPlayerState
+        ) => AudioPlayerState | Partial<AudioPlayerState>),
+    replace?: false
+  ): void;
+  (
+    state: AudioPlayerState | ((state: AudioPlayerState) => AudioPlayerState),
+    replace: true
+  ): void;
+  (arg0: any): any;
+}
+
+export interface CardContextValue {
+  children?: React.ReactNode;
+  card: CloudinaryResource;
+  handleClickCard: (e: React.MouseEvent<HTMLElement>) => void;
+  handleClickButton: (
+    e: React.MouseEvent<HTMLButtonElement>,
+    track: CloudinaryResource
+  ) => void;
 }
