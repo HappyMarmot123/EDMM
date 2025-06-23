@@ -27,7 +27,7 @@ function useAudioPlayerLogic() {
   const { setVolume, toggleMute, setLiveVolume } = useAudioVolume();
 
   // useEffect Init + Event Listener
-  useAudioLifecycle({ isSeekingRef, nextTrack });
+  useAudioLifecycle({ isSeekingRef });
 
   return {
     ...state,

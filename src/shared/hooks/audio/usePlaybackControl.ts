@@ -14,7 +14,7 @@ export const usePlaybackControl = () => {
       await audioContext.resume();
     }
     storeTogglePlayPause();
-  }, [currentTrack, audioContext, storeTogglePlayPause]);
+  }, [currentTrack, audioContext]);
 
   const nextTrack = useCallback(() => {
     if (isEmpty(cloudinaryData)) return;
@@ -35,7 +35,7 @@ export const usePlaybackControl = () => {
     const nextTrackEntry =
       trackEntries[(currentIndex + 1) % trackEntries.length];
     handleSelectTrack(nextTrackEntry[0]);
-  }, [cloudinaryData, currentTrack, handleSelectTrack]);
+  }, [cloudinaryData, currentTrack]);
 
   const prevTrack = useCallback(() => {
     if (isEmpty(cloudinaryData)) return;
