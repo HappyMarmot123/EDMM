@@ -1,15 +1,17 @@
 import type { AudioStoreActions } from "@/shared/types/dataType";
-import { playNextTrackLogic } from "./audioPlayerUtil";
-import useTrackStore from "@/app/store/trackStore";
-import useCloudinaryStore from "@/app/store/cloudinaryStore";
 
 export const setupAudioEventListeners = (
   audio: HTMLAudioElement,
   actions: AudioStoreActions,
-  isSeekingRef: React.MutableRefObject<boolean>
+  isSeekingRef: React.MutableRefObject<boolean>,
+  nextTrack: () => void
 ) => {
-  const handleTimeUpdate = () =>
-    actions.storeSetCurrentTime(audio.currentTime || 0);
+  const handleTimeUpdate = () => {
+    if (!isSeekingRef.current) {
+      actions.storeSetCurrentTime(audio.currentTime || 0);
+    }
+  };
+
   const handleDurationChange = () => {
     if (!isNaN(audio.duration) && isFinite(audio.duration)) {
       actions.storeSetDuration(audio.duration);
@@ -17,12 +19,6 @@ export const setupAudioEventListeners = (
     } else {
       actions.storeSetDuration(0);
     }
-  };
-
-  const handleEnded = () => {
-    const { currentTrack, setTrack, isPlaying } = useTrackStore.getState();
-    const { cloudinaryData } = useCloudinaryStore.getState();
-    playNextTrackLogic({ cloudinaryData, currentTrack, setTrack, isPlaying });
   };
 
   const handleError = (e: Event) => {
@@ -37,9 +33,6 @@ export const setupAudioEventListeners = (
   };
 
   const handlePlaying = () => {
-    if (isSeekingRef.current) {
-      isSeekingRef.current = false;
-    }
     actions.storeSetIsBuffering(false);
   };
 
@@ -57,22 +50,20 @@ export const setupAudioEventListeners = (
   audio.addEventListener("timeupdate", handleTimeUpdate);
   audio.addEventListener("durationchange", handleDurationChange);
   audio.addEventListener("loadedmetadata", handleDurationChange);
-  audio.addEventListener("ended", handleEnded);
+  audio.addEventListener("ended", nextTrack);
   audio.addEventListener("error", handleError);
   audio.addEventListener("waiting", handleWaiting);
   audio.addEventListener("playing", handlePlaying);
-  //   audio.addEventListener("canplaythrough", handleCanPlayThrough);
   audio.addEventListener("seeked", handleSeeked);
 
   return () => {
     audio.removeEventListener("timeupdate", handleTimeUpdate);
     audio.removeEventListener("durationchange", handleDurationChange);
     audio.removeEventListener("loadedmetadata", handleDurationChange);
-    audio.removeEventListener("ended", handleEnded);
+    audio.removeEventListener("ended", nextTrack);
     audio.removeEventListener("error", handleError);
     audio.removeEventListener("waiting", handleWaiting);
     audio.removeEventListener("playing", handlePlaying);
-    // audio.removeEventListener("canplaythrough", handleCanPlayThrough);
     audio.removeEventListener("seeked", handleSeeked);
   };
 };
