@@ -3,12 +3,10 @@
 import { CloudinaryResource } from "@/shared/types/dataType";
 import useTrackStore from "@/app/store/trackStore";
 import { useToggle } from "@/shared/providers/toggleProvider";
-import useCloudinaryStore from "@/app/store/cloudinaryStore";
-import { useTrackManagement } from "@/shared/hooks/audio/useTrackManagement";
+import { useAudioTrackManage } from "@/shared/hooks/audio/useAudioTrackManage";
 import { useCallback } from "react";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { Card } from "@/features/landing/atoms/cardPresentation";
-import { usePlaybackControl } from "@/shared/hooks/audio/usePlaybackControl";
 
 /* 
   TODO:
@@ -21,7 +19,7 @@ import { usePlaybackControl } from "@/shared/hooks/audio/usePlaybackControl";
 
 export const CardContainer = ({ card }: { card: CloudinaryResource }) => {
   const { openToggle } = useToggle();
-  const { handleSelectTrack } = useTrackManagement();
+  const { handleSelectTrack } = useAudioTrackManage();
   const currentTrack = useTrackStore((state) => state.currentTrack);
   const { togglePlayPause, isPlaying } = useAudioPlayer();
 

@@ -6,6 +6,30 @@ import {
 } from "@/shared/types/dataType";
 import { useAudioState } from "./useAudioState";
 
+export const useAudioTrackManage = () => {
+  const { cloudinaryData, currentTrack, setTrack, isPlaying } = useAudioState();
+
+  useEffect(() => {
+    const hasNoDataOrTrack = isEmpty(cloudinaryData) || currentTrack;
+    if (hasNoDataOrTrack) return;
+
+    const firstTrackAssetId = cloudinaryData.keys().next().value;
+    if (firstTrackAssetId) {
+      findAndSetTrack(cloudinaryData, firstTrackAssetId, setTrack);
+    }
+  }, [cloudinaryData, currentTrack, setTrack]);
+
+  const handleSelectTrack = useCallback(
+    (assetId: string) => {
+      if (assetId === currentTrack?.assetId) return;
+      findAndSetTrack(cloudinaryData, assetId, setTrack, isPlaying);
+    },
+    [cloudinaryData, isPlaying, currentTrack, setTrack]
+  );
+
+  return { handleSelectTrack };
+};
+
 const findAndSetTrack = (
   cloudinaryData: CloudinaryResourceMap,
   assetId: string,
@@ -30,28 +54,4 @@ const findAndSetTrack = (
     producer: findTrackInData.producer,
   };
   setTrack(newTrackInfo, isPlaying || false);
-};
-
-export const useTrackManagement = () => {
-  const { cloudinaryData, currentTrack, setTrack, isPlaying } = useAudioState();
-
-  useEffect(() => {
-    const hasNoDataOrTrack = isEmpty(cloudinaryData) || currentTrack;
-    if (hasNoDataOrTrack) return;
-
-    const firstTrackAssetId = cloudinaryData.keys().next().value;
-    if (firstTrackAssetId) {
-      findAndSetTrack(cloudinaryData, firstTrackAssetId, setTrack);
-    }
-  }, [cloudinaryData, currentTrack, setTrack]);
-
-  const handleSelectTrack = useCallback(
-    (assetId: string) => {
-      if (assetId === currentTrack?.assetId) return;
-      findAndSetTrack(cloudinaryData, assetId, setTrack, isPlaying);
-    },
-    [cloudinaryData, isPlaying, currentTrack, setTrack]
-  );
-
-  return { handleSelectTrack };
 };

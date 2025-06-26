@@ -1,12 +1,12 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect } from "react";
 import { useAudioState } from "../hooks/audio/useAudioState";
-import { useTrackManagement } from "../hooks/audio/useTrackManagement";
-import { usePlaybackControl } from "../hooks/audio/usePlaybackControl";
+import { useAudioTrackManage } from "../hooks/audio/useAudioTrackManage";
+import { useAudioPlayControl } from "../hooks/audio/useAudioPlayControl";
 import { useAudioSeeking } from "../hooks/audio/useAudioSeeking";
 import { useAudioVolume } from "../hooks/audio/useAudioVolume";
-import { useAudioLifecycle } from "../hooks/audio/useAudioLifecycle";
+import { setupAudioEventListeners } from "../lib/audioEventManager";
 
 type AudioPlayerLogicReturnType = ReturnType<typeof useAudioPlayerLogic>;
 
@@ -21,13 +21,31 @@ const AudioPlayerContext = createContext<
 
 function useAudioPlayerLogic() {
   const state = useAudioState();
-  const { handleSelectTrack } = useTrackManagement();
-  const { togglePlayPause, nextTrack, prevTrack } = usePlaybackControl();
+  const { handleSelectTrack } = useAudioTrackManage();
+  const { togglePlayPause, nextTrack, prevTrack } = useAudioPlayControl();
   const { seek, isSeekingRef } = useAudioSeeking();
   const { setVolume, toggleMute, setLiveVolume } = useAudioVolume();
 
   // useEffect Init + Event Listener
-  useAudioLifecycle({ isSeekingRef });
+  // 의존성 배열에 nextTrack 꼭 추가하세요 클로저 이슈 생깁니다
+  useEffect(() => {
+    const actions = {
+      state,
+      isSeekingRef,
+      nextTrack,
+    };
+    const cleanup = setupAudioEventListeners(actions);
+    return cleanup;
+  }, [state.audio, isSeekingRef, nextTrack]);
+
+  // 컴포넌트 언마운트 시 오디오 인스턴스 정리
+  useEffect(() => {
+    return () => {
+      if (state.cleanAudioInstance) {
+        state.cleanAudioInstance();
+      }
+    };
+  }, [state.cleanAudioInstance]);
 
   return {
     ...state,

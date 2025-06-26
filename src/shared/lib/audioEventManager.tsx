@@ -1,56 +1,46 @@
-import type { AudioStoreActions } from "@/shared/types/dataType";
+// actions.audio, actions.isSeekingRef를 제외한 모든 프롭은 actions.state.로 접근하도록 수정
 
-export const setupAudioEventListeners = (
-  audio: HTMLAudioElement,
-  actions: AudioStoreActions,
-  isSeekingRef: React.MutableRefObject<boolean>,
-  nextTrack: () => void
-) => {
+export const setupAudioEventListeners = (actions: any) => {
+  const audio = actions.state.audio;
+
   const handleTimeUpdate = () => {
-    if (!isSeekingRef.current) {
-      actions.storeSetCurrentTime(audio.currentTime || 0);
+    if (!actions.isSeekingRef.current) {
+      actions.state.storeSetCurrentTime(audio.currentTime || 0);
     }
   };
 
   const handleDurationChange = () => {
     if (!isNaN(audio.duration) && isFinite(audio.duration)) {
-      actions.storeSetDuration(audio.duration);
-      actions.storeSetIsBuffering(false);
+      actions.state.storeSetDuration(audio.duration);
+      actions.state.storeSetIsBuffering(false);
     } else {
-      actions.storeSetDuration(0);
+      actions.state.storeSetDuration(0);
     }
   };
 
   const handleError = (e: Event) => {
     console.error("Audio Error:", e);
-    actions.storeSetIsBuffering(false);
+    actions.state.storeSetIsBuffering(false);
   };
 
   const handleWaiting = () => {
-    if (!isSeekingRef.current) {
-      actions.storeSetIsBuffering(true);
+    if (!actions.isSeekingRef.current) {
+      actions.state.storeSetIsBuffering(true);
     }
   };
 
   const handlePlaying = () => {
-    actions.storeSetIsBuffering(false);
+    actions.state.storeSetIsBuffering(false);
   };
 
-  //   const handleCanPlayThrough = () => {
-  //     if (isSeekingRef.current) {
-  //       isSeekingRef.current = false;
-  //     }
-  //     actions.storeSetIsBuffering(false);
-  //   };
-
   const handleSeeked = () => {
-    isSeekingRef.current = false;
+    actions.isSeekingRef.current = false;
   };
 
   audio.addEventListener("timeupdate", handleTimeUpdate);
   audio.addEventListener("durationchange", handleDurationChange);
   audio.addEventListener("loadedmetadata", handleDurationChange);
-  audio.addEventListener("ended", nextTrack);
+  audio.addEventListener("ended", actions.nextTrack);
   audio.addEventListener("error", handleError);
   audio.addEventListener("waiting", handleWaiting);
   audio.addEventListener("playing", handlePlaying);
@@ -60,7 +50,7 @@ export const setupAudioEventListeners = (
     audio.removeEventListener("timeupdate", handleTimeUpdate);
     audio.removeEventListener("durationchange", handleDurationChange);
     audio.removeEventListener("loadedmetadata", handleDurationChange);
-    audio.removeEventListener("ended", nextTrack);
+    audio.removeEventListener("ended", actions.nextTrack);
     audio.removeEventListener("error", handleError);
     audio.removeEventListener("waiting", handleWaiting);
     audio.removeEventListener("playing", handlePlaying);

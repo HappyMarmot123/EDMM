@@ -1,7 +1,8 @@
+import { cache } from "react";
 import { httpClient } from "@/shared/api/httpClient";
 import type { CloudinaryResource } from "@/shared/types/dataType";
 
-export default async function cloudinaryClient(): Promise<
+export default cache(async function cloudinaryClient(): Promise<
   CloudinaryResource[]
 > {
   try {
@@ -19,4 +20,4 @@ export default async function cloudinaryClient(): Promise<
     console.error("Cloudinary fetch error:", error);
     return [];
   }
-}
+});
