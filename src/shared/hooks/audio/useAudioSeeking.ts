@@ -1,8 +1,13 @@
 import { useCallback, useRef } from "react";
-import { useAudioState } from "./useAudioState";
+import useTrackStore from "@/app/store/trackStore";
+import useAudioInstanceStore from "@/app/store/audioInstanceStore";
 
 export const useAudioSeeking = () => {
-  const { audio, currentTrack, storeSeekTo } = useAudioState();
+  const audio = useAudioInstanceStore(
+    (state) => state.audioInstance
+  ) as HTMLAudioElement;
+  const currentTrack = useTrackStore((state) => state.currentTrack);
+  const storeSeekTo = useTrackStore((state) => state.seekTo);
   const isSeekingRef = useRef(false);
 
   const seek = useCallback(

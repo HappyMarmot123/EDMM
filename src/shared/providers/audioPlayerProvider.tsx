@@ -1,63 +1,135 @@
 "use client";
 
-import { createContext, useContext, useEffect } from "react";
-import { useAudioState } from "../hooks/audio/useAudioState";
+import { createContext, useContext, useMemo } from "react";
 import { useAudioTrackManage } from "../hooks/audio/useAudioTrackManage";
 import { useAudioPlayControl } from "../hooks/audio/useAudioPlayControl";
 import { useAudioSeeking } from "../hooks/audio/useAudioSeeking";
 import { useAudioVolume } from "../hooks/audio/useAudioVolume";
-import { setupAudioEventListeners } from "../lib/audioEventManager";
-
-type AudioPlayerLogicReturnType = ReturnType<typeof useAudioPlayerLogic>;
+import { useAudioEffects } from "../hooks/audio/useAudioEffects";
+import useTrackStore from "@/app/store/trackStore";
+import useCloudinaryStore from "@/app/store/cloudinaryStore";
+import useAudioInstanceStore from "@/app/store/audioInstanceStore";
+import {
+  AudioPlayerState,
+  CloudinaryStoreState,
+  AudioInstanceState,
+} from "@/shared/types/dataType";
 
 /*
   TODO:
   FACADE PATTERN SUPER SEXY JUICY
 */
 
+type AudioPlayerLogicReturnType = {
+  // State from stores
+  currentTrack: AudioPlayerState["currentTrack"];
+  isPlaying: AudioPlayerState["isPlaying"];
+  currentTime: AudioPlayerState["currentTime"];
+  duration: AudioPlayerState["duration"];
+  isBuffering: AudioPlayerState["isBuffering"];
+  volume: AudioPlayerState["volume"];
+  isMuted: AudioPlayerState["isMuted"];
+  cloudinaryData: CloudinaryStoreState["cloudinaryData"];
+  isLoadingCloudinary: CloudinaryStoreState["isLoadingCloudinary"];
+  audio: AudioInstanceState["audioInstance"];
+  analyserNode: AudioInstanceState["audioAnalyser"];
+  audioContext: AudioInstanceState["audioContext"];
+  // Actions from hooks
+  handleSelectTrack: ReturnType<
+    typeof useAudioTrackManage
+  >["handleSelectTrack"];
+  togglePlayPause: ReturnType<typeof useAudioPlayControl>["togglePlayPause"];
+  nextTrack: ReturnType<typeof useAudioPlayControl>["nextTrack"];
+  prevTrack: ReturnType<typeof useAudioPlayControl>["prevTrack"];
+  seek: ReturnType<typeof useAudioSeeking>["seek"];
+  setVolume: ReturnType<typeof useAudioVolume>["setVolume"];
+  toggleMute: ReturnType<typeof useAudioVolume>["toggleMute"];
+  setLiveVolume: ReturnType<typeof useAudioVolume>["setLiveVolume"];
+};
+
 const AudioPlayerContext = createContext<
   AudioPlayerLogicReturnType | undefined
 >(undefined);
 
-function useAudioPlayerLogic() {
-  const state = useAudioState();
+function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
+  // 1. Setup side effects
+  useAudioEffects();
+
+  // 2. State selection
+  const currentTrack = useTrackStore((state) => state.currentTrack);
+  const isPlaying = useTrackStore((state) => state.isPlaying);
+  const currentTime = useTrackStore((state) => state.currentTime);
+  const duration = useTrackStore((state) => state.duration);
+  const isBuffering = useTrackStore((state) => state.isBuffering);
+  const volume = useTrackStore((state) => state.volume);
+  const isMuted = useTrackStore((state) => state.isMuted);
+
+  const cloudinaryData = useCloudinaryStore((state) => state.cloudinaryData);
+  const isLoadingCloudinary = useCloudinaryStore(
+    (state) => state.isLoadingCloudinary
+  );
+
+  const audio = useAudioInstanceStore(
+    (state) => state.audioInstance
+  ) as HTMLAudioElement;
+  const analyserNode = useAudioInstanceStore((state) => state.audioAnalyser);
+  const audioContext = useAudioInstanceStore((state) => state.audioContext);
+
+  // 3. Actions from custom hooks
   const { handleSelectTrack } = useAudioTrackManage();
   const { togglePlayPause, nextTrack, prevTrack } = useAudioPlayControl();
-  const { seek, isSeekingRef } = useAudioSeeking();
+  const { seek } = useAudioSeeking();
   const { setVolume, toggleMute, setLiveVolume } = useAudioVolume();
 
-  // useEffect Init + Event Listener
-  // 의존성 배열에 nextTrack 꼭 추가하세요 클로저 이슈 생깁니다
-  useEffect(() => {
-    const actions = {
-      state,
-      isSeekingRef,
+  // 4. Memoize the context value
+  return useMemo(
+    () => ({
+      // State
+      currentTrack,
+      isPlaying,
+      currentTime,
+      duration,
+      isBuffering,
+      volume,
+      isMuted,
+      cloudinaryData,
+      isLoadingCloudinary,
+      audio,
+      analyserNode,
+      audioContext,
+      // Actions
+      handleSelectTrack,
+      togglePlayPause,
       nextTrack,
-    };
-    const cleanup = setupAudioEventListeners(actions);
-    return cleanup;
-  }, [state.audio, isSeekingRef, nextTrack]);
-
-  // 컴포넌트 언마운트 시 오디오 인스턴스 정리
-  useEffect(() => {
-    return () => {
-      if (state.cleanAudioInstance) {
-        state.cleanAudioInstance();
-      }
-    };
-  }, [state.cleanAudioInstance]);
-
-  return {
-    ...state,
-    handleSelectTrack,
-    togglePlayPause,
-    nextTrack,
-    prevTrack,
-    seek,
-    setVolume,
-    toggleMute,
-    setLiveVolume,
-  };
+      prevTrack,
+      seek,
+      setVolume,
+      toggleMute,
+      setLiveVolume,
+    }),
+    [
+      currentTrack,
+      isPlaying,
+      currentTime,
+      duration,
+      isBuffering,
+      volume,
+      isMuted,
+      cloudinaryData,
+      isLoadingCloudinary,
+      audio,
+      analyserNode,
+      audioContext,
+      handleSelectTrack,
+      togglePlayPause,
+      nextTrack,
+      prevTrack,
+      seek,
+      setVolume,
+      toggleMute,
+      setLiveVolume,
+    ]
+  );
 }
 
 export const AudioPlayerProvider = ({

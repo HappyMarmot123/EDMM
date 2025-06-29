@@ -1,18 +1,16 @@
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { isEmpty } from "lodash";
-import { useAudioState } from "./useAudioState";
 import { useAudioTrackManage } from "./useAudioTrackManage";
+import useCloudinaryStore from "@/app/store/cloudinaryStore";
+import useTrackStore from "@/app/store/trackStore";
+import useAudioInstanceStore from "@/app/store/audioInstanceStore";
 
 export const useAudioPlayControl = () => {
-  const {
-    currentTrack,
-    cloudinaryData,
-    audioContext,
-    audio,
-    isPlaying,
-    storeTogglePlayPause,
-    storeSetCurrentTime,
-  } = useAudioState();
+  const cloudinaryData = useCloudinaryStore((state) => state.cloudinaryData);
+  const audioContext = useAudioInstanceStore((state) => state.audioContext);
+  const currentTrack = useTrackStore((state) => state.currentTrack);
+  const storeTogglePlayPause = useTrackStore((state) => state.togglePlayPause);
+
   const { handleSelectTrack } = useAudioTrackManage();
 
   const togglePlayPause = useCallback(async () => {
@@ -21,7 +19,7 @@ export const useAudioPlayControl = () => {
       await audioContext.resume();
     }
     storeTogglePlayPause();
-  }, [currentTrack, audioContext]);
+  }, [currentTrack, audioContext, storeTogglePlayPause]);
 
   const nextTrack = useCallback(() => {
     if (isEmpty(cloudinaryData)) return;
@@ -63,25 +61,6 @@ export const useAudioPlayControl = () => {
     const prevTrackData = trackEntries[prevIndex];
     handleSelectTrack(prevTrackData[0]);
   }, [cloudinaryData, currentTrack, handleSelectTrack]);
-
-  // 현재 트랙이 변경되면 오디오 소스를 업데이트
-  useEffect(() => {
-    const isTrackChanged = currentTrack?.url && audio.src !== currentTrack.url;
-
-    if (isTrackChanged) {
-      audio.src = currentTrack.url;
-      storeSetCurrentTime(0);
-    }
-  }, [currentTrack, audio]);
-
-  // 재생 상태가 변경되면 오디오를 재생/일시정지
-  useEffect(() => {
-    if (isPlaying) {
-      audio.play().catch((e) => console.warn("Error playing audio:", e));
-    } else {
-      audio.pause();
-    }
-  }, [isPlaying, currentTrack, audio]);
 
   return {
     togglePlayPause,

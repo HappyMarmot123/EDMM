@@ -4,10 +4,14 @@ import {
   type TrackInfo,
   type CloudinaryResourceMap,
 } from "@/shared/types/dataType";
-import { useAudioState } from "./useAudioState";
+import useCloudinaryStore from "@/app/store/cloudinaryStore";
+import useTrackStore from "@/app/store/trackStore";
 
 export const useAudioTrackManage = () => {
-  const { cloudinaryData, currentTrack, setTrack, isPlaying } = useAudioState();
+  const cloudinaryData = useCloudinaryStore((state) => state.cloudinaryData);
+  const currentTrack = useTrackStore((state) => state.currentTrack);
+  const isPlaying = useTrackStore((state) => state.isPlaying);
+  const setTrack = useTrackStore((state) => state.setTrack);
 
   useEffect(() => {
     const hasNoDataOrTrack = isEmpty(cloudinaryData) || currentTrack;
