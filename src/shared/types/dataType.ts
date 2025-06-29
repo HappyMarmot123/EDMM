@@ -1,7 +1,7 @@
 import type { Session, User, UserMetadata } from "@supabase/supabase-js";
 import { Method } from "axios";
 import { LucideProps } from "lucide-react";
-import type { RefObject, MouseEvent, ReactNode } from "react";
+import type { RefObject, ReactNode } from "react";
 
 // 타입 제네릭 추상화 이그젬플
 // 임플리먼트 말고 익스텐즈로 상속 후 확장 구현
@@ -444,6 +444,20 @@ export interface zustandPersistSet {
     replace: true
   ): void;
   (arg0: any): any;
+}
+
+export interface AudioPlayerLogicReturnType
+  extends AudioPlayerState,
+    CloudinaryStoreState,
+    AudioInstanceState {
+  handleSelectTrack: ModalMusicListProps["handleSelectTrack"];
+  togglePlayPause: AudioPlayerState["togglePlayPause"];
+  setVolume: AudioPlayerState["setVolume"];
+  toggleMute: AudioPlayerState["toggleMute"];
+  nextTrack: any;
+  prevTrack: any;
+  seek: any;
+  setLiveVolume: any;
 }
 
 export interface CardContextValue {

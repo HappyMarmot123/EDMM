@@ -25,7 +25,7 @@ export default function ModalPlayer() {
     currentTrack,
     isPlaying,
     isBuffering,
-    analyserNode,
+    audioAnalyser,
     currentTime,
     duration,
     togglePlayPause,
@@ -97,10 +97,10 @@ export default function ModalPlayer() {
                 WebkitTransform: "scaleY(-1)",
               }}
             />
-            {analyserNode && (
+            {audioAnalyser && (
               <div className="absolute z-0">
                 <AudioVisualizer
-                  analyserNode={analyserNode}
+                  analyserNode={audioAnalyser}
                   isPlaying={isPlaying}
                   width={600}
                   height={200}

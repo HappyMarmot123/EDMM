@@ -1,10 +1,14 @@
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { isNumber } from "lodash";
-import { useAudioState } from "./useAudioState";
+import useTrackStore from "@/app/store/trackStore";
+import useAudioInstanceStore from "@/app/store/audioInstanceStore";
 
 export const useAudioVolume = () => {
-  const { audio, volume, isMuted, storeSetVolume, storeToggleMute } =
-    useAudioState();
+  const audio = useAudioInstanceStore(
+    (state) => state.audioInstance
+  ) as HTMLAudioElement;
+  const storeSetVolume = useTrackStore((state) => state.setVolume);
+  const storeToggleMute = useTrackStore((state) => state.toggleMute);
 
   const setLiveVolume = useCallback(
     (newVolume: number) => {
@@ -14,13 +18,6 @@ export const useAudioVolume = () => {
     },
     [audio]
   );
-
-  // 볼륨/음소거 상태가 변경되면 오디오 볼륨을 업데이트
-  useEffect(() => {
-    if (isNumber(volume)) {
-      audio.volume = isMuted ? 0 : volume;
-    }
-  }, [volume, isMuted, audio]);
 
   return {
     setVolume: storeSetVolume,

@@ -24,7 +24,7 @@ export const useListModal = () => {
     setLiveVolume,
     toggleMute,
     handleSelectTrack,
-    analyserNode,
+    audioAnalyser,
   } = useAudioPlayer();
 
   const cloudinaryData = useCloudinaryStore((state) => state.cloudinaryData);
@@ -189,7 +189,7 @@ export const useListModal = () => {
     duration,
     isBuffering,
     isMuted,
-    analyserNode,
+    audioAnalyser,
     togglePlayPause,
     nextTrack,
     prevTrack,
