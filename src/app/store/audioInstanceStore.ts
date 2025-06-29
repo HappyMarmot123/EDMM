@@ -7,7 +7,10 @@ import {
 } from "@/shared/lib/audioInstance";
 import { AudioInstanceState } from "@/shared/types/dataType";
 
-const useAudioInstanceStore = create<AudioInstanceState>(() => {
+const useAudioInstanceStore = create<AudioInstanceState>()((set) => {
+  let audioContext: AudioContext | null = null;
+  let audioInstance: HTMLAudioElement | null = null;
+
   if (typeof window === "undefined") {
     return {
       audioInstance: null,
@@ -17,9 +20,12 @@ const useAudioInstanceStore = create<AudioInstanceState>(() => {
     };
   }
 
+  audioInstance = getAudioInstance();
+  audioContext = getAudioContext();
+
   return {
-    audioInstance: getAudioInstance(),
-    audioContext: getAudioContext(),
+    audioInstance,
+    audioContext,
     audioAnalyser: getAnalyser(),
     cleanAudioInstance: cleanupAudioInstance,
   };

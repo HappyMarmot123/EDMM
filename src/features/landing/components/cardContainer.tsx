@@ -3,8 +3,7 @@
 import { CloudinaryResource } from "@/shared/types/dataType";
 import useTrackStore from "@/app/store/trackStore";
 import { useToggle } from "@/shared/providers/toggleProvider";
-import useCloudinaryStore from "@/app/store/cloudinaryStore";
-import { setFindNewTrack } from "@/shared/lib/audioPlayerUtil";
+import { useAudioTrackManage } from "@/shared/hooks/audio/useAudioTrackManage";
 import { useCallback } from "react";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { Card } from "@/features/landing/atoms/cardPresentation";
@@ -20,17 +19,16 @@ import { Card } from "@/features/landing/atoms/cardPresentation";
 
 export const CardContainer = ({ card }: { card: CloudinaryResource }) => {
   const { openToggle } = useToggle();
-  const { handleSelectTrack } = useAudioPlayer();
+  const { handleSelectTrack } = useAudioTrackManage();
   const currentTrack = useTrackStore((state) => state.currentTrack);
-  const setTrack = useTrackStore((state) => state.setTrack);
-  const cloudinaryData = useCloudinaryStore((state) => state.cloudinaryData);
+  const { togglePlayPause, isPlaying } = useAudioPlayer();
 
   const handleClickCard = useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
       e.preventDefault();
-      const notNewAsset = card.asset_id !== currentTrack?.assetId;
-      if (notNewAsset) {
-        setFindNewTrack(cloudinaryData, card.asset_id, setTrack);
+      const newAsset = card.asset_id !== currentTrack?.assetId;
+      if (newAsset) {
+        handleSelectTrack(card.asset_id);
       }
       openToggle();
     },
@@ -41,9 +39,17 @@ export const CardContainer = ({ card }: { card: CloudinaryResource }) => {
     (e: React.MouseEvent<HTMLButtonElement>, track: CloudinaryResource) => {
       e.preventDefault();
       e.stopPropagation();
-      handleSelectTrack(track.asset_id);
+      const newAsset = track.asset_id !== currentTrack?.assetId;
+      if (newAsset) {
+        handleSelectTrack(track.asset_id);
+      } else {
+        return togglePlayPause();
+      }
+      if (!isPlaying) {
+        togglePlayPause();
+      }
     },
-    []
+    [currentTrack, isPlaying]
   );
 
   let props = {

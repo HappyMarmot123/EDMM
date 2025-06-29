@@ -1,183 +1,135 @@
 "use client";
 
+import { createContext, useContext, useMemo } from "react";
+import { useAudioTrackManage } from "../hooks/audio/useAudioTrackManage";
+import { useAudioPlayControl } from "../hooks/audio/useAudioPlayControl";
+import { useAudioSeeking } from "../hooks/audio/useAudioSeeking";
+import { useAudioVolume } from "../hooks/audio/useAudioVolume";
+import { useAudioEffects } from "../hooks/audio/useAudioEffects";
+import useTrackStore from "@/app/store/trackStore";
+import useCloudinaryStore from "@/app/store/cloudinaryStore";
+import useAudioInstanceStore from "@/app/store/audioInstanceStore";
 import {
-  createContext,
-  useContext,
-  useEffect,
-  useCallback,
-  useRef,
-} from "react";
-import { isNumber, isEmpty } from "lodash";
-import {
-  togglePlayPauseLogic,
-  seekLogic,
-  playPrevTrackLogic,
-  playNextTrackLogic,
-  useTrackStoreVariables,
-  setFindNewTrack,
-} from "@/shared/lib/audioPlayerUtil";
-import { setupAudioEventListeners } from "@/shared/lib/audioEventManager";
+  AudioPlayerState,
+  CloudinaryStoreState,
+  AudioInstanceState,
+} from "@/shared/types/dataType";
 
-type AudioPlayerLogicReturnType = ReturnType<typeof useAudioPlayerLogic>;
+/*
+  TODO:
+  FACADE PATTERN SUPER SEXY JUICY
+*/
+
+type AudioPlayerLogicReturnType = {
+  // State from stores
+  currentTrack: AudioPlayerState["currentTrack"];
+  isPlaying: AudioPlayerState["isPlaying"];
+  currentTime: AudioPlayerState["currentTime"];
+  duration: AudioPlayerState["duration"];
+  isBuffering: AudioPlayerState["isBuffering"];
+  volume: AudioPlayerState["volume"];
+  isMuted: AudioPlayerState["isMuted"];
+  cloudinaryData: CloudinaryStoreState["cloudinaryData"];
+  isLoadingCloudinary: CloudinaryStoreState["isLoadingCloudinary"];
+  audio: AudioInstanceState["audioInstance"];
+  analyserNode: AudioInstanceState["audioAnalyser"];
+  audioContext: AudioInstanceState["audioContext"];
+  // Actions from hooks
+  handleSelectTrack: ReturnType<
+    typeof useAudioTrackManage
+  >["handleSelectTrack"];
+  togglePlayPause: ReturnType<typeof useAudioPlayControl>["togglePlayPause"];
+  nextTrack: ReturnType<typeof useAudioPlayControl>["nextTrack"];
+  prevTrack: ReturnType<typeof useAudioPlayControl>["prevTrack"];
+  seek: ReturnType<typeof useAudioSeeking>["seek"];
+  setVolume: ReturnType<typeof useAudioVolume>["setVolume"];
+  toggleMute: ReturnType<typeof useAudioVolume>["toggleMute"];
+  setLiveVolume: ReturnType<typeof useAudioVolume>["setLiveVolume"];
+};
 
 const AudioPlayerContext = createContext<
   AudioPlayerLogicReturnType | undefined
 >(undefined);
 
-function useAudioPlayerLogic() {
-  const isSeekingRef = useRef(false);
+function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
+  // 1. Setup side effects
+  useAudioEffects();
 
-  const {
-    currentTrack,
-    isPlaying,
-    currentTime,
-    duration,
-    isBuffering,
-    volume,
-    isMuted,
-    setTrack,
-    storeTogglePlayPause,
-    storeSetVolume,
-    storeSetCurrentTime,
-    storeSetDuration,
-    storeSetIsBuffering,
-    storeSeekTo,
-    storeToggleMute,
-    cloudinaryData,
-    isLoadingCloudinary,
-    audio,
-    analyserNode,
-    audioContext,
-    cleanAudioInstance,
-  } = useTrackStoreVariables();
+  // 2. State selection
+  const currentTrack = useTrackStore((state) => state.currentTrack);
+  const isPlaying = useTrackStore((state) => state.isPlaying);
+  const currentTime = useTrackStore((state) => state.currentTime);
+  const duration = useTrackStore((state) => state.duration);
+  const isBuffering = useTrackStore((state) => state.isBuffering);
+  const volume = useTrackStore((state) => state.volume);
+  const isMuted = useTrackStore((state) => state.isMuted);
 
-  // 오디오, 현재트랙 정보 업데이트
-  useEffect(() => {
-    const isTrackChanged = currentTrack && audio.src !== currentTrack.url;
-
-    if (isTrackChanged && currentTrack.url) {
-      audio.src = currentTrack.url;
-      storeSetCurrentTime(0);
-    }
-  }, [currentTrack, audio, storeSetCurrentTime]);
-
-  // 볼륨 설정
-  useEffect(() => {
-    if (isNumber(volume)) {
-      audio.volume = isMuted ? 0 : volume;
-    }
-  }, [volume, isMuted, audio]);
-
-  // 트랙플레이 컨트롤
-  useEffect(() => {
-    if (isPlaying) {
-      audio.play().catch((e) => {
-        console.warn("Error playing audio:", e);
-      });
-    } else {
-      audio.pause();
-    }
-  }, [isPlaying, currentTrack]);
-
-  // 첫 접근시 트랙 세팅
-  useEffect(() => {
-    const hasAlreadyTrackInStore = isEmpty(cloudinaryData) || currentTrack;
-    if (hasAlreadyTrackInStore) return;
-
-    if (cloudinaryData && cloudinaryData.size > 0) {
-      const firstTrackAssetId = cloudinaryData.keys().next().value!!;
-      setFindNewTrack(cloudinaryData, firstTrackAssetId, setTrack);
-    }
-  }, [cloudinaryData]);
-
-  const togglePlayPause = useCallback(async () => {
-    if (!currentTrack && !isPlaying) return;
-    await togglePlayPauseLogic({ audioContext, storeTogglePlayPause });
-  }, [currentTrack, isPlaying, audioContext]);
-
-  const seek = useCallback(
-    (time: number) => {
-      const currentAudioDuration = audio?.duration || 0;
-      if (!currentTrack || !audio) return;
-      seekLogic({
-        audio,
-        currentTrack,
-        duration: currentAudioDuration,
-        time,
-        storeSeekTo,
-        isSeekingRef,
-      });
-    },
-    [currentTrack, audio, storeSeekTo]
+  const cloudinaryData = useCloudinaryStore((state) => state.cloudinaryData);
+  const isLoadingCloudinary = useCloudinaryStore(
+    (state) => state.isLoadingCloudinary
   );
 
-  const playNextTrack = () => {
-    playNextTrackLogic({ cloudinaryData, currentTrack, setTrack, isPlaying });
-  };
+  const audio = useAudioInstanceStore(
+    (state) => state.audioInstance
+  ) as HTMLAudioElement;
+  const analyserNode = useAudioInstanceStore((state) => state.audioAnalyser);
+  const audioContext = useAudioInstanceStore((state) => state.audioContext);
 
-  const playPrevTrack = () => {
-    playPrevTrackLogic({ cloudinaryData, currentTrack, setTrack, isPlaying });
-  };
+  // 3. Actions from custom hooks
+  const { handleSelectTrack } = useAudioTrackManage();
+  const { togglePlayPause, nextTrack, prevTrack } = useAudioPlayControl();
+  const { seek } = useAudioSeeking();
+  const { setVolume, toggleMute, setLiveVolume } = useAudioVolume();
 
-  const handleSelectTrack = useCallback(
-    (assetId: string) => {
-      if (assetId === currentTrack?.assetId) return;
-      setFindNewTrack(cloudinaryData, assetId, setTrack, isPlaying);
-    },
-    [cloudinaryData, isPlaying, currentTrack]
+  // 4. Memoize the context value
+  return useMemo(
+    () => ({
+      // State
+      currentTrack,
+      isPlaying,
+      currentTime,
+      duration,
+      isBuffering,
+      volume,
+      isMuted,
+      cloudinaryData,
+      isLoadingCloudinary,
+      audio,
+      analyserNode,
+      audioContext,
+      // Actions
+      handleSelectTrack,
+      togglePlayPause,
+      nextTrack,
+      prevTrack,
+      seek,
+      setVolume,
+      toggleMute,
+      setLiveVolume,
+    }),
+    [
+      currentTrack,
+      isPlaying,
+      currentTime,
+      duration,
+      isBuffering,
+      volume,
+      isMuted,
+      cloudinaryData,
+      isLoadingCloudinary,
+      audio,
+      analyserNode,
+      audioContext,
+      handleSelectTrack,
+      togglePlayPause,
+      nextTrack,
+      prevTrack,
+      seek,
+      setVolume,
+      toggleMute,
+      setLiveVolume,
+    ]
   );
-
-  const setLiveVolume = useCallback(
-    (newVolume: number) => {
-      if (isNumber(newVolume) && audio) {
-        audio.volume = newVolume;
-      }
-    },
-    [audio]
-  );
-
-  // 오디오 이벤트 리스너 설정
-  useEffect(() => {
-    const actions = {
-      storeSetCurrentTime,
-      storeSetDuration,
-      storeSetIsBuffering,
-      setTrack,
-    };
-
-    const cleanup = setupAudioEventListeners(audio, actions, isSeekingRef);
-    return cleanup;
-  }, []);
-
-  // 컴포넌트 언마운트 시 오디오 인스턴스 정리
-  useEffect(() => {
-    return () => {
-      if (cleanAudioInstance) {
-        cleanAudioInstance();
-      }
-    };
-  }, [cleanAudioInstance]);
-
-  return {
-    currentTrack,
-    isPlaying,
-    currentTime,
-    duration,
-    isBuffering,
-    volume,
-    isMuted,
-    isLoadingCloudinary,
-    togglePlayPause,
-    seek,
-    nextTrack: playNextTrack,
-    prevTrack: playPrevTrack,
-    handleSelectTrack,
-    setVolume: storeSetVolume,
-    setLiveVolume,
-    toggleMute: storeToggleMute,
-    analyserNode,
-    audioPlayer: audio,
-  };
 }
 
 export const AudioPlayerProvider = ({
