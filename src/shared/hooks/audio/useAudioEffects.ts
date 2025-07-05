@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { isNumber } from "lodash";
 import useTrackStore from "@/app/store/trackStore";
 import useAudioInstanceStore from "@/app/store/audioInstanceStore";
@@ -50,9 +50,8 @@ export const useAudioEffects = () => {
     }
   }, [volume, isMuted, audio]);
 
-  // 이벤트 리스너 설정
-  useEffect(() => {
-    const actions = {
+  const actions = useMemo(
+    () => ({
       state: {
         audio,
         storeSetCurrentTime,
@@ -61,17 +60,21 @@ export const useAudioEffects = () => {
       },
       isSeekingRef,
       nextTrack,
-    };
+    }),
+    [
+      audio,
+      storeSetCurrentTime,
+      storeSetDuration,
+      storeSetIsBuffering,
+      isSeekingRef,
+      nextTrack,
+    ]
+  );
+
+  useEffect(() => {
     const cleanup = setupAudioEventListeners(actions);
     return cleanup;
-  }, [
-    audio,
-    isSeekingRef,
-    nextTrack,
-    storeSetCurrentTime,
-    storeSetDuration,
-    storeSetIsBuffering,
-  ]);
+  }, [actions]);
 
   // 언마운트 이벤트 클린업업
   useEffect(() => {

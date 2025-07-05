@@ -104,7 +104,17 @@ export const addRecentAssetId = (set: any) => (assetId: string) => {
 };
 
 export const setCloudinaryData = (set: any) => (data: CloudinaryResourceMap) =>
-  set({ cloudinaryData: data, isLoadingCloudinary: false });
+  set((state: any) => {
+    const currentData = state.cloudinaryData;
+    if (!currentData && !data) return state;
+    if (!currentData || !data) {
+      return { cloudinaryData: data, isLoadingCloudinary: false };
+    }
+    if (currentData.size !== data.size) {
+      return { cloudinaryData: data, isLoadingCloudinary: false };
+    }
+    return { ...state, isLoadingCloudinary: false };
+  });
 
 export const setCloudinaryError = (set: any) => (error: Error | null) =>
   set({ cloudinaryError: error });

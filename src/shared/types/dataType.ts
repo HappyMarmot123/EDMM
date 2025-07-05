@@ -469,3 +469,22 @@ export interface CardContextValue {
     track: CloudinaryResource
   ) => void;
 }
+
+export type trackReducerState = {
+  trackId: string | null;
+  trackEntries: [string, CloudinaryResource][];
+};
+
+export type trackReducerAction =
+  | {
+      type: "NEXT_TRACK" | "PREV_TRACK";
+      payload: {
+        currentTrack: TrackInfo | null;
+      };
+    }
+  | {
+      type: "UPDATE_TRACK_ENTRIES";
+      payload: {
+        trackEntries: [string, CloudinaryResource][];
+      };
+    };
