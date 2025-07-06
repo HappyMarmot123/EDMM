@@ -21,6 +21,7 @@ export interface ModalMusicListProps
   isLoading: boolean;
   trackList: CloudinaryResourceMap;
   handleSelectTrack: (assetId: string) => void;
+  isFavoriteLoading?: boolean;
 }
 
 export interface BaseResponse {
@@ -286,6 +287,19 @@ export interface LikeButtonProps {
   role: Record<string, any>;
   isFavorite: boolean;
   toggleFavorite: (assetId: string) => void;
+  isLoading?: boolean;
+}
+
+export interface FavoriteActionState {
+  isLoading: boolean;
+  error: string | null;
+  success: boolean;
+  lastToggledAssetId: string | null;
+}
+
+export interface FavoriteActionPayload {
+  assetId: string;
+  favoriteStore: any;
 }
 
 export interface UnifiedTrack {
@@ -488,3 +502,13 @@ export type trackReducerAction =
         trackEntries: [string, CloudinaryResource][];
       };
     };
+
+export interface OptimisticFavoriteState {
+  favoriteAssetIds: Set<string>;
+  pendingToggle: string | null;
+}
+
+export interface OptimisticFavoriteAction {
+  type: "TOGGLE_FAVORITE";
+  assetId: string;
+}

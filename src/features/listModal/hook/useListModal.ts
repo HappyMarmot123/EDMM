@@ -7,6 +7,7 @@ import { useFavorites } from "@/features/listModal/hook/useFavorites";
 import { useVolumeControl } from "@/shared/hooks/useVolumeControl";
 import { toast } from "sonner";
 import favoriteStore from "@/app/store/favoriteStore";
+import { useFavoriteAction } from "./useFavoriteAction";
 
 export const useListModal = () => {
   const {
@@ -40,6 +41,15 @@ export const useListModal = () => {
     setFavorites,
     toggleFavorite: storeToggleFavorite,
   } = favoriteStore();
+
+  // useOptimistic를 사용한 새로운 toggleFavorite
+  const {
+    toggleFavorite: actionToggleFavorite,
+    isPending: isFavoritePending,
+    isLoading: isFavoriteLoading,
+    error: favoriteError,
+    optimisticFavoriteIds,
+  } = useFavoriteAction();
 
   const isCursorHidden = useRef(true);
   const [activeButton, setActiveButton] = useState("available");
@@ -162,16 +172,8 @@ export const useListModal = () => {
     return displayCount < total;
   }, [displayedTrackList, searchTerm, displayCount]);
 
-  const toggleFavorite = useCallback(
-    (assetId: string) => {
-      if (!user) {
-        toast.error("You need to login to like tracks.");
-        return;
-      }
-      storeToggleFavorite(assetId, user.id);
-    },
-    [user, storeToggleFavorite]
-  );
+  // 기존 toggleFavorite 함수를 actionToggleFavorite으로 대체
+  const toggleFavorite = actionToggleFavorite;
 
   const {
     localVolume,
@@ -198,7 +200,7 @@ export const useListModal = () => {
     allTracks,
     trackList,
     isLoading,
-    favoriteAssetIds,
+    favoriteAssetIds: optimisticFavoriteIds, // 낙관적 상태 사용
     toggleFavorite,
     activeButton,
     setActiveButton,
@@ -214,5 +216,9 @@ export const useListModal = () => {
     toggleMute,
     loadMoreTracks,
     hasMoreTracks,
+    // useOptimistic로 추가된 새로운 상태들
+    isFavoritePending,
+    isFavoriteLoading,
+    favoriteError,
   };
 };

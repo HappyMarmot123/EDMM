@@ -43,6 +43,7 @@ export default function ModalPlayer() {
     toggleMute,
     loadMoreTracks,
     hasMoreTracks,
+    isFavoriteLoading,
   } = useListModal();
   const { role } = useAuth();
   const { seek } = useAudioPlayer();
@@ -178,6 +179,7 @@ export default function ModalPlayer() {
                   role={role}
                   isFavorite={initFavorite(currentTrack)}
                   toggleFavorite={toggleFavorite}
+                  isLoading={isFavoriteLoading}
                 />
               </motion.div>
 

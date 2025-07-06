@@ -5,7 +5,7 @@ import {
   CloudinaryResourceMap,
 } from "@/shared/types/dataType";
 import { CLAMP_VOLUME } from "@/shared/lib/util";
-import { handleOnLike } from "@/shared/lib/util";
+import { toggleFavorite as toggleFavoriteUtil } from "@/shared/lib/util";
 import { createJSONStorage } from "zustand/middleware";
 
 const MAX_RECENT_ASSETS = 10;
@@ -124,5 +124,5 @@ export const setFavorites = (set: any) => (favorites: Set<string>) =>
 
 export const toggleFavorite =
   (set: any, get: any) => async (assetId: string, userId: string) => {
-    await handleOnLike(assetId, userId, get, set);
+    await toggleFavoriteUtil(assetId, userId, get, set);
   };

@@ -23,6 +23,7 @@ export default function ModalTrackList() {
     handleSelectTrack,
     loadMoreTracks,
     hasMoreTracks,
+    isFavoriteLoading,
   } = useListModal();
 
   const { closeToggle } = useToggle();
@@ -100,6 +101,7 @@ export default function ModalTrackList() {
           favoriteAssetIds={favoriteAssetIds}
           toggleFavorite={toggleFavorite}
           handleSelectTrack={handleSelectTrack}
+          isFavoriteLoading={isFavoriteLoading}
         />
         <div ref={targetRef} className="h-4 w-full" />
       </section>
