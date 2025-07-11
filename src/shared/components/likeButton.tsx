@@ -31,7 +31,13 @@ class ClassNameBuilder {
 }
 
 export const LikeButton = React.memo(
-  ({ track, role, isFavorite, toggleFavorite }: LikeButtonProps) => {
+  ({
+    track,
+    role,
+    isFavorite,
+    toggleFavorite,
+    isLoading = false,
+  }: LikeButtonProps) => {
     if (!role) return null;
     const interact = role.favoriteInteract;
 
@@ -47,20 +53,24 @@ export const LikeButton = React.memo(
 
     const iconClassName = new ClassNameBuilder()
       .addBase("w-4 h-4")
-      .addCondition(!interact, "cursor-not-allowed")
+      .addCondition(!interact || isLoading, "cursor-not-allowed")
       .addCondition(isFavorite, "text-pink-500 fill-pink-500/30")
-      .addCondition(interact, "hover:text-pink-500 transition-colors")
+      .addCondition(
+        interact && !isLoading,
+        "hover:text-pink-500 transition-colors"
+      )
+      .addCondition(isLoading, "opacity-50 animate-pulse")
       .build();
 
     const wrappedButtonClassName = new ClassNameBuilder()
       .addBase("p-1")
-      .addCondition(!interact, "cursor-not-allowed")
+      .addCondition(!interact || isLoading, "cursor-not-allowed")
       .build();
 
     return (
       <ProtectTooltip>
         <button
-          disabled={!interact}
+          disabled={!interact || isLoading}
           className={wrappedButtonClassName}
           onClick={wrappedButtonOnClick}
         >

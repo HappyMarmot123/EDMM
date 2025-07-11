@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { subscribeWithSelector } from "zustand/middleware";
 import { setCloudinaryData, setCloudinaryError } from "./service/storeService";
 import {
   CloudinaryResourceMap,
@@ -11,6 +12,17 @@ TODO:
   the easiest migration is to use createWithEqualityFn in v5.
   https://github.com/pmndrs/zustand/blob/HEAD/docs/migrations/migrating-to-v5.md#using-custom-equality-functions-such-as-shallow
 */
+
+const useCloudinaryStore = create<CloudinaryStoreState>()(
+  subscribeWithSelector((set) => ({
+    cloudinaryData: new Map() as CloudinaryResourceMap,
+    cloudinaryError: null,
+    isLoadingCloudinary: true,
+
+    setCloudinaryData: setCloudinaryData(set),
+    setCloudinaryError: setCloudinaryError(set),
+  }))
+);
 
 const useCloudinaryStore = create<CloudinaryStoreState>()((set) => ({
   cloudinaryData: new Map() as CloudinaryResourceMap,

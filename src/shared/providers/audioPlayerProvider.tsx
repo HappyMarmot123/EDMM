@@ -9,11 +9,7 @@ import { useAudioEffects } from "../hooks/audio/useAudioEffects";
 import useTrackStore from "@/app/store/trackStore";
 import useCloudinaryStore from "@/app/store/cloudinaryStore";
 import useAudioInstanceStore from "@/app/store/audioInstanceStore";
-import {
-  AudioPlayerState,
-  CloudinaryStoreState,
-  AudioInstanceState,
-} from "@/shared/types/dataType";
+import { AudioPlayerLogicReturnType } from "../types/dataType";
 
 /*
   TODO:
@@ -52,52 +48,22 @@ const AudioPlayerContext = createContext<
 >(undefined);
 
 function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
-  // 1. Setup side effects
-  useAudioEffects();
+  useAudioEffects(); // 사이드 이펙트
 
-  // 2. State selection
-  const currentTrack = useTrackStore((state) => state.currentTrack);
-  const isPlaying = useTrackStore((state) => state.isPlaying);
-  const currentTime = useTrackStore((state) => state.currentTime);
-  const duration = useTrackStore((state) => state.duration);
-  const isBuffering = useTrackStore((state) => state.isBuffering);
-  const volume = useTrackStore((state) => state.volume);
-  const isMuted = useTrackStore((state) => state.isMuted);
+  const trackState = useTrackStore((state) => state);
+  const cloudinaryState = useCloudinaryStore((state) => state);
+  const audioState = useAudioInstanceStore((state) => state);
 
-  const cloudinaryData = useCloudinaryStore((state) => state.cloudinaryData);
-  const isLoadingCloudinary = useCloudinaryStore(
-    (state) => state.isLoadingCloudinary
-  );
-
-  const audio = useAudioInstanceStore(
-    (state) => state.audioInstance
-  ) as HTMLAudioElement;
-  const analyserNode = useAudioInstanceStore((state) => state.audioAnalyser);
-  const audioContext = useAudioInstanceStore((state) => state.audioContext);
-
-  // 3. Actions from custom hooks
   const { handleSelectTrack } = useAudioTrackManage();
   const { togglePlayPause, nextTrack, prevTrack } = useAudioPlayControl();
   const { seek } = useAudioSeeking();
   const { setVolume, toggleMute, setLiveVolume } = useAudioVolume();
 
-  // 4. Memoize the context value
   return useMemo(
     () => ({
-      // State
-      currentTrack,
-      isPlaying,
-      currentTime,
-      duration,
-      isBuffering,
-      volume,
-      isMuted,
-      cloudinaryData,
-      isLoadingCloudinary,
-      audio,
-      analyserNode,
-      audioContext,
-      // Actions
+      ...trackState,
+      ...cloudinaryState,
+      ...audioState,
       handleSelectTrack,
       togglePlayPause,
       nextTrack,
@@ -108,18 +74,9 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       setLiveVolume,
     }),
     [
-      currentTrack,
-      isPlaying,
-      currentTime,
-      duration,
-      isBuffering,
-      volume,
-      isMuted,
-      cloudinaryData,
-      isLoadingCloudinary,
-      audio,
-      analyserNode,
-      audioContext,
+      trackState,
+      cloudinaryState,
+      audioState,
       handleSelectTrack,
       togglePlayPause,
       nextTrack,

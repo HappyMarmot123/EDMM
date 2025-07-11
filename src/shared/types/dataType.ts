@@ -1,7 +1,7 @@
 import type { Session, User, UserMetadata } from "@supabase/supabase-js";
 import { Method } from "axios";
 import { LucideProps } from "lucide-react";
-import type { RefObject, MouseEvent, ReactNode } from "react";
+import type { RefObject, ReactNode } from "react";
 
 // 타입 제네릭 추상화 이그젬플
 // 임플리먼트 말고 익스텐즈로 상속 후 확장 구현
@@ -21,6 +21,7 @@ export interface ModalMusicListProps
   isLoading: boolean;
   trackList: CloudinaryResourceMap;
   handleSelectTrack: (assetId: string) => void;
+  isFavoriteLoading?: boolean;
 }
 
 export interface BaseResponse {
@@ -286,6 +287,19 @@ export interface LikeButtonProps {
   role: Record<string, any>;
   isFavorite: boolean;
   toggleFavorite: (assetId: string) => void;
+  isLoading?: boolean;
+}
+
+export interface FavoriteActionState {
+  isLoading: boolean;
+  error: string | null;
+  success: boolean;
+  lastToggledAssetId: string | null;
+}
+
+export interface FavoriteActionPayload {
+  assetId: string;
+  favoriteStore: any;
 }
 
 export interface UnifiedTrack {
@@ -446,6 +460,20 @@ export interface zustandPersistSet {
   (arg0: any): any;
 }
 
+export interface AudioPlayerLogicReturnType
+  extends AudioPlayerState,
+    CloudinaryStoreState,
+    AudioInstanceState {
+  handleSelectTrack: ModalMusicListProps["handleSelectTrack"];
+  togglePlayPause: AudioPlayerState["togglePlayPause"];
+  setVolume: AudioPlayerState["setVolume"];
+  toggleMute: AudioPlayerState["toggleMute"];
+  nextTrack: any;
+  prevTrack: any;
+  seek: any;
+  setLiveVolume: any;
+}
+
 export interface CardContextValue {
   children?: React.ReactNode;
   card: CloudinaryResource;
@@ -454,4 +482,33 @@ export interface CardContextValue {
     e: React.MouseEvent<HTMLButtonElement>,
     track: CloudinaryResource
   ) => void;
+}
+
+export type trackReducerState = {
+  trackId: string | null;
+  trackEntries: [string, CloudinaryResource][];
+};
+
+export type trackReducerAction =
+  | {
+      type: "NEXT_TRACK" | "PREV_TRACK";
+      payload: {
+        currentTrack: TrackInfo | null;
+      };
+    }
+  | {
+      type: "UPDATE_TRACK_ENTRIES";
+      payload: {
+        trackEntries: [string, CloudinaryResource][];
+      };
+    };
+
+export interface OptimisticFavoriteState {
+  favoriteAssetIds: Set<string>;
+  pendingToggle: string | null;
+}
+
+export interface OptimisticFavoriteAction {
+  type: "TOGGLE_FAVORITE";
+  assetId: string;
 }
