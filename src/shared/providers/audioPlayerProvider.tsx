@@ -16,6 +16,33 @@ import { AudioPlayerLogicReturnType } from "../types/dataType";
   FACADE PATTERN SUPER SEXY JUICY
 */
 
+type AudioPlayerLogicReturnType = {
+  // State from stores
+  currentTrack: AudioPlayerState["currentTrack"];
+  isPlaying: AudioPlayerState["isPlaying"];
+  currentTime: AudioPlayerState["currentTime"];
+  duration: AudioPlayerState["duration"];
+  isBuffering: AudioPlayerState["isBuffering"];
+  volume: AudioPlayerState["volume"];
+  isMuted: AudioPlayerState["isMuted"];
+  cloudinaryData: CloudinaryStoreState["cloudinaryData"];
+  isLoadingCloudinary: CloudinaryStoreState["isLoadingCloudinary"];
+  audio: AudioInstanceState["audioInstance"];
+  analyserNode: AudioInstanceState["audioAnalyser"];
+  audioContext: AudioInstanceState["audioContext"];
+  // Actions from hooks
+  handleSelectTrack: ReturnType<
+    typeof useAudioTrackManage
+  >["handleSelectTrack"];
+  togglePlayPause: ReturnType<typeof useAudioPlayControl>["togglePlayPause"];
+  nextTrack: ReturnType<typeof useAudioPlayControl>["nextTrack"];
+  prevTrack: ReturnType<typeof useAudioPlayControl>["prevTrack"];
+  seek: ReturnType<typeof useAudioSeeking>["seek"];
+  setVolume: ReturnType<typeof useAudioVolume>["setVolume"];
+  toggleMute: ReturnType<typeof useAudioVolume>["toggleMute"];
+  setLiveVolume: ReturnType<typeof useAudioVolume>["setLiveVolume"];
+};
+
 const AudioPlayerContext = createContext<
   AudioPlayerLogicReturnType | undefined
 >(undefined);

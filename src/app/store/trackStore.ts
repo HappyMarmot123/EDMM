@@ -18,6 +18,11 @@ import {
   seekTo,
   partializeFunction,
 } from "./service/storeService";
+import { shallow } from "zustand/shallow";
+import {
+  type TrackInfo,
+  type CloudinaryResource,
+} from "@/shared/types/dataType";
 
 const useTrackStore = createWithEqualityFn<AudioPlayerState>()(
   subscribeWithSelector(
