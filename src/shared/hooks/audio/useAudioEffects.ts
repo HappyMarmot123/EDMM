@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { isNumber } from "lodash";
 import useTrackStore from "@/app/store/trackStore";
 import useAudioInstanceStore from "@/app/store/audioInstanceStore";
@@ -25,7 +25,7 @@ export const useAudioEffects = () => {
   const storeSetDuration = useTrackStore((state) => state.setDuration);
   const storeSetIsBuffering = useTrackStore((state) => state.setIsBuffering);
 
-  // 오디오 트랙 변경시시 초기화
+  // 1. Sync track change
   useEffect(() => {
     const isTrackChanged = currentTrack?.url && audio.src !== currentTrack.url;
     if (isTrackChanged) {
@@ -34,24 +34,25 @@ export const useAudioEffects = () => {
     }
   }, [currentTrack, audio, storeSetCurrentTime]);
 
-  // 재생/일시정지
+  // 2. Sync play/pause state
   useEffect(() => {
     if (isPlaying) {
       audio.play().catch((e) => console.warn("Error playing audio:", e));
     } else {
       audio.pause();
     }
-  }, [isPlaying, currentTrack, audio]);
+  }, [isPlaying, currentTrack, audio]); // `currentTrack` is needed to ensure play() is called after src change
 
-  // 볼륨/음소거
+  // 3. Sync volume/mute state
   useEffect(() => {
     if (isNumber(volume)) {
       audio.volume = isMuted ? 0 : volume;
     }
   }, [volume, isMuted, audio]);
 
-  const actions = useMemo(
-    () => ({
+  // 4. Setup audio event listeners
+  useEffect(() => {
+    const actions = {
       state: {
         audio,
         storeSetCurrentTime,
@@ -60,23 +61,19 @@ export const useAudioEffects = () => {
       },
       isSeekingRef,
       nextTrack,
-    }),
-    [
-      audio,
-      storeSetCurrentTime,
-      storeSetDuration,
-      storeSetIsBuffering,
-      isSeekingRef,
-      nextTrack,
-    ]
-  );
-
-  useEffect(() => {
+    };
     const cleanup = setupAudioEventListeners(actions);
     return cleanup;
-  }, [actions]);
+  }, [
+    audio,
+    isSeekingRef,
+    nextTrack,
+    storeSetCurrentTime,
+    storeSetDuration,
+    storeSetIsBuffering,
+  ]);
 
-  // 언마운트 이벤트 클린업업
+  // 5. Cleanup audio instance on unmount
   useEffect(() => {
     return () => {
       if (cleanAudioInstance) {

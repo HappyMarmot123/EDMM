@@ -5,7 +5,7 @@ import {
   CloudinaryResourceMap,
 } from "@/shared/types/dataType";
 import { CLAMP_VOLUME } from "@/shared/lib/util";
-import { toggleFavorite as toggleFavoriteUtil } from "@/shared/lib/util";
+import { handleOnLike } from "@/shared/lib/util";
 import { createJSONStorage } from "zustand/middleware";
 
 const MAX_RECENT_ASSETS = 10;
@@ -104,17 +104,7 @@ export const addRecentAssetId = (set: any) => (assetId: string) => {
 };
 
 export const setCloudinaryData = (set: any) => (data: CloudinaryResourceMap) =>
-  set((state: any) => {
-    const currentData = state.cloudinaryData;
-    if (!currentData && !data) return state;
-    if (!currentData || !data) {
-      return { cloudinaryData: data, isLoadingCloudinary: false };
-    }
-    if (currentData.size !== data.size) {
-      return { cloudinaryData: data, isLoadingCloudinary: false };
-    }
-    return { ...state, isLoadingCloudinary: false };
-  });
+  set({ cloudinaryData: data, isLoadingCloudinary: false });
 
 export const setCloudinaryError = (set: any) => (error: Error | null) =>
   set({ cloudinaryError: error });
@@ -124,5 +114,5 @@ export const setFavorites = (set: any) => (favorites: Set<string>) =>
 
 export const toggleFavorite =
   (set: any, get: any) => async (assetId: string, userId: string) => {
-    await toggleFavoriteUtil(assetId, userId, get, set);
+    await handleOnLike(assetId, userId, get, set);
   };

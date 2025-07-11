@@ -30,7 +30,7 @@ export function replaceKeyName(resource: CloudinaryResource) {
 type FavoriteGetter = () => { favoriteAssetIds: Set<string> };
 type FavoriteSetter = (newState: { favoriteAssetIds: Set<string> }) => void;
 
-export const toggleFavorite = async (
+export const handleOnLike = async (
   assetId: string,
   userId: string,
   get: FavoriteGetter,

@@ -103,27 +103,3 @@ const fsdDevelopmentGuidelines = [
   "Shared is Generic: Code in 'shared' must not contain any business logic or be tied to specific features/entities. It should be universally applicable.",
   "Public API for Slices: Each slice (feature, entity, widget, page) should ideally expose a public API (e.g., through an index.ts barrel file) for other layers to consume, hiding internal implementation details.",
 ];
-
-// --- Testing Guidelines with Jest ---
-const jestTestingGuidelines = [
-  "Test Organization: Tests can be organized in two ways:",
-  "  1. Co-located tests: Place tests in __tests__ folders next to the code they test (e.g., 'src/shared/components/__tests__/')",
-  "  2. Centralized tests: Place tests in the dedicated test directory following FSD structure (e.g., 'src/test/shared/components/')",
-  "Test File Naming: Use descriptive names following the pattern: 'ComponentName.test.tsx' or 'functionName.test.ts'",
-  "Test Structure: Follow FSD layer structure in test organization:",
-  "  - src/test/app/ - Application-level tests (routing, providers, etc.)",
-  "  - src/test/widgets/ - Widget integration tests", 
-  "  - src/test/features/ - Feature functionality tests",
-  "  - src/test/entities/ - Entity and business logic tests",
-  "  - src/test/shared/ - Utility functions, hooks, and shared component tests",
-  "Test Coverage: Aim for comprehensive coverage focusing on:",
-  "  - Component rendering and props",
-  "  - User interactions and event handling", 
-  "  - Business logic and utility functions",
-  "  - Error handling and edge cases",
-  "Test Commands:",
-  "  - 'npm test' - Run all tests once",
-  "  - 'npm run test:watch' - Run tests in watch mode",
-  "  - 'npm run test:coverage' - Run tests with coverage report",
-  "Mocking Strategy: Use Jest mocks appropriately for external dependencies while maintaining test reliability and performance.",
-];

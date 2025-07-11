@@ -15,7 +15,6 @@ const ModalMusicList = ({
   favoriteAssetIds,
   toggleFavorite,
   handleSelectTrack,
-  isFavoriteLoading = false,
 }: ModalMusicListProps) => {
   const { role } = useAuth();
   const { currentTrack } = useTrackStore();
@@ -74,7 +73,6 @@ const ModalMusicList = ({
               role={role}
               isFavorite={initFavorite(track)}
               toggleFavorite={toggleFavorite}
-              isLoading={isFavoriteLoading}
             />
             <span className="text-gray-400 text-sm">128</span>
           </div>

@@ -25,7 +25,7 @@ export default function ModalPlayer() {
     currentTrack,
     isPlaying,
     isBuffering,
-    audioAnalyser,
+    analyserNode,
     currentTime,
     duration,
     togglePlayPause,
@@ -43,7 +43,6 @@ export default function ModalPlayer() {
     toggleMute,
     loadMoreTracks,
     hasMoreTracks,
-    isFavoriteLoading,
   } = useListModal();
   const { role } = useAuth();
   const { seek } = useAudioPlayer();
@@ -98,10 +97,10 @@ export default function ModalPlayer() {
                 WebkitTransform: "scaleY(-1)",
               }}
             />
-            {audioAnalyser && (
+            {analyserNode && (
               <div className="absolute z-0">
                 <AudioVisualizer
-                  analyserNode={audioAnalyser}
+                  analyserNode={analyserNode}
                   isPlaying={isPlaying}
                   width={600}
                   height={200}
@@ -179,7 +178,6 @@ export default function ModalPlayer() {
                   role={role}
                   isFavorite={initFavorite(currentTrack)}
                   toggleFavorite={toggleFavorite}
-                  isLoading={isFavoriteLoading}
                 />
               </motion.div>
 
