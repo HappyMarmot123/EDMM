@@ -24,4 +24,13 @@ const useCloudinaryStore = create<CloudinaryStoreState>()(
   }))
 );
 
+const useCloudinaryStore = create<CloudinaryStoreState>()((set) => ({
+  cloudinaryData: new Map() as CloudinaryResourceMap,
+  cloudinaryError: null,
+  isLoadingCloudinary: true,
+
+  setCloudinaryData: setCloudinaryData(set),
+  setCloudinaryError: setCloudinaryError(set),
+}));
+
 export default useCloudinaryStore;

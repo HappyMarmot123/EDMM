@@ -24,7 +24,6 @@ const useAudioInstanceStore = create<AudioInstanceState>()(
 
     audioInstance = getAudioInstance();
     audioContext = getAudioContext();
-
     return {
       audioInstance,
       audioContext,
