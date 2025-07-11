@@ -78,6 +78,8 @@ export const useAudioPlayControl = () => {
     });
   }, [trackEntries]);
 
+  useEffect(() => {
+    if (state.trackId && state.trackId !== currentTrack?.assetId) {
       handleSelectTrack(state.trackId);
     }
   }, [state.trackId, currentTrack?.assetId, handleSelectTrack]);
