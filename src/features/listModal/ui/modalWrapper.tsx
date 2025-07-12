@@ -52,6 +52,7 @@ export default function ListModal({ children }: ListModalProps) {
         "overflow-y-auto md:overflow-hidden custom-scrollbar",
         "z-40"
       )}
+      style={{ willChange: "transform, opacity" }}
     >
       <InfiniteScrollProvider onLoadMore={handleLoadMore}>
         {children}

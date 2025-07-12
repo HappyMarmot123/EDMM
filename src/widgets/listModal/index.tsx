@@ -1,6 +1,12 @@
-import ModalPlayer from "@/features/listModal/ui/modalPlayer";
-import ModalTrackList from "@/features/listModal/ui/modalTrackList";
+import { Suspense, lazy } from "react";
 import ModalWrapper from "@/features/listModal/ui/modalWrapper";
+import ModalPlayerSkeleton from "@/shared/components/modalPlayerSkeleton";
+import ModalTrackListSkeleton from "@/shared/components/modalTrackListSkeleton";
+
+const ModalPlayer = lazy(() => import("@/features/listModal/ui/modalPlayer"));
+const ModalTrackList = lazy(
+  () => import("@/features/listModal/ui/modalTrackList")
+);
 
 /*
   TODO:
@@ -11,8 +17,12 @@ import ModalWrapper from "@/features/listModal/ui/modalWrapper";
 export default function ListModal() {
   return (
     <ModalWrapper>
-      <ModalPlayer />
-      <ModalTrackList />
+      <Suspense fallback={<ModalPlayerSkeleton />}>
+        <ModalPlayer />
+      </Suspense>
+      <Suspense fallback={<ModalTrackListSkeleton />}>
+        <ModalTrackList />
+      </Suspense>
     </ModalWrapper>
   );
 }

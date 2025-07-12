@@ -17,11 +17,11 @@ export default function LandingWrapper({ children }: LandingWrapperProps) {
     offset: ["start end", "end end"],
   });
 
-  const scaleX = useSpring(scrollYProgress, {
-    stiffness: 100,
-    damping: 30,
-    restDelta: 0.001,
-  });
+  // const scaleX = useSpring(scrollYProgress, {
+  //   stiffness: 100,
+  //   damping: 30,
+  //   restDelta: 0.001,
+  // });
 
   const customColor = useTransform(
     scrollYProgress,
@@ -32,7 +32,7 @@ export default function LandingWrapper({ children }: LandingWrapperProps) {
   return (
     <>
       <div ref={ref} className="h-full relative">
-        <motion.div className="progress-bar" style={{ scaleX: scaleX }} />
+        {/* <motion.div className="progress-bar" style={{ scaleX: scaleX }} /> */}
         <figure className="progress">
           <svg width="100%" height="100%" viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="30" pathLength="1" className="bg" />

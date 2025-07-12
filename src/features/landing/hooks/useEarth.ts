@@ -44,8 +44,8 @@ export default function useEarth({
         scale: 2.0,
         offset: [250, -250],
         onRender: (state) => {
-          phi += 0.005;
-          state.phi = phi + rotation.get();
+          // phi += 0.005;
+          // state.phi = phi + rotation.get();
           state.width = width;
           state.height = height;
         },

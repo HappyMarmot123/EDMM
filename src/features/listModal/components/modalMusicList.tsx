@@ -1,7 +1,7 @@
 import { CloudinaryResource } from "@/shared/types/dataType";
 import Image from "next/image";
 import clsx from "clsx";
-import React, { useCallback } from "react";
+import React from "react";
 import useTrackStore from "@/app/store/trackStore";
 import { useAuth } from "@/shared/providers/authProvider";
 import LoadingView from "../components/loadingView";
@@ -20,13 +20,13 @@ const ModalMusicList = ({
   const { role } = useAuth();
   const { currentTrack } = useTrackStore();
 
-  const handleOnClick = useCallback(
-    (e: React.MouseEvent<HTMLElement>, track: CloudinaryResource) => {
-      e.preventDefault();
-      handleSelectTrack(track.asset_id);
-    },
-    [handleSelectTrack]
-  );
+  const handleOnClick = (
+    e: React.MouseEvent<HTMLElement>,
+    track: CloudinaryResource
+  ) => {
+    e.preventDefault();
+    handleSelectTrack(track.asset_id);
+  };
 
   const isCurrentTrackStyle = (track: CloudinaryResource) => {
     return currentTrack?.assetId === track.asset_id ? "bg-white/10" : "";
