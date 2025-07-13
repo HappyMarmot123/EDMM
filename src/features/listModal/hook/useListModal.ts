@@ -8,6 +8,7 @@ import { useVolumeControl } from "@/shared/hooks/useVolumeControl";
 import { toast } from "sonner";
 import favoriteStore from "@/app/store/favoriteStore";
 import { useFavoriteAction } from "./useFavoriteAction";
+import { useViewport } from "@/shared/hooks/useViewport";
 
 export const useListModal = () => {
   const {
@@ -32,8 +33,8 @@ export const useListModal = () => {
   const isLoadingCloudinary = useCloudinaryStore(
     (state) => state.isLoadingCloudinary
   );
-
   const { user } = useAuth();
+  const { isMobile, isClient } = useViewport();
   const { data: initialFavorites, isLoading: isLoadingFavorites } =
     useFavorites();
   const {
@@ -95,8 +96,13 @@ export const useListModal = () => {
   }, [activeButton, user]);
 
   useEffect(() => {
+    if (!isClient || isMobile) return;
+
     const secondaryCursor = document.querySelector(".secondary-cursor");
-    if (!secondaryCursor) return console.error("cursor el not found");
+    if (!secondaryCursor) {
+      console.error("cursor el not found");
+      return;
+    }
 
     isCursorHidden.current = true;
     secondaryCursor.classList.add("hidden");
@@ -105,7 +111,7 @@ export const useListModal = () => {
       isCursorHidden.current = false;
       secondaryCursor.classList.remove("hidden");
     };
-  }, []);
+  }, [isClient, isMobile]);
 
   useEffect(() => {
     let newDisplayedList: CloudinaryResourceMap = new Map();
@@ -200,7 +206,7 @@ export const useListModal = () => {
     allTracks,
     trackList,
     isLoading,
-    favoriteAssetIds: optimisticFavoriteIds, // 낙관적 상태 사용
+    favoriteAssetIds: optimisticFavoriteIds,
     toggleFavorite,
     activeButton,
     setActiveButton,
@@ -216,7 +222,6 @@ export const useListModal = () => {
     toggleMute,
     loadMoreTracks,
     hasMoreTracks,
-    // useOptimistic로 추가된 새로운 상태들
     isFavoritePending,
     isFavoriteLoading,
     favoriteError,

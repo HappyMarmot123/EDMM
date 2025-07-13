@@ -64,8 +64,10 @@ const ModalMusicList = ({
           />
 
           <div className="flex-1">
-            <h3 className="font-medium">{track.title}</h3>
-            <p className="text-sm text-gray-400">{track.producer}</p>
+            <h3 className="font-medium line-clamp-1">{track.title}</h3>
+            <p className="text-sm text-gray-400 line-clamp-1">
+              {track.producer}
+            </p>
           </div>
 
           <div className="relative flex items-center space-x-2">
@@ -76,7 +78,7 @@ const ModalMusicList = ({
               toggleFavorite={toggleFavorite}
               isLoading={isFavoriteLoading}
             />
-            <span className="text-gray-400 text-sm">128</span>
+            <span className="text-gray-400 text-sm">33</span>
           </div>
         </section>
       ))}

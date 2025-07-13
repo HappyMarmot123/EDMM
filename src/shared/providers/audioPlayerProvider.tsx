@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useMemo } from "react";
 import { useAudioTrackManage } from "../hooks/audio/useAudioTrackManage";
-import { useAudioPlayControl } from "../hooks/audio/useAudioPlayControl";
 import { useAudioSeeking } from "../hooks/audio/useAudioSeeking";
 import { useAudioVolume } from "../hooks/audio/useAudioVolume";
 import { useAudioEffects } from "../hooks/audio/useAudioEffects";
@@ -27,11 +26,11 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
   const cloudinaryState = useCloudinaryStore((state) => state);
   const audioState = useAudioInstanceStore((state) => state);
 
-  const { handleSelectTrack } = useAudioTrackManage();
-  const { togglePlayPause, nextTrack, prevTrack } = useAudioPlayControl();
+  const { handleSelectTrack, playNextTrack, playPrevTrack, togglePlayPause } =
+    useAudioTrackManage();
   const { seek } = useAudioSeeking();
   const { setVolume, toggleMute, setLiveVolume } = useAudioVolume();
-
+  console.log(trackState.currentTrack);
   return useMemo(
     () => ({
       ...trackState,
@@ -39,8 +38,8 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       ...audioState,
       handleSelectTrack,
       togglePlayPause,
-      nextTrack,
-      prevTrack,
+      nextTrack: playNextTrack,
+      prevTrack: playPrevTrack,
       seek,
       setVolume,
       toggleMute,
@@ -52,8 +51,8 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       audioState,
       handleSelectTrack,
       togglePlayPause,
-      nextTrack,
-      prevTrack,
+      playNextTrack,
+      playPrevTrack,
       seek,
       setVolume,
       toggleMute,

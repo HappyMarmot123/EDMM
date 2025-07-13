@@ -189,6 +189,7 @@ export default function ModalPlayer() {
                   transition={{ duration: 0.1 }}
                   onClick={prevTrack}
                   className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition"
+                  aria-label="Previous track"
                 >
                   <SkipBack width={20} fill="white" />
                 </motion.button>
@@ -197,6 +198,7 @@ export default function ModalPlayer() {
                   transition={{ duration: 0.1 }}
                   onClick={togglePlayPause}
                   className="w-12 h-12 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition"
+                  aria-label={isPlaying ? "Pause" : "Play"}
                 >
                   {isPlaying ? (
                     <Pause width={20} fill="white" />
@@ -209,6 +211,7 @@ export default function ModalPlayer() {
                   transition={{ duration: 0.1 }}
                   onClick={nextTrack}
                   className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition"
+                  aria-label="Next track"
                 >
                   <SkipForward width={20} fill="white" />
                 </motion.button>

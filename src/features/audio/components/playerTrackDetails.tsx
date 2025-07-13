@@ -10,7 +10,26 @@ const PlayerTrackDetails: React.FC<PlayerTrackDetailsProps> = ({
   currentProgress,
   seekBarContainerRef,
   seek,
+  isMobile,
+  currentTrackInfo,
 }) => {
+  if (isMobile) {
+    return (
+      <div className="flex-1 flex flex-col justify-center min-w-0 mx-3">
+        <div className="flex items-baseline">
+          <span className="text-sm font-bold text-slate-800 truncate">
+            {currentTrackInfo?.name}
+          </span>
+        </div>
+        <div className="flex text-xs text-slate-400 mt-0.5">
+          <span>{formatTime(currentTime)}</span>
+          <span className="mx-1">/</span>
+          <span>{formatTime(duration)}</span>
+        </div>
+      </div>
+    );
+  }
+
   const seekTimeTooltipRef = React.useRef<HTMLDivElement>(null);
 
   const handleSeekInteraction = (event: React.MouseEvent<HTMLElement>) => {

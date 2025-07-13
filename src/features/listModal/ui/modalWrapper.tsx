@@ -16,7 +16,7 @@ interface ListModalProps {
   children: React.ReactNode;
 }
 
-export default function ListModal({ children }: ListModalProps) {
+export default function ModalWrapper({ children }: ListModalProps) {
   const { isOpen } = useToggle();
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export default function ListModal({ children }: ListModalProps) {
   return (
     <motion.div
       initial="closed"
-      animate={isOpen ? "open" : "closed"}
+      animate="open"
       exit="closed"
       variants={listModalVariants}
       className={clsx(

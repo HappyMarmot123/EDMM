@@ -23,18 +23,6 @@ export const CardContainer = ({ card }: { card: CloudinaryResource }) => {
   const currentTrack = useTrackStore((state) => state.currentTrack);
   const { togglePlayPause, isPlaying } = useAudioPlayer();
 
-  const handleClickCard = useCallback(
-    (e: React.MouseEvent<HTMLElement>) => {
-      e.preventDefault();
-      const newAsset = card.asset_id !== currentTrack?.assetId;
-      if (newAsset) {
-        handleSelectTrack(card.asset_id);
-      }
-      openToggle();
-    },
-    [card, currentTrack]
-  );
-
   const handleClickButton = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>, track: CloudinaryResource) => {
       e.preventDefault();
@@ -51,6 +39,15 @@ export const CardContainer = ({ card }: { card: CloudinaryResource }) => {
     },
     [currentTrack, isPlaying]
   );
+
+  const handleClickCard = (e: React.MouseEvent<HTMLElement>) => {
+    e.preventDefault();
+    const newAsset = card.asset_id !== currentTrack?.assetId;
+    if (newAsset) {
+      handleSelectTrack(card.asset_id);
+    }
+    openToggle();
+  };
 
   let props = {
     card,

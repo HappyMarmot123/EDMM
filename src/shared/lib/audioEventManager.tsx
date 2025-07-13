@@ -33,6 +33,10 @@ export const setupAudioEventListeners = (actions: any) => {
     actions.state.storeSetIsBuffering(false);
   };
 
+  const handleSeeking = () => {
+    actions.isSeekingRef.current = true;
+  };
+
   const handleSeeked = () => {
     actions.isSeekingRef.current = false;
   };
@@ -44,6 +48,7 @@ export const setupAudioEventListeners = (actions: any) => {
   audio.addEventListener("error", handleError);
   audio.addEventListener("waiting", handleWaiting);
   audio.addEventListener("playing", handlePlaying);
+  audio.addEventListener("seeking", handleSeeking);
   audio.addEventListener("seeked", handleSeeked);
 
   return () => {
@@ -54,6 +59,7 @@ export const setupAudioEventListeners = (actions: any) => {
     audio.removeEventListener("error", handleError);
     audio.removeEventListener("waiting", handleWaiting);
     audio.removeEventListener("playing", handlePlaying);
+    audio.removeEventListener("seeking", handleSeeking);
     audio.removeEventListener("seeked", handleSeeked);
   };
 };

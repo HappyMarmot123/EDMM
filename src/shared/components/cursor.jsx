@@ -1,8 +1,12 @@
+"use client";
+
 import React from "react";
+import { useViewport } from "@/shared/hooks/useViewport";
 // import CustomCursorContext from "./context/CustomCursorContext";
 
 // TODO: Hide if cursor not moved
 export default function Cursor() {
+  const { isMobile } = useViewport();
   // const { type } = useContext(CustomCursorContext);
   const secondaryCursor = React.useRef(null);
   const positionRef = React.useRef({
@@ -69,7 +73,17 @@ export default function Cursor() {
     };
 
     followMouse();
+
+    return () => {
+      if (positionRef.current.key !== -1) {
+        cancelAnimationFrame(positionRef.current.key);
+      }
+    };
   }, []);
+
+  if (isMobile) {
+    return null;
+  }
 
   return (
     <div className={`cursor-wrapper default`}>
