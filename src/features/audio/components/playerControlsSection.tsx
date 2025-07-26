@@ -120,6 +120,7 @@ const PlayerControlsSection: React.FC<
           IconOnFalse={Play}
           onClick={togglePlayPause}
           label={playPauseLabel}
+          className="w-10 h-10 bg-pink-100 rounded-full hover:bg-pink-200 transition-colors duration-200"
         />
         <PlayerControlButton
           id="play-next"

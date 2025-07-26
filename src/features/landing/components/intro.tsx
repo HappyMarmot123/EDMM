@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { AnimatePresence, motion, Variants } from "framer-motion";
+import { interpolateColor } from "@/shared/lib/colorUtils";
 
 const Intro = () => {
   const introVariants: Variants = {
@@ -16,38 +17,59 @@ const Intro = () => {
     },
   };
 
-  const textVariants: Variants = {
-    initial: {
-      y: 100,
-      opacity: 0,
-    },
-    animate: (custom) => ({
-      y: 0,
-      opacity: 1,
+  const sentenceVariants: Variants = {
+    initial: {},
+    animate: {
       transition: {
-        delay: 0.2 + custom * 0.2,
+        staggerChildren: 0.05,
+        delayChildren: 0.3,
+      },
+    },
+    exit: {
+      transition: {
+        staggerChildren: 0.03,
+        staggerDirection: -1,
+      },
+    },
+  };
+
+  const letterVariants: Variants = {
+    initial: {
+      opacity: 0,
+      y: "100%",
+      rotate: 10,
+    },
+    animate: {
+      opacity: 1,
+      y: 0,
+      rotate: 0,
+      transition: {
         duration: 0.5,
         ease: "easeOut",
       },
-    }),
-    exit: (custom) => ({
-      y: -50,
+    },
+    exit: {
       opacity: 0,
+      y: "-100%",
+      rotate: -10,
       transition: {
-        delay: custom * 0.1,
-        duration: 0.3,
+        duration: 0.4,
         ease: "easeIn",
       },
-    }),
+    },
   };
+
+  const textLines = [
+    { text: "you know you're", startColor: "#ff98a2", endColor: "#f472e0" },
+    { text: "somebody's dream", startColor: "#ff98a2", endColor: "#f472e0" },
+  ];
 
   const [showIntro, setShowIntro] = React.useState(true);
 
   useEffect(() => {
-    // 모든 애니메이션이 끝나면 intro 요소를 사라지게 함
     const timer = setTimeout(() => {
       setShowIntro(false);
-    }, 3000);
+    }, 4000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -58,41 +80,44 @@ const Intro = () => {
           className="intro fixed top-0 left-0 w-full h-full flex items-center justify-center z-50"
           variants={introVariants}
           initial="initial"
-          animate="initial"
+          animate="animate"
           exit="exit"
         >
-          <div className="intro-text">
-            <motion.h1
-              className="hide font-bold text-[clamp(2rem,5vw,6rem)]"
-              variants={textVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              custom={0}
-            >
-              <span className="text text-primary">Experience the beat</span>
-            </motion.h1>
-            <motion.h1
-              className="hide font-bold text-[clamp(2rem,5vw,6rem)]"
-              variants={textVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              custom={1}
-            >
-              <span className="text text-white">of Electronic</span>
-            </motion.h1>
-            <motion.h1
-              className="hide font-bold text-[clamp(2rem,5vw,6rem)]"
-              variants={textVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              custom={2}
-            >
-              <span className="text text-primary">Dance Music.</span>
-            </motion.h1>
-          </div>
+          <motion.div
+            className="intro-text"
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            {textLines.map((line, index) => (
+              <motion.h1
+                key={index}
+                className="hide font-bold text-[clamp(2rem,5vw,6rem)] overflow-hidden"
+                variants={sentenceVariants}
+              >
+                <span className="flex">
+                  {line.text.split("").map((char, charIndex) => {
+                    const factor = charIndex / (line.text.length - 1);
+                    const color = interpolateColor(
+                      line.startColor,
+                      line.endColor,
+                      factor
+                    );
+                    return (
+                      <motion.span
+                        key={charIndex}
+                        className="inline-block"
+                        variants={letterVariants}
+                        style={{ color }}
+                      >
+                        {char === " " ? "\u00A0" : char}
+                      </motion.span>
+                    );
+                  })}
+                </span>
+              </motion.h1>
+            ))}
+          </motion.div>
           <motion.div className="slider"></motion.div>
         </motion.div>
       )}

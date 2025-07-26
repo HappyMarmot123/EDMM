@@ -2,8 +2,9 @@
 
 import Cursor from "@/shared/components/cursor";
 import DustySnow from "@/features/landing/components/dustySnow";
-import { motion, useScroll, useSpring, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
+import Intro from "@/features/landing/components/intro";
 
 interface LandingWrapperProps {
   children: React.ReactNode;
@@ -17,6 +18,7 @@ export default function LandingWrapper({ children }: LandingWrapperProps) {
     offset: ["start end", "end end"],
   });
 
+  // TODO: 프로그래스 바 삭제하지 말 것
   // const scaleX = useSpring(scrollYProgress, {
   //   stiffness: 100,
   //   damping: 30,
@@ -52,7 +54,7 @@ export default function LandingWrapper({ children }: LandingWrapperProps) {
         </figure>
         <DustySnow />
         <Cursor />
-        {/* <Intro /> */}
+        <Intro />
         <article className="my-gradient fixed w-screen pointer-events-none" />
         {children}
       </div>

@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     siteName: "EDMM",
     images: [
       {
-        url: "/logo.png",
+        url: "/favicon.ico",
         width: 800,
         height: 600,
         alt: "EDMM 로고",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "EDMM",
     description: "음악 스트리밍 서비스",
-    images: ["/logo.png"],
+    images: ["/favicon.ico"],
   },
   robots: {
     index: true,
