@@ -67,9 +67,9 @@ const CardPlayButton = () => {
     <button
       aria-label="Play/Pause"
       onClick={(e) => handleClickButton(e, card)}
-      className="col-start-5 col-end-7 row-start-5 row-end-7 z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+      className="col-start-5 col-end-7 row-start-5 row-end-7 z-10 flex items-center justify-center md:opacity-0 md:group-hover:opacity-100 opacity-100 transition-opacity duration-300"
     >
-      <div className="bg-black/80 rounded-full p-3 md:p-4 transform scale-75 group-hover:scale-100 transition-transform duration-300 border-2 border-white/70  hover:bg-gray-600/80 cursor-pointer">
+      <div className="bg-black/80 rounded-full p-3 md:p-4 transform md:scale-75 md:group-hover:scale-100 scale-100 transition-transform duration-300 border-2 border-white/70 md:hover:bg-gray-600/80 cursor-pointer">
         <Play className="w-4 h-4 md:w-6 md:h-6 text-white fill-current" />
       </div>
     </button>
@@ -86,7 +86,7 @@ const CardDetails = () => {
       <h1 className="text-base md:text-lg lg:text-xl font-bold text-white uppercase leading-tight tracking-tight line-clamp-2 mb-1 group-hover:text-white/90 transition-colors duration-300">
         {card.title}
       </h1>
-      <p className="text-xs md:text-sm text-neutral-300 font-medium uppercase leading-snug tracking-tight line-clamp-1 group-hover:text-neutral-200 transition-colors duration-300">
+      <p className="md:block hidden text-xs md:text-sm text-neutral-300 font-medium uppercase leading-snug tracking-tight line-clamp-1 group-hover:text-neutral-200 transition-colors duration-300">
         {card.producer}
       </p>
     </div>

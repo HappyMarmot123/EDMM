@@ -118,6 +118,7 @@ export default function AudioPlayer() {
             currentProgress={currentProgress}
             seekBarContainerRef={seekBarContainerRef}
             seek={seek}
+            currentTrackInfo={currentTrack}
           />
           <div
             id="player-content"

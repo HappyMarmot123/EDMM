@@ -1,5 +1,10 @@
 import "@testing-library/jest-dom";
 
+jest.mock("@/app/api/supabase/supabaseClient", () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
+
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}

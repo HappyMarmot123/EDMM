@@ -31,7 +31,7 @@ export default function useEarth({
         devicePixelRatio: 2,
         width: width,
         height: height,
-        phi: 0,
+        phi: 2.5,
         theta: 0.3,
         dark: 1,
         diffuse: 1.2,

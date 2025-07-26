@@ -1,13 +1,11 @@
-import { createWithEqualityFn } from "zustand/traditional";
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import {
-  persist,
-  createJSONStorage,
-  subscribeWithSelector,
-} from "zustand/middleware";
-import { AudioPlayerState, zustandPersistSet } from "@/shared/types/dataType";
-import { mergeFunction } from "@/shared/lib/util";
+  AudioPlayerState,
+  TrackInfo,
+  zustandPersistSet,
+} from "@/shared/types/dataType";
 import {
-  setTrack,
   togglePlayPause,
   setIsPlaying,
   setCurrentTime,
@@ -18,41 +16,47 @@ import {
   seekTo,
   partializeFunction,
 } from "./service/storeService";
-import { shallow } from "zustand/shallow";
-import {
-  type TrackInfo,
-  type CloudinaryResource,
-} from "@/shared/types/dataType";
+import useRecentPlayStore from "./recentPlayStore";
 
-const useTrackStore = createWithEqualityFn<AudioPlayerState>()(
-  subscribeWithSelector(
-    persist(
-      (set: zustandPersistSet) => ({
-        currentTrack: null,
-        isPlaying: false,
-        currentTime: 0,
-        duration: 0,
-        isBuffering: false,
-        volume: 0.7,
-        isMuted: false,
+const setTrack =
+  (set: any) =>
+  (track: TrackInfo, playImmediately = false) => {
+    if (track.assetId) {
+      useRecentPlayStore.getState().addRecentAssetId(track.assetId);
+    }
+    set((state: AudioPlayerState) => ({
+      ...state,
+      currentTrack: track,
+      currentTime: 0,
+      isPlaying: playImmediately,
+      isBuffering: track.assetId !== "none",
+    }));
+  };
 
-        setTrack: setTrack(set),
-        togglePlayPause: togglePlayPause(set),
-        setIsPlaying: setIsPlaying(set),
-        setCurrentTime: setCurrentTime(set),
-        setDuration: setDuration(set),
-        setIsBuffering: setIsBuffering(set),
-        setVolume: setVolume(set),
-        toggleMute: toggleMute(set),
-        seekTo: seekTo(set),
-      }),
-      {
-        name: "track-storage",
-        storage: createJSONStorage(() => localStorage),
-        partialize: partializeFunction,
-        merge: mergeFunction,
-      }
-    )
+const useTrackStore = create<AudioPlayerState>()(
+  persist(
+    (set, get) => ({
+      currentTrack: null,
+      duration: 0,
+      currentTime: 0,
+      isPlaying: false,
+      isMuted: false,
+      volume: 1,
+      isBuffering: false,
+      setTrack: setTrack(set),
+      togglePlayPause: togglePlayPause(set),
+      setIsPlaying: setIsPlaying(set),
+      setCurrentTime: setCurrentTime(set),
+      setDuration: setDuration(set),
+      setIsBuffering: setIsBuffering(set),
+      setVolume: setVolume(set),
+      toggleMute: toggleMute(set),
+      seekTo: seekTo(set),
+    }),
+    {
+      name: "track-store",
+      partialize: partializeFunction,
+    }
   )
 );
 

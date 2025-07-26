@@ -18,7 +18,6 @@ export const useAudioSeeking = () => {
         return;
       }
 
-      isSeekingRef.current = true;
       const newTime = Math.max(0, Math.min(time, duration));
       audio.currentTime = newTime;
       storeSeekTo(newTime);

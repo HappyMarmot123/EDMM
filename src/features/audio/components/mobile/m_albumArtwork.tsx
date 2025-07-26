@@ -1,35 +1,35 @@
+"use client";
+
 import React from "react";
 import { CldImage } from "next-cloudinary";
 import clsx from "clsx";
 import { ExtendedAlbumArtworkProps } from "@/shared/types/dataType";
 
-const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
+const MAlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
   isPlaying,
   isBuffering,
   currentTrackInfo,
   onClick,
 }) => {
-  const webAlbumArtClassName = (playing: boolean, buffering: boolean) => {
-    return clsx(
-      "absolute w-[92px] h-[92px] top-[-22px] ml-[32px]",
-      "bg-gray-300",
-      "rounded-full overflow-hidden hover:scale-105 shadow-[0_0_0_10px_#fff]",
-      "cursor-pointer transform rotate-0 transition-all duration-300 ease-[ease]",
-      playing && [
-        "active top-[-32px]",
-        "shadow-[0_0_0_4px_#fff7f7,_0_30px_50px_-15px_#afb7c1]",
-      ],
-      buffering && [
-        "buffering",
-        "[&>img]:opacity-25",
-        "[&>img.active]:opacity-80",
-        "[&>img.active]:blur-sm",
-        "[&_#buffer-box]:opacity-100",
-      ]
-    );
+  const mobileAlbumArtClassName = (playing: boolean, buffering: boolean) => {
+    const baseClasses =
+      "relative z-[1] overflow-hidden rounded-full cursor-pointer shadow-lg select-none";
+    const mobileClasses = "w-[54px] h-[54px]";
+    const animationClasses =
+      "before:absolute before:top-1/2 before:left-1/2 before:w-[20px] before:h-[20px] before:mt-[-10px] before:ml-[-10px] before:bg-white before:rounded-full before:z-[2]";
+
+    let stateClasses = "";
+    if (buffering) {
+      stateClasses =
+        "before:animate-scale-up-down before:bg-transparent before:border-2 before:border-white before:border-t-transparent before:animate-spin";
+    } else if (playing) {
+      stateClasses = "before:animate-scale-up-down active";
+    }
+
+    return clsx(baseClasses, mobileClasses, stateClasses, animationClasses);
   };
 
-  const finalClassName = webAlbumArtClassName(isPlaying, isBuffering);
+  const finalClassName = mobileAlbumArtClassName(isPlaying, isBuffering);
 
   return (
     <button
@@ -48,15 +48,15 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
             isPlaying && "animate-rotate-album active"
           )}
           draggable={false}
-          width={92}
-          height={92}
+          width={54}
+          height={54}
           loading="lazy"
         />
       ) : (
         <div
           id="buffer-box"
           className={clsx(
-            "absolute top-1/2 right-0 left-0 text-white text-sm font-medium text-center p-2 mt-[-16px] mx-auto backdrop-blur-sm rounded-lg z-[2] transition-all duration-300 pointer-events-none flex items-center justify-center animate-pulse"
+            "absolute inset-0 flex items-center justify-center bg-gray-800/50 text-white z-[2] pointer-events-none"
           )}
           role="status"
           aria-live="polite"
@@ -65,7 +65,7 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
           <div
             className={clsx(
               "border-white border-t-transparent rounded-full animate-spin",
-              "w-8 h-8 border-4"
+              "w-6 h-6 border-2"
             )}
           />
         </div>
@@ -74,4 +74,4 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
   );
 };
 
-export default AlbumArtwork;
+export default MAlbumArtwork;

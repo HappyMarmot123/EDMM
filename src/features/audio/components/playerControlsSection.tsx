@@ -13,9 +13,9 @@ import { useVolumeControl } from "@/shared/hooks/useVolumeControl";
 import { PlayerControlButton } from "@/shared/components/playerControlBtn";
 import { IconToggleButton } from "@/shared/components/iconToggleButton";
 
-const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = ({
-  currentTrackInfo,
-}) => {
+const PlayerControlsSection: React.FC<
+  Omit<PlayerControlsSectionProps, "isMobile">
+> = ({ currentTrackInfo }) => {
   const {
     isPlaying,
     volume,
@@ -120,6 +120,7 @@ const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = ({
           IconOnFalse={Play}
           onClick={togglePlayPause}
           label={playPauseLabel}
+          className="w-10 h-10 bg-pink-100 rounded-full hover:bg-pink-200 transition-colors duration-200"
         />
         <PlayerControlButton
           id="play-next"

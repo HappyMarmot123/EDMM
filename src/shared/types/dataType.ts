@@ -142,6 +142,8 @@ export interface PlayerTrackDetailsProps {
   currentProgress: number;
   seekBarContainerRef: RefObject<HTMLDivElement | null>;
   seek: (time: number) => void;
+  isMobile?: boolean;
+  currentTrackInfo?: TrackInfo;
 }
 
 export interface AlbumArtworkProps {
@@ -152,11 +154,14 @@ export interface AlbumArtworkProps {
 
 export interface PlayerControlsSectionProps {
   currentTrackInfo: TrackInfo | null;
+  isMobile?: boolean;
 }
 
-export interface ExtendedAlbumArtworkProps extends AlbumArtworkProps {
-  onClick?: () => void;
-}
+export type ExtendedAlbumArtworkProps = AlbumArtworkProps & {
+  currentTrackInfo: TrackInfo | null;
+  onClick: () => void;
+  isMobile?: boolean;
+};
 
 export interface CloudinaryResource {
   asset_id: string;
@@ -279,7 +284,8 @@ export interface IconToggleButtonProps {
   IconOnFalse: React.ComponentType<LucideProps>;
   onClick: () => void;
   label: string;
-  iconProps?: Omit<LucideProps, "ref">;
+  iconProps?: React.SVGProps<SVGSVGElement>;
+  className?: string;
 }
 
 export interface LikeButtonProps {

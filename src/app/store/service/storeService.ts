@@ -40,20 +40,6 @@ export const createSetStorage = () => ({
 export const createRecentPlayStorage = () =>
   createJSONStorage(() => localStorage, createSetStorage());
 
-export const setTrack =
-  (set: zustandPersistSet) =>
-  (track: TrackInfo, playImmediately = false) => {
-    if (track.assetId && addRecentAssetId) {
-      addRecentAssetId(track.assetId);
-    }
-    set((state: AudioPlayerState) => ({
-      currentTrack: track,
-      currentTime: 0,
-      isPlaying: playImmediately,
-      isBuffering: track.assetId !== "none",
-    }));
-  };
-
 export const partializeFunction = (state: AudioPlayerState) => ({
   volume: state.volume,
   isMuted: state.isMuted,

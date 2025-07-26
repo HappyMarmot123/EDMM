@@ -3,13 +3,16 @@ import { PlayerTrackDetailsProps } from "@/shared/types/dataType";
 import clsx from "clsx";
 import { formatTime, handleMouseMove, handleMouseOut } from "@/shared/lib/util";
 
-const PlayerTrackDetails: React.FC<PlayerTrackDetailsProps> = ({
+const PlayerTrackDetails: React.FC<
+  Omit<PlayerTrackDetailsProps, "isMobile">
+> = ({
   isPlaying,
   currentTime,
   duration,
   currentProgress,
   seekBarContainerRef,
   seek,
+  currentTrackInfo,
 }) => {
   const seekTimeTooltipRef = React.useRef<HTMLDivElement>(null);
 

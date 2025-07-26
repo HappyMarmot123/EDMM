@@ -6,12 +6,17 @@ import {
 } from "@/shared/types/dataType";
 import useCloudinaryStore from "@/app/store/cloudinaryStore";
 import useTrackStore from "@/app/store/trackStore";
+import useAudioInstanceStore from "@/app/store/audioInstanceStore";
 
 export const useAudioTrackManage = () => {
   const cloudinaryData = useCloudinaryStore((state) => state.cloudinaryData);
-  const currentTrack = useTrackStore((state) => state.currentTrack);
-  const isPlaying = useTrackStore((state) => state.isPlaying);
-  const setTrack = useTrackStore((state) => state.setTrack);
+  const {
+    currentTrack,
+    isPlaying,
+    setTrack,
+    togglePlayPause: storeTogglePlayPause,
+  } = useTrackStore();
+  const { audioContext } = useAudioInstanceStore();
 
   useEffect(() => {
     const hasNoDataOrTrack = isEmpty(cloudinaryData) || currentTrack;
@@ -23,15 +28,52 @@ export const useAudioTrackManage = () => {
     }
   }, [cloudinaryData, currentTrack, setTrack]);
 
-  const handleSelectTrack = useCallback(
-    (assetId: string) => {
-      if (assetId === currentTrack?.assetId) return;
-      findAndSetTrack(cloudinaryData, assetId, setTrack, isPlaying);
-    },
-    [cloudinaryData, isPlaying, currentTrack, setTrack]
-  );
+  const handleSelectTrack = (assetId: string) => {
+    if (assetId === currentTrack?.assetId) return;
+    findAndSetTrack(cloudinaryData, assetId, setTrack, isPlaying);
+  };
 
-  return { handleSelectTrack };
+  const playNextTrack = () => {
+    if (isEmpty(cloudinaryData)) return;
+    const trackEntries = Array.from(cloudinaryData.keys());
+    const currentIndex = currentTrack
+      ? trackEntries.findIndex((id) => id === currentTrack.assetId)
+      : -1;
+    const nextIndex = (currentIndex + 1) % trackEntries.length;
+    const nextAssetId = trackEntries[nextIndex];
+    findAndSetTrack(cloudinaryData, nextAssetId, setTrack, isPlaying);
+  };
+
+  const playPrevTrack = () => {
+    if (isEmpty(cloudinaryData)) return;
+    const trackEntries = Array.from(cloudinaryData.keys());
+    const currentIndex = currentTrack
+      ? trackEntries.findIndex((id) => id === currentTrack.assetId)
+      : -1;
+    const prevIndex =
+      (currentIndex - 1 + trackEntries.length) % trackEntries.length;
+    const prevAssetId = trackEntries[prevIndex];
+    findAndSetTrack(cloudinaryData, prevAssetId, setTrack, isPlaying);
+  };
+
+  const togglePlayPause = async () => {
+    if (!currentTrack) {
+      return;
+    }
+
+    if (audioContext?.state === "suspended") {
+      await audioContext.resume();
+    }
+
+    storeTogglePlayPause();
+  };
+
+  return {
+    handleSelectTrack,
+    playNextTrack,
+    playPrevTrack,
+    togglePlayPause,
+  };
 };
 
 const findAndSetTrack = (
