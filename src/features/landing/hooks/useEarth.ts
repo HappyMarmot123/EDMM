@@ -31,7 +31,7 @@ export default function useEarth({
         devicePixelRatio: 2,
         width: width,
         height: height,
-        phi: 0,
+        phi: 2.5,
         theta: 0.3,
         dark: 1,
         diffuse: 1.2,
@@ -44,8 +44,8 @@ export default function useEarth({
         scale: 2.0,
         offset: [250, -250],
         onRender: (state) => {
-          // phi += 0.005;
-          // state.phi = phi + rotation.get();
+          phi += 0.005;
+          state.phi = phi + rotation.get();
           state.width = width;
           state.height = height;
         },

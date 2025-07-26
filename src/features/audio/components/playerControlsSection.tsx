@@ -13,10 +13,9 @@ import { useVolumeControl } from "@/shared/hooks/useVolumeControl";
 import { PlayerControlButton } from "@/shared/components/playerControlBtn";
 import { IconToggleButton } from "@/shared/components/iconToggleButton";
 
-const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = ({
-  currentTrackInfo,
-  isMobile,
-}) => {
+const PlayerControlsSection: React.FC<
+  Omit<PlayerControlsSectionProps, "isMobile">
+> = ({ currentTrackInfo }) => {
   const {
     isPlaying,
     volume,
@@ -76,51 +75,6 @@ const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = ({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [togglePlayPause, volume, setVolume, setLiveVolume]);
-
-  if (isMobile) {
-    return (
-      <section className="flex items-center justify-end gap-3">
-        <PlayerControlButton
-          id="play-previous"
-          onClick={prevTrack}
-          aria-label="Previous track"
-          className="p-1"
-        >
-          <SkipBack
-            className="block m-auto text-slate-600"
-            width={22}
-            height={22}
-            fill="currentColor"
-            aria-hidden="true"
-          />
-        </PlayerControlButton>
-        <IconToggleButton
-          id="play-pause"
-          condition={isPlaying}
-          IconOnTrue={Pause}
-          IconOnFalse={Play}
-          onClick={togglePlayPause}
-          label={playPauseLabel}
-          className="p-2 w-11 h-11"
-          iconProps={{ width: 28, height: 28, fill: "currentColor" }}
-        />
-        <PlayerControlButton
-          id="play-next"
-          onClick={nextTrack}
-          aria-label="Next track"
-          className="p-1"
-        >
-          <SkipForward
-            className="block m-auto text-slate-600"
-            width={22}
-            height={22}
-            fill="currentColor"
-            aria-hidden="true"
-          />
-        </PlayerControlButton>
-      </section>
-    );
-  }
 
   return (
     <div

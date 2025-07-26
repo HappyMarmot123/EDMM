@@ -30,7 +30,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
     useAudioTrackManage();
   const { seek } = useAudioSeeking();
   const { setVolume, toggleMute, setLiveVolume } = useAudioVolume();
-  console.log(trackState.currentTrack);
+
   return useMemo(
     () => ({
       ...trackState,
