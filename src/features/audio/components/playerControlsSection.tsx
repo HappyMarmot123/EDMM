@@ -86,18 +86,18 @@ const PlayerControlsSection: React.FC<
         aria-label="Track Information"
       >
         <div
-          id="album-name"
-          className="text-slate-700 text-sm font-bold w-full transition-colors duration-300 overflow-hidden whitespace-nowrap text-ellipsis"
-          title={currentTrackInfo?.album}
-        >
-          {currentTrackInfo?.album}
-        </div>
-        <div
           id="track-name"
-          className="text-slate-500 text-xs w-full transition-colors duration-300 overflow-hidden whitespace-nowrap text-ellipsis"
+          className="text-slate-700 text-sm font-bold w-full transition-colors duration-300 overflow-hidden whitespace-nowrap text-ellipsis"
           title={currentTrackInfo?.name}
         >
           {currentTrackInfo?.name}
+        </div>
+        <div
+          id="producer-name"
+          className="text-slate-500 text-xs w-full transition-colors duration-300 overflow-hidden whitespace-nowrap text-ellipsis"
+          title={currentTrackInfo?.producer}
+        >
+          {currentTrackInfo?.producer}
         </div>
       </section>
       <section className="flex items-center justify-between w-full">
