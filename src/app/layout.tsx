@@ -52,15 +52,6 @@ const RootLayout = async ({ children }: { children: React.ReactNode }) => {
 
   return (
     <html lang="en" suppressHydrationWarning={true}>
-      <head>
-        {/* <link
-          rel="preload"
-          as="style"
-          type="font/woff2"
-          crossOrigin=""
-          href="font"
-        /> */}
-      </head>
       <Script
         src="https://developers.kakao.com/sdk/js/kakao.js"
         strategy="afterInteractive"
