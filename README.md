@@ -1,6 +1,6 @@
 <a href="edmm.vercel.app" alt="Join EDMM" style="display: flex; flex-direction: row;">
- <img src="public/web_screenshot.png" alt="프로젝트 웹 화면" style="width: 700px; height: auto; margin-right: 10px;">
- <img src="public/mobile_screenshot.png" alt="프로젝트 모바일 화면" style="width: 300px; height: auto;">
+ <img src="public/web_screenshot.png" alt="프로젝트 웹 화면" style="width: 800px; height: auto; margin-right: 10px;">
+<!--  <img src="public/mobile_screenshot.png" alt="프로젝트 모바일 화면" style="width: 300px; height: auto;"> -->
 </a>
 
 # 🎵 EDMM: Electronic Dance Music Marmot   
