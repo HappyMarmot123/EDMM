@@ -50,6 +50,8 @@ const CardImage = () => {
       alt={`${card.title} album art`}
       className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500 ease-out"
       loading="lazy"
+      unoptimized={true}
+      sizes="(max-width: 640px) 160px, (max-width: 768px) 192px, (max-width: 1024px) 224px, 256px"
       width={256}
       height={256}
       style={{ height: "auto" }}

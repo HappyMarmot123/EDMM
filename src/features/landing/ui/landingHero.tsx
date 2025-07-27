@@ -4,7 +4,7 @@ import Earth from "@/features/landing/components/earth";
 
 export default function Hero() {
   return (
-    <section className="py-36 min-h-screen flex flex-col justify-between p-4 sm:p-6 md:p-8 overflow-x-hidden gap-4 md:gap-0">
+    <section className="py-36 min-h-screen flex flex-col justify-between p-4 md:p-8 overflow-x-hidden gap-4 md:gap-0">
       <div className="flex flex-col md:flex-row justify-between items-center w-full max-w-screen-xl mx-auto">
         <h1 className="text-7xl sm:text-8xl md:text-9xl font-bold leading-none text-center md:text-left">
           EDMM
