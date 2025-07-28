@@ -56,7 +56,7 @@ export default function LandingWrapper({ children }: LandingWrapperProps) {
         <Cursor />
         <Intro />
         <article className="my-gradient fixed w-screen pointer-events-none" />
-        {children}
+        <main>{children}</main>
       </div>
     </>
   );
