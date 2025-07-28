@@ -1,8 +1,11 @@
 import React, { useEffect } from "react";
 import { AnimatePresence, motion, Variants } from "framer-motion";
 import { interpolateColor } from "@/shared/lib/colorUtils";
+import { useIntroStore } from "@/app/store/introStore";
 
 const Intro = () => {
+  const { isIntroVisible, hideIntro } = useIntroStore();
+
   const introVariants: Variants = {
     initial: {
       backgroundColor: "#000",
@@ -64,18 +67,16 @@ const Intro = () => {
     { text: "somebody's dream", startColor: "#ff98a2", endColor: "#f472e0" },
   ];
 
-  const [showIntro, setShowIntro] = React.useState(true);
-
   useEffect(() => {
     const timer = setTimeout(() => {
-      setShowIntro(false);
+      hideIntro();
     }, 4000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [hideIntro]);
 
   return (
     <AnimatePresence>
-      {showIntro && (
+      {isIntroVisible && (
         <motion.div
           className="intro fixed top-0 left-0 w-full h-full flex items-center justify-center z-50"
           variants={introVariants}
@@ -106,7 +107,7 @@ const Intro = () => {
                     return (
                       <motion.span
                         key={charIndex}
-                        className="inline-block"
+                        className="inline-block select-none"
                         variants={letterVariants}
                         style={{ color }}
                       >

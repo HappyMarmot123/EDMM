@@ -11,27 +11,27 @@ import LenisProvider from "@/shared/providers/lenisProvider";
 import AudioPlayer from "@/widgets/audioPlayer";
 import ListModal from "@/widgets/listModal";
 
-export default function Landing() {
-  return (
-    <ToggleProvider>
-      <LenisProvider>
-        <LandingContent />
-      </LenisProvider>
-    </ToggleProvider>
-  );
-}
-
 function LandingContent() {
   const { isOpen } = useToggle();
 
   return (
-    <LandingWrapper>
-      <AnimatePresence>
-        {!isOpen && <AudioPlayer />}
-        {isOpen && <ListModal />}
-      </AnimatePresence>
-      <Hero />
-      <BodySection />
-    </LandingWrapper>
+    <AnimatePresence>
+      {!isOpen && <AudioPlayer />}
+      {isOpen && <ListModal />}
+    </AnimatePresence>
+  );
+}
+
+export default function Landing() {
+  return (
+    <ToggleProvider>
+      <LenisProvider>
+        <LandingWrapper>
+          <LandingContent />
+          <Hero />
+          <BodySection />
+        </LandingWrapper>
+      </LenisProvider>
+    </ToggleProvider>
   );
 }
