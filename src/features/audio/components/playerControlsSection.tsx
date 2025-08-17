@@ -82,23 +82,23 @@ const PlayerControlsSection: React.FC<
       className="pl-40 flex flex-col justify-center items-center gap-1 h-full flex-grow overflow-hidden pr-4"
     >
       <section
-        className="flex flex-col w-full overflow-hidden"
+        className="flex flex-row gap-4 items-center w-full overflow-hidden"
         aria-label="Track Information"
       >
-        <div
+        <p
           id="track-name"
-          className="text-slate-700 text-sm font-bold w-full transition-colors duration-300 overflow-hidden whitespace-nowrap text-ellipsis"
+          className="text-slate-700 text-md font-bold transition-colors duration-300 overflow-hidden whitespace-nowrap text-ellipsis"
           title={currentTrackInfo?.name}
         >
           {currentTrackInfo?.name}
-        </div>
-        <div
+        </p>
+        <p
           id="producer-name"
-          className="text-slate-500 text-xs w-full transition-colors duration-300 overflow-hidden whitespace-nowrap text-ellipsis"
+          className="text-slate-500 text-sm transition-colors duration-300 overflow-hidden whitespace-nowrap text-ellipsis"
           title={currentTrackInfo?.producer}
         >
           {currentTrackInfo?.producer}
-        </div>
+        </p>
       </section>
       <section className="flex items-center justify-between w-full">
         <PlayerControlButton
