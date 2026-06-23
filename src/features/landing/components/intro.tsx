@@ -63,7 +63,8 @@ const Intro = () => {
   };
 
   const textLines = [
-    { text: "EDMM", startColor: "#e8e8e8", endColor: "#e3d5e2" },
+    { text: "you know you're", startColor: "#ff98a2", endColor: "#f472e0" },
+    { text: "somebody's dream", startColor: "#ff98a2", endColor: "#f472e0" },
   ];
 
   useEffect(() => {
@@ -77,7 +78,7 @@ const Intro = () => {
     <AnimatePresence>
       {isIntroVisible && (
         <motion.div
-          className="intro fixed top-0 left-0 w-full h-full flex items-center justify-center z-[100]"
+          className="intro fixed top-0 left-0 w-full h-full flex items-center justify-center z-50"
           variants={introVariants}
           initial="initial"
           animate="animate"
@@ -92,7 +93,7 @@ const Intro = () => {
             {textLines.map((line, index) => (
               <motion.h1
                 key={index}
-                className="hide font-bold text-9xl overflow-hidden"
+                className="hide font-bold text-[clamp(2rem,5vw,6rem)] overflow-hidden"
                 variants={sentenceVariants}
               >
                 <span className="flex">
