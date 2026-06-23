@@ -220,7 +220,7 @@ export const listModalVariants: Variants = {
   open: {
     opacity: 1,
     scale: 1,
-    visibility: "visible" as CSSProperties["visibility"],
+    visibility: "visible" as any,
     transition: { duration: 0.3, ease: "easeInOut" },
   },
   closed: {
@@ -228,7 +228,7 @@ export const listModalVariants: Variants = {
     scale: 0.95,
     transition: { duration: 0.3, ease: "easeInOut" },
     transitionEnd: {
-      visibility: "hidden" as CSSProperties["visibility"],
+      visibility: "hidden" as any,
     },
   },
 };
