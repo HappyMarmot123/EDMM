@@ -2,7 +2,7 @@
 
 import Cursor from "@/shared/components/cursor";
 import DustySnow from "@/features/landing/components/dustySnow";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 import Intro from "@/features/landing/components/intro";
 
@@ -34,24 +34,6 @@ export default function LandingWrapper({ children }: LandingWrapperProps) {
   return (
     <>
       <div ref={ref} className="h-full relative">
-        {/* <motion.div className="progress-bar" style={{ scaleX: scaleX }} /> */}
-        <figure className="progress">
-          <svg width="100%" height="100%" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="30" pathLength="1" className="bg" />
-            <motion.circle
-              cx="50"
-              cy="50"
-              r="30"
-              pathLength="1"
-              className="indicator"
-              style={{
-                pathLength: scrollYProgress2,
-                transition: "pathLength 0.3s ease",
-                stroke: customColor,
-              }}
-            />
-          </svg>
-        </figure>
         <DustySnow />
         <Cursor />
         <Intro />
