@@ -33,22 +33,6 @@ export default function Hero() {
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-4 w-full max-w-screen-xl mx-auto pb-8 md:pb-4">
-        <div className="text-center md:text-left my-4 md:my-0">
-          <p className="font-semibold tracking-tighter uppercase text-base sm:text-lg lg:text-xl">
-            Portfolio Production
-          </p>
-          <p className="font-semibold tracking-tighter uppercase text-base sm:text-lg lg:text-xl">
-            Designed by HappyMarmot123
-          </p>
-          <p className="font-semibold tracking-tighter uppercase text-base sm:text-lg lg:text-xl">
-            Have Fun Enjoy It
-          </p>
-        </div>
-        <div className="flex justify-center md:justify-end">
-          <Github />
-        </div>
-      </div>
     </section>
   );
 }
