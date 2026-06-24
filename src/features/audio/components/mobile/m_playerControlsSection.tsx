@@ -14,7 +14,10 @@ const MPlayerControlsSection = ({
   const playPauseLabel = isPlaying ? "Pause" : "Play";
 
   return (
-    <section className="flex items-center justify-end gap-3">
+    <section
+      className="flex items-center justify-end gap-3"
+      aria-label={`${currentTrackInfo?.name ?? "Current track"} controls`}
+    >
       <PlayerControlButton
         id="play-previous"
         onClick={prevTrack}

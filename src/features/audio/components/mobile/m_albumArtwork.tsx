@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { CldImage } from "next-cloudinary";
+import Image from "next/image";
 import clsx from "clsx";
 import { ExtendedAlbumArtworkProps } from "@/shared/types/dataType";
 
@@ -39,7 +39,7 @@ const MAlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
       aria-label="Toggle player details view"
     >
       {currentTrackInfo?.artworkId ? (
-        <CldImage
+        <Image
           key={currentTrackInfo.artworkId}
           src={currentTrackInfo.artworkId}
           alt={currentTrackInfo.album}

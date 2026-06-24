@@ -39,7 +39,6 @@ export default function AudioPlayer() {
   const draggableRef = useRef<HTMLDivElement>(null);
   const [bounds, setBounds] = useState<DraggableBounds | undefined>(undefined);
   const defaultPositionRef = useRef({ x: 100, y: 640 });
-  const [draggableKey, setDraggableKey] = useState(Date.now());
 
   const currentProgress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
@@ -85,14 +84,13 @@ export default function AudioPlayer() {
 
   return (
     <Draggable
-      key={draggableKey}
       bounds={bounds}
       defaultPosition={defaultPositionRef.current}
       nodeRef={draggableRef as React.RefObject<HTMLElement>}
       handle=".draggable-handle"
       cancel=".no-drag"
       onDrag={handleDrag}
-      onStop={(e) => {
+      onStop={() => {
         setTimeout(() => {
           isDragging.current = false;
         }, 0);

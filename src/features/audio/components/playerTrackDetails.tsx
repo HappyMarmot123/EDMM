@@ -38,6 +38,7 @@ const PlayerTrackDetails: React.FC<
   return (
     <div
       id="player-track"
+      aria-label={`${currentTrackInfo?.name ?? "Current track"} progress`}
       className={clsx(
         "absolute right-[15px] left-[15px] pt-[6px] pr-[22px] pb-[16px] pl-[147px] bg-white rounded-t-[15px] transition-transform duration-300 ease-in-out z-[1]",
         isPlaying ? "translate-y-[-40px]" : "translate-y-0"

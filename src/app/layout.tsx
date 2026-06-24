@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
-import "@/shared/styles/global.css?v=2";
-import Script from "next/script";
-import { AuthProvider } from "@/shared/providers/authProvider";
+import "@/shared/styles/global.css";
 import { AudioPlayerProvider } from "@/shared/providers/audioPlayerProvider";
-import { DataLoader } from "./api/dataLoader";
-import TrackService from "@/shared/lib/TrackService";
 import { TanstackProvider } from "../shared/providers/tanstackProvider";
+import NavSidebar from "@/widgets/navSidebar";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://edmm.vercel.app"),
@@ -47,22 +44,18 @@ export const metadata: Metadata = {
   },
 };
 
-const RootLayout = async ({ children }: { children: React.ReactNode }) => {
-  const tracks = await DataLoader();
-
+const RootLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <html lang="en" suppressHydrationWarning={true}>
-      <Script
-        src="https://developers.kakao.com/sdk/js/kakao.js"
-        strategy="afterInteractive"
-      />
       <body>
-        <TrackService tracks={tracks} />
-        <AuthProvider>
-          <TanstackProvider>
-            <AudioPlayerProvider>{children}</AudioPlayerProvider>
-          </TanstackProvider>
-        </AuthProvider>
+        <TanstackProvider>
+          <AudioPlayerProvider>
+            <div className="min-h-screen flex bg-black text-white">
+              <NavSidebar />
+              <div className="flex-1">{children}</div>
+            </div>
+          </AudioPlayerProvider>
+        </TanstackProvider>
       </body>
     </html>
   );

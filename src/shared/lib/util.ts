@@ -1,12 +1,6 @@
-import { AudioPlayerState, CloudinaryResource } from "@/shared/types/dataType";
-import { CSSProperties, SetStateAction } from "react";
+import { SetStateAction } from "react";
 import { Dispatch, MouseEvent, RefObject } from "react";
 import clsx from "clsx";
-import { Variants } from "framer-motion";
-import axios from "axios";
-import { toast } from "sonner";
-import { debounce } from "lodash";
-import { httpClient } from "@/shared/api/httpClient";
 
 export function formatTime(seconds: number): string {
   if (isNaN(seconds) || seconds < 0) {
@@ -18,59 +12,6 @@ export function formatTime(seconds: number): string {
   const secsStr = String(secs).padStart(2, "0");
   return `${minutesStr}:${secsStr}`;
 }
-
-export function replaceKeyName(resource: CloudinaryResource) {
-  return {
-    ...resource,
-    title: resource.context?.caption || null,
-    producer: resource.context?.alt || null,
-  };
-}
-
-type FavoriteGetter = () => { favoriteAssetIds: Set<string> };
-type FavoriteSetter = (newState: { favoriteAssetIds: Set<string> }) => void;
-
-export const toggleFavorite = async (
-  assetId: string,
-  userId: string,
-  get: FavoriteGetter,
-  set: FavoriteSetter
-): Promise<void> => {
-  const { favoriteAssetIds } = get();
-  const isCurrentlyFavorite = favoriteAssetIds.has(assetId);
-  const newIsFavorite = !isCurrentlyFavorite;
-
-  const originalFavorites = new Set(favoriteAssetIds);
-  const newFavorites = new Set(originalFavorites);
-
-  if (newIsFavorite) {
-    newFavorites.add(assetId);
-  } else {
-    newFavorites.delete(assetId);
-  }
-  set({ favoriteAssetIds: newFavorites });
-
-  try {
-    const debouncedRequest = debounce(async () => {
-      const response = await httpClient.request({
-        url: "/api/supabase",
-        method: "POST",
-        payload: {
-          assetId,
-          userId,
-          isFavorite: newIsFavorite,
-        },
-      });
-      return response;
-    }, 1000);
-
-    await debouncedRequest();
-  } catch (error) {
-    set({ favoriteAssetIds: originalFavorites });
-    toast.error("Something went wrong. Could you try again?");
-    console.error("Error liking track:", error);
-  }
-};
 
 export const handleSeek = (
   event: MouseEvent<HTMLDivElement>,
@@ -128,8 +69,6 @@ export const handleSeekInteraction = (
   const time = percentage * (duration as number);
 
   const isClick = event.type === "click";
-  const isMouseMove = event.type === "mousemove";
-
   if (isClick) {
     seek(time);
   } else {
@@ -177,11 +116,6 @@ export const handleMouseOut = (
   }
 };
 
-// className
-// 	영역, 위치
-// 	폰트, 색
-// 	박스
-//  기타
 export const albumArtClassName = (isPlaying: boolean, isBuffering: boolean) => {
   return clsx(
     "absolute w-[92px] h-[92px] top-[-22px] ml-[32px]",
@@ -204,31 +138,3 @@ export const albumArtClassName = (isPlaying: boolean, isBuffering: boolean) => {
 
 export const CLAMP_VOLUME = (volume: number) =>
   Math.max(0, Math.min(1, volume));
-
-export const mergeFunction = (
-  persistedState: unknown | AudioPlayerState,
-  currentState: AudioPlayerState
-) => ({
-  ...currentState,
-  ...(persistedState as object),
-  isPlaying: false,
-  isBuffering: false,
-  currentTime: 0,
-});
-
-export const listModalVariants: Variants = {
-  open: {
-    opacity: 1,
-    scale: 1,
-    visibility: "visible" as any,
-    transition: { duration: 0.3, ease: "easeInOut" },
-  },
-  closed: {
-    opacity: 0,
-    scale: 0.95,
-    transition: { duration: 0.3, ease: "easeInOut" },
-    transitionEnd: {
-      visibility: "hidden" as any,
-    },
-  },
-};

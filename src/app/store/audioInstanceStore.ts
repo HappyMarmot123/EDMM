@@ -9,7 +9,7 @@ import {
 import { AudioInstanceState } from "@/shared/types/dataType";
 
 const useAudioInstanceStore = create<AudioInstanceState>()(
-  subscribeWithSelector((set) => {
+  subscribeWithSelector(() => {
     let audioContext: AudioContext | null = null;
     let audioInstance: HTMLAudioElement | null = null;
 
