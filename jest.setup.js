@@ -1,9 +1,9 @@
+import "fake-indexeddb/auto";
 import "@testing-library/jest-dom";
 
-jest.mock("@/app/api/supabase/supabaseClient", () => ({
-  __esModule: true,
-  default: jest.fn(),
-}));
+if (typeof globalThis.structuredClone !== "function") {
+  globalThis.structuredClone = (value) => JSON.parse(JSON.stringify(value));
+}
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
@@ -45,20 +45,22 @@ window.HTMLMediaElement.prototype.load = jest.fn();
 global.URL.createObjectURL = jest.fn();
 global.URL.revokeObjectURL = jest.fn();
 
-// Mock localStorage
-const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-};
-global.localStorage = localStorageMock;
+const createStorageMock = () => {
+  let store = new Map();
 
-// Mock sessionStorage
-const sessionStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
+  return {
+    getItem: jest.fn((key) => store.get(String(key)) ?? null),
+    setItem: jest.fn((key, value) => {
+      store.set(String(key), String(value));
+    }),
+    removeItem: jest.fn((key) => {
+      store.delete(String(key));
+    }),
+    clear: jest.fn(() => {
+      store = new Map();
+    }),
+  };
 };
-global.sessionStorage = sessionStorageMock;
+
+global.localStorage = createStorageMock();
+global.sessionStorage = createStorageMock();
