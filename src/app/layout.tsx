@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "@/shared/styles/global.css";
 import { AudioPlayerProvider } from "@/shared/providers/audioPlayerProvider";
 import { TanstackProvider } from "../shared/providers/tanstackProvider";
-import NavSidebar from "@/widgets/navSidebar";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://edmm.vercel.app"),
@@ -47,14 +46,9 @@ export const metadata: Metadata = {
 const RootLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <html lang="en" suppressHydrationWarning={true}>
-      <body>
+      <body suppressHydrationWarning={true}>
         <TanstackProvider>
-          <AudioPlayerProvider>
-            <div className="min-h-screen flex bg-black text-white">
-              <NavSidebar />
-              <div className="flex-1">{children}</div>
-            </div>
-          </AudioPlayerProvider>
+          <AudioPlayerProvider>{children}</AudioPlayerProvider>
         </TanstackProvider>
       </body>
     </html>
