@@ -1,12 +1,10 @@
 "use client";
 
 import React, { ReactNode } from "react";
-import { Lenis, ReactLenis } from "lenis/react";
+import { ReactLenis } from "lenis/react";
 import type { LenisRef } from "lenis/react";
-import { cancelFrame, frame } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { useToggle } from "@/shared/providers/toggleProvider";
-import { isEmpty } from "lodash";
 
 interface LenisProviderProps {
   children: ReactNode;

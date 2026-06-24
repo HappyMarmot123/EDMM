@@ -24,38 +24,46 @@ export default function useEarth({
 
   useEffect(() => {
     let phi = 0;
+    let animationFrameId: number | undefined;
     let globe: ReturnType<typeof createGlobe> | undefined;
 
     if (canvasRef.current) {
       globe = createGlobe(canvasRef.current, {
         devicePixelRatio: 2,
-        width: width,
-        height: height,
+        width,
+        height,
         phi: 2.5,
         theta: 0.3,
         dark: 1,
         diffuse: 1.2,
         mapSamples: 16000,
         mapBrightness: 6,
-        baseColor: baseColor,
-        markerColor: markerColor,
-        glowColor: glowColor,
+        baseColor,
+        markerColor,
+        glowColor,
         markers: [],
         scale: 2.0,
         offset: [250, -250],
-        onRender: (state) => {
-          phi += 0.005;
-          state.phi = phi + rotation.get();
-          state.width = width;
-          state.height = height;
-        },
       });
+
+      const animate = () => {
+        phi += 0.005;
+        globe?.update({
+          phi: phi + rotation.get(),
+          width,
+          height,
+        });
+        animationFrameId = requestAnimationFrame(animate);
+      };
+
+      animate();
     }
 
     return () => {
-      if (globe) {
-        globe.destroy();
+      if (animationFrameId !== undefined) {
+        cancelAnimationFrame(animationFrameId);
       }
+      globe?.destroy();
     };
   }, [width, height, rotation, baseColor, markerColor, glowColor]);
 

@@ -1,10 +1,17 @@
 "use client";
 
 import Cursor from "@/shared/components/cursor";
-import DustySnow from "@/features/landing/components/dustySnow";
-import { useScroll, useTransform } from "framer-motion";
+import { useScroll } from "framer-motion";
 import { useRef } from "react";
-import Intro from "@/features/landing/components/intro";
+import { useInView } from "@/shared/hooks/useInView";
+import dynamic from "next/dynamic";
+
+const DustySnow = dynamic(() => import("@/features/landing/components/dustySnow"), {
+  ssr: false,
+});
+const Intro = dynamic(() => import("@/features/landing/components/intro"), {
+  ssr: false,
+});
 
 interface LandingWrapperProps {
   children: React.ReactNode;
@@ -12,8 +19,11 @@ interface LandingWrapperProps {
 
 export default function LandingWrapper({ children }: LandingWrapperProps) {
   const ref = useRef(null);
-  const { scrollYProgress } = useScroll();
-  const { scrollYProgress: scrollYProgress2 } = useScroll({
+  const { ref: snowRef, inView: showSnow } = useInView<HTMLDivElement>({
+    rootMargin: "300px",
+  });
+  useScroll();
+  useScroll({
     target: ref,
     offset: ["start end", "end end"],
   });
@@ -25,16 +35,11 @@ export default function LandingWrapper({ children }: LandingWrapperProps) {
   //   restDelta: 0.001,
   // });
 
-  const customColor = useTransform(
-    scrollYProgress,
-    [0, 1],
-    ["#ff98a2", "#00f"]
-  );
-
   return (
     <>
       <div ref={ref} className="h-full relative">
-        <DustySnow />
+        <div ref={snowRef} className="absolute inset-0 pointer-events-none" />
+        {showSnow ? <DustySnow /> : null}
         <Cursor />
         <Intro />
         <article className="my-gradient fixed w-screen pointer-events-none" />

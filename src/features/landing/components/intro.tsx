@@ -1,10 +1,10 @@
 import React, { useEffect } from "react";
 import { AnimatePresence, motion, Variants } from "framer-motion";
 import { interpolateColor } from "@/shared/lib/colorUtils";
-import { useIntroStore } from "@/app/store/introStore";
+import { useOncePerSession } from "@/shared/hooks/useOncePerSession";
 
 const Intro = () => {
-  const { isIntroVisible, hideIntro } = useIntroStore();
+  const { shouldRun, markDone } = useOncePerSession("intro");
 
   const introVariants: Variants = {
     initial: {
@@ -68,16 +68,19 @@ const Intro = () => {
   ];
 
   useEffect(() => {
+    if (!shouldRun) return;
+
     const timer = setTimeout(() => {
-      hideIntro();
+      markDone();
     }, 4000);
     return () => clearTimeout(timer);
-  }, [hideIntro]);
+  }, [markDone, shouldRun]);
 
   return (
     <AnimatePresence>
-      {isIntroVisible && (
+      {shouldRun && (
         <motion.div
+          data-testid="intro-root"
           className="intro fixed top-0 left-0 w-full h-full flex items-center justify-center z-50"
           variants={introVariants}
           initial="initial"

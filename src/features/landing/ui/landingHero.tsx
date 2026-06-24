@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
-import Github from "@/features/landing/components/github";
-import Earth from "@/features/landing/components/earth";
+import EarthLazy from "@/features/landing/components/earthLazy";
 
 export default function Hero() {
   return (
@@ -29,7 +28,7 @@ export default function Hero() {
 
       <div className="hidden w-full md:flex justify-center items-center flex-shrink-0">
         <div className="w-[500px] h-[500px] scale-[0.6] sm:scale-[0.8] md:scale-100 transition-transform duration-300 flex items-center justify-center z-10">
-          <Earth width={500} height={500} />
+          <EarthLazy width={500} height={500} />
         </div>
       </div>
 
