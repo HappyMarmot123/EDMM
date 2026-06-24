@@ -1,4 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
+import DustySnow from "@/features/landing/components/dustySnow";
 import RoseSpaceBackground from "@/features/landing/components/roseSpaceBackground";
 
 describe("RoseSpaceBackground", () => {
@@ -42,5 +44,18 @@ describe("RoseSpaceBackground", () => {
         "rose-starfield--reduced"
       );
     });
+  });
+});
+
+describe("DustySnow", () => {
+  it("does not create random stars during server render", () => {
+    const randomSpy = jest.spyOn(Math, "random").mockReturnValue(0.5);
+
+    try {
+      renderToString(<DustySnow />);
+      expect(randomSpy).not.toHaveBeenCalled();
+    } finally {
+      randomSpy.mockRestore();
+    }
   });
 });

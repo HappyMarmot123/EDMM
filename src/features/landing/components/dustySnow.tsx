@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 interface DustySnowProps {
   reducedMotion?: boolean;
@@ -22,14 +22,13 @@ export default function DustySnow({
   count = 150,
 }: DustySnowProps) {
   const [isClient, setIsClient] = useState(false);
-  const stars = useMemo(
-    () => createStars(reducedMotion ? Math.min(count, 54) : count),
-    [count, reducedMotion]
-  );
+  const [stars, setStars] = useState<ReturnType<typeof createStars>>([]);
+  const starCount = reducedMotion ? Math.min(count, 54) : count;
 
   useEffect(() => {
+    setStars(createStars(starCount));
     setIsClient(true);
-  }, []);
+  }, [starCount]);
 
   if (!isClient) {
     return null;
