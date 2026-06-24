@@ -122,7 +122,9 @@ h1 {
 .rose-starfield {
   position: absolute;
   inset: 0;
+  z-index: 0;
   overflow: hidden;
+  pointer-events: none;
 }
 
 .rose-star {

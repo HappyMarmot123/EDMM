@@ -3,9 +3,15 @@ import { renderToString } from "react-dom/server";
 import DustySnow from "@/features/landing/components/dustySnow";
 import RoseSpaceBackground from "@/features/landing/components/roseSpaceBackground";
 
+const originalMatchMedia = window.matchMedia;
+
 describe("RoseSpaceBackground", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
   });
 
   it("renders an aria-hidden rose space background", async () => {
@@ -45,9 +51,54 @@ describe("RoseSpaceBackground", () => {
       );
     });
   });
+
+  it("uses legacy media query listeners when event listeners are unavailable", () => {
+    const addListener = jest.fn();
+    const removeListener = jest.fn();
+    window.matchMedia = jest.fn().mockImplementation((query) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener,
+      removeListener,
+      dispatchEvent: jest.fn(),
+    }));
+
+    const { unmount } = render(<RoseSpaceBackground />);
+
+    expect(addListener).toHaveBeenCalledTimes(1);
+    unmount();
+    expect(removeListener).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("DustySnow", () => {
+  it("renders an inert aria-hidden starfield when mounted directly", async () => {
+    render(<DustySnow />);
+
+    const starfield = await screen.findByTestId("rose-starfield");
+    expect(starfield).toHaveAttribute("aria-hidden", "true");
+    expect(starfield).toHaveClass("rose-starfield");
+  });
+
+  it("caps reduced-motion stars at 54", async () => {
+    render(<DustySnow reducedMotion count={150} />);
+
+    const starfield = await screen.findByTestId("rose-starfield");
+    await waitFor(() => {
+      expect(starfield.querySelectorAll(".rose-star")).toHaveLength(54);
+    });
+  });
+
+  it("keeps reduced-motion stars below the cap when count is lower", async () => {
+    render(<DustySnow reducedMotion count={12} />);
+
+    const starfield = await screen.findByTestId("rose-starfield");
+    await waitFor(() => {
+      expect(starfield.querySelectorAll(".rose-star")).toHaveLength(12);
+    });
+  });
+
   it("does not create random stars during server render", () => {
     const randomSpy = jest.spyOn(Math, "random").mockReturnValue(0.5);
 

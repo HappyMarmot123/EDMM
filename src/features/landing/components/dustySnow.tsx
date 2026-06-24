@@ -36,6 +36,7 @@ export default function DustySnow({
 
   return (
     <div
+      aria-hidden="true"
       className={`rose-starfield${reducedMotion ? " rose-starfield--reduced" : ""}`}
       data-testid="rose-starfield"
     >
