@@ -109,4 +109,10 @@ describe("DustySnow", () => {
       randomSpy.mockRestore();
     }
   });
+
+  it("renders deterministic stars during server render", () => {
+    const html = renderToString(<DustySnow count={3} />);
+
+    expect(html.match(/class="rose-star"/g)).toHaveLength(3);
+  });
 });

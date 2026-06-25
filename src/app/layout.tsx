@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "@/shared/styles/global.css";
-import { AudioPlayerProvider } from "@/shared/providers/audioPlayerProvider";
+import { HYDRATION_EXTENSION_ATTRIBUTE_GUARD_SCRIPT } from "@/shared/lib/hydrationExtensionAttributeGuard";
 import { TanstackProvider } from "../shared/providers/tanstackProvider";
 
 export const metadata: Metadata = {
@@ -46,10 +47,17 @@ export const metadata: Metadata = {
 const RootLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <html lang="en" suppressHydrationWarning={true}>
+      <head>
+        <Script
+          id="hydration-extension-attribute-guard"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: HYDRATION_EXTENSION_ATTRIBUTE_GUARD_SCRIPT,
+          }}
+        />
+      </head>
       <body suppressHydrationWarning={true}>
-        <TanstackProvider>
-          <AudioPlayerProvider>{children}</AudioPlayerProvider>
-        </TanstackProvider>
+        <TanstackProvider>{children}</TanstackProvider>
       </body>
     </html>
   );

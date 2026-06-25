@@ -1,7 +1,10 @@
 "use client";
 
 import type { Track } from "@/entities/track/model";
-import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
+import {
+  AudioPlayerProvider,
+  useAudioPlayer,
+} from "@/shared/providers/audioPlayerProvider";
 import { ToggleProvider } from "@/shared/providers/toggleProvider";
 import type { ReactNode } from "react";
 import AudioPlayerWidget from ".";
@@ -11,6 +14,14 @@ interface AudioPlayerShellProps {
 }
 
 export default function AudioPlayerShell({ children }: AudioPlayerShellProps) {
+  return (
+    <AudioPlayerProvider>
+      <AudioPlayerShellContent>{children}</AudioPlayerShellContent>
+    </AudioPlayerProvider>
+  );
+}
+
+function AudioPlayerShellContent({ children }: AudioPlayerShellProps) {
   const { playTrack } = useAudioPlayer();
 
   return (
