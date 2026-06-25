@@ -278,6 +278,9 @@ export function TrackDetailView({ trackId, onPlay }: TrackDetailViewProps) {
           <AudioVisualizer
             analyser={audioAnalyser}
             isActive={isVisualizerActive}
+            isCurrentTrack={isCurrentTrack}
+            trackTitle={track.title}
+            artistName={track.artistName}
           />
 
           <section

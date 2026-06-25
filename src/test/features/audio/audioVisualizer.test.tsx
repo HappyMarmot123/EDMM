@@ -31,13 +31,24 @@ describe("AudioVisualizer", () => {
     jest.restoreAllMocks();
   });
 
-  it("renders the legacy segmented-bar canvas", () => {
-    render(<AudioVisualizer analyser={null} isActive={false} />);
+  it("renders the EDMM rose themed segmented-bar canvas", () => {
+    render(
+      <AudioVisualizer
+        analyser={null}
+        isActive={false}
+        artistName="Artist One"
+        trackTitle="Track One"
+      />
+    );
 
-    expect(screen.getByTestId("audio-visualizer-canvas")).toHaveAttribute(
+    const canvas = screen.getByTestId("audio-visualizer-canvas");
+    expect(canvas).toHaveAttribute(
       "data-visualizer-renderer",
       "legacy-segmented-bars"
     );
+    expect(canvas).toHaveAttribute("data-visualizer-theme", "edmm-rose");
+    expect(screen.getByText("Rose spectrum")).toBeInTheDocument();
+    expect(screen.getByText("Artist One / Track One")).toBeInTheDocument();
   });
 
   it("draws segmented frequency bars from analyser data while active", () => {
@@ -48,7 +59,7 @@ describe("AudioVisualizer", () => {
     expect(window.requestAnimationFrame).toHaveBeenCalled();
     expect(getByteFrequencyData).toHaveBeenCalled();
     expect(fillRect).toHaveBeenCalled();
-    expect(fillRect.mock.calls[0]).toEqual([0, 218, 140, 6]);
+    expect(fillRect.mock.calls).toContainEqual([0, 218, 140, 6]);
 
     unmount();
 
