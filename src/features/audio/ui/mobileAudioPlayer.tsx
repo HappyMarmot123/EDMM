@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, type MouseEvent } from "react";
 import MPlayerTrackDetails from "@/features/audio/components/mobile/m_playerTrackDetails";
 import MPlayerControlsSection from "@/features/audio/components/mobile/m_playerControlsSection";
 import MAlbumArtwork from "@/features/audio/components/mobile/m_albumArtwork";
@@ -17,6 +17,15 @@ export default function MobileAudioPlayer() {
 
   const currentProgress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  const handleSeekInteraction = (event: MouseEvent<HTMLElement>) => {
+    if (!seekBarContainerRef.current || !duration) return;
+
+    const rect = seekBarContainerRef.current.getBoundingClientRect();
+    const clickPosition = event.clientX - rect.left;
+    const seekFraction = clickPosition / rect.width;
+    seek(seekFraction * duration);
+  };
+
   if (!currentTrack) {
     return null;
   }
@@ -24,27 +33,29 @@ export default function MobileAudioPlayer() {
   return (
     <div
       id="player-container-mobile"
-      className="fixed bottom-0 left-0 w-full h-[80px] bg-white z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.1)]"
+      className="fixed inset-x-0 bottom-0 z-[70] border-t border-white/10 bg-[#080609]/95 text-white shadow-[0_-18px_50px_rgba(0,0,0,0.45)] backdrop-blur-xl"
+      style={{ paddingBottom: "max(env(safe-area-inset-bottom), 10px)" }}
       aria-label="Audio Player"
     >
       <section
         id="seek-bar-container-mobile"
         ref={seekBarContainerRef}
-        className="absolute top-0 left-0 w-full h-[6px] cursor-pointer group"
+        className="group absolute left-0 top-0 h-1.5 w-full cursor-pointer"
+        onClick={handleSeekInteraction}
       >
-        <div className="w-full h-full bg-gray-200">
+        <div className="h-full w-full bg-white/15">
           <div
             id="seek-bar-mobile"
-            className="h-full bg-[#fd6d94] transition-all duration-100 ease-linear"
+            className="h-full bg-[#fd6d94] transition-[width] duration-150 ease-out"
             style={{ width: `${currentProgress}%` }}
           >
-            <span className="absolute right-0 top-1/2 -mt-1 h-3 w-3 bg-white border-2 border-[#fd6d94] rounded-full opacity-0 group-hover:opacity-100"></span>
+            <span className="absolute right-0 top-1/2 -mt-1.5 h-3 w-3 rounded-full border-2 border-[#fd6d94] bg-white opacity-0 group-hover:opacity-100"></span>
           </div>
         </div>
       </section>
       <div
         id="player-mobile"
-        className="relative h-full flex items-center px-4 justify-between"
+        className="relative flex min-h-[78px] items-center justify-between px-4 pt-2"
       >
         <div className="flex items-center flex-1 min-w-0">
           <MAlbumArtwork

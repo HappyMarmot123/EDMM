@@ -16,17 +16,17 @@ const MPlayerControlsSection = ({
   return (
     <section
       id="player-controls"
-      className="flex items-center justify-end gap-3"
+      className="flex flex-none items-center justify-end gap-1"
       aria-label={`${currentTrackInfo?.name ?? "Current track"} controls`}
     >
       <PlayerControlButton
         id="play-previous"
         onClick={prevTrack}
         aria-label="Previous track"
-        className="p-1"
+        className="h-10 w-10 text-white/70 hover:text-white"
       >
         <SkipBack
-          className="block m-auto text-slate-600"
+          className="m-auto block"
           width={22}
           height={22}
           fill="currentColor"
@@ -40,22 +40,22 @@ const MPlayerControlsSection = ({
         IconOnFalse={Play}
         onClick={togglePlayPause}
         label={playPauseLabel}
-        className="p-2 w-11 h-11"
+        className="h-11 w-11 bg-white text-black hover:bg-[#ffd6e1]"
         iconProps={{
           width: 28,
           height: 28,
           fill: "currentColor",
-          className: "text-slate-600",
+          className: "text-black",
         }}
       />
       <PlayerControlButton
         id="play-next"
         onClick={nextTrack}
         aria-label="Next track"
-        className="p-1"
+        className="h-10 w-10 text-white/70 hover:text-white"
       >
         <SkipForward
-          className="block m-auto text-slate-600"
+          className="m-auto block"
           width={22}
           height={22}
           fill="currentColor"

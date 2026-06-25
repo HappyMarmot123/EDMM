@@ -1,12 +1,10 @@
 import React from "react";
 import { PlayerTrackDetailsProps } from "@/shared/types/dataType";
-import clsx from "clsx";
 import { formatTime, handleMouseMove, handleMouseOut } from "@/shared/lib/util";
 
 const PlayerTrackDetails: React.FC<
   Omit<PlayerTrackDetailsProps, "isMobile">
 > = ({
-  isPlaying,
   currentTime,
   duration,
   currentProgress,
@@ -39,23 +37,16 @@ const PlayerTrackDetails: React.FC<
     <div
       id="player-track"
       aria-label={`${currentTrackInfo?.name ?? "Current track"} progress`}
-      className={clsx(
-        "absolute right-[15px] left-[15px] pt-[6px] pr-[22px] pb-[16px] pl-[147px] bg-white rounded-t-[15px] transition-transform duration-300 ease-in-out z-[1]",
-        isPlaying ? "translate-y-[-40px]" : "translate-y-0"
-      )}
+      className="w-full"
     >
       <section
         id="track-time"
-        className={clsx(
-          "flex items-center w-full py-2",
-          (isPlaying || currentTime > 0) &&
-            "active [&>div]:text-[#f86d92] [&>div]:bg-transparent"
-        )}
+        className="flex w-full items-center gap-2"
         aria-label="Track progress"
       >
         <div
           id="current-time"
-          className="text-transparent text-[11px] bg-[#ffe8ee] rounded-[10px] transition-colors,background-color duration-300 ease-in-out px-1"
+          className="w-10 text-right text-[11px] tabular-nums text-white/50"
           aria-live="polite"
         >
           {formatTime(currentTime)}
@@ -63,7 +54,7 @@ const PlayerTrackDetails: React.FC<
         <section
           id="seek-bar-container"
           ref={seekBarContainerRef}
-          className="no-drag relative h-[8px] rounded-[4px] bg-[#ffe8ee] cursor-pointer group mx-2 flex-grow focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#fd6d94]"
+          className="group relative h-2 flex-grow cursor-pointer rounded-full bg-white/15 focus:outline-none focus:ring-2 focus:ring-[#fd6d94] focus:ring-offset-2 focus:ring-offset-black"
           onClick={handleSeekInteraction}
           onMouseMove={(e) =>
             handleMouseMove(
@@ -89,17 +80,17 @@ const PlayerTrackDetails: React.FC<
           <div
             id="seek-time"
             ref={seekTimeTooltipRef}
-            className="absolute bottom-[10px] text-white text-[12px] whitespace-pre p-[5px] rounded-[4px] bg-[#3b3d50] transform -translate-x-1/2 z-10 pointer-events-none opacity-0 transition-opacity"
+            className="pointer-events-none absolute bottom-3 z-10 -translate-x-1/2 rounded bg-black px-2 py-1 text-[12px] text-white opacity-0 shadow-lg transition-opacity"
           ></div>
           <div
             id="seek-bar"
-            className="absolute inset-0 left-0 h-full w-0 bg-[#fd6d94] rounded-[4px] transition-width duration-200 ease-in-out z-[1] pointer-events-none"
+            className="pointer-events-none absolute inset-y-0 left-0 z-[1] h-full w-0 rounded-full bg-[#fd6d94] transition-[width] duration-150 ease-out"
             style={{ width: `${currentProgress}%` }}
           ></div>
         </section>
         <div
           id="track-length"
-          className="text-transparent text-[11px] bg-[#ffe8ee] rounded-[10px] transition-colors,background-color duration-300 ease-in-out px-1"
+          className="w-10 text-[11px] tabular-nums text-white/50"
         >
           {formatTime(duration)}
         </div>

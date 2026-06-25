@@ -79,37 +79,41 @@ const PlayerControlsSection: React.FC<
   return (
     <div
       id="player-controls"
-      className="pl-40 flex flex-col justify-center items-center gap-1 h-full flex-grow overflow-hidden pr-4"
+      className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(130px,1fr)]"
     >
       <section
-        className="flex flex-col w-full overflow-hidden"
+        className="min-w-0 overflow-hidden"
         aria-label="Track Information"
       >
         <div
           id="track-name"
-          className="text-slate-700 text-sm font-bold w-full transition-colors duration-300 overflow-hidden whitespace-nowrap text-ellipsis"
+          className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm font-semibold text-white"
           title={currentTrackInfo?.name}
         >
           {currentTrackInfo?.name}
         </div>
         <div
           id="producer-name"
-          className="text-slate-500 text-xs w-full transition-colors duration-300 overflow-hidden whitespace-nowrap text-ellipsis"
+          className="mt-0.5 w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs text-white/55"
           title={currentTrackInfo?.producer}
         >
           {currentTrackInfo?.producer}
         </div>
       </section>
-      <section className="flex items-center justify-between w-full">
+      <section
+        className="flex items-center justify-center gap-2"
+        aria-label="Playback controls"
+      >
         <PlayerControlButton
           id="play-previous"
           onClick={prevTrack}
           aria-label="Previous track"
+          className="h-10 w-10 text-white/70 hover:text-white"
         >
           <SkipBack
-            className="block m-auto transition-colors duration-200 ease-[ease] text-[#fd6d94]"
+            className="m-auto block transition-colors duration-200 ease-out"
             width={20}
-            fill="#fd6d94"
+            fill="currentColor"
             aria-hidden="true"
           />
         </PlayerControlButton>
@@ -120,42 +124,60 @@ const PlayerControlsSection: React.FC<
           IconOnFalse={Play}
           onClick={togglePlayPause}
           label={playPauseLabel}
-          className="w-10 h-10 bg-pink-100 rounded-full hover:bg-pink-200 transition-colors duration-200"
+          className="h-11 w-11 bg-white text-black hover:bg-[#ffd6e1]"
+          iconProps={{
+            width: 22,
+            height: 22,
+            fill: "currentColor",
+            className: "text-black",
+          }}
         />
         <PlayerControlButton
           id="play-next"
           onClick={nextTrack}
           aria-label="Next track"
+          className="h-10 w-10 text-white/70 hover:text-white"
         >
           <SkipForward
-            className="block m-auto transition-colors duration-200 ease-[ease] text-[#fd6d94]"
+            className="m-auto block transition-colors duration-200 ease-out"
             width={20}
-            fill="#fd6d94"
+            fill="currentColor"
             aria-hidden="true"
           />
         </PlayerControlButton>
-        <div className="flex items-center gap-2 justify-end">
-          <IconToggleButton
-            id="volume-control"
-            condition={isMuted}
-            IconOnTrue={VolumeX}
-            IconOnFalse={Volume2}
-            onClick={toggleMute}
-            label={muteLabel}
-          />
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={isMuted ? 0 : localVolume}
-            onChange={handleVolumeChange}
-            onMouseUp={handleVolumeChangeEnd}
-            onTouchEnd={handleVolumeChangeEnd}
-            className="no-drag w-full max-w-[100px] h-1.5 bg-[#ffe8ee] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#fd6d94] [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[#fd6d94] [&::-moz-range-thumb]:cursor-pointer"
-            aria-label="Volume"
-          />
-        </div>
+      </section>
+      <section
+        className="hidden min-w-0 items-center justify-end gap-2 md:flex"
+        aria-label="Volume controls"
+      >
+        <IconToggleButton
+          id="volume-control"
+          condition={isMuted}
+          IconOnTrue={VolumeX}
+          IconOnFalse={Volume2}
+          onClick={toggleMute}
+          label={muteLabel}
+          className="h-9 w-9 text-white/70 hover:text-white"
+          iconProps={{
+            width: 20,
+            height: 20,
+            fill: "none",
+            strokeWidth: 2.2,
+            className: "text-current",
+          }}
+        />
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={isMuted ? 0 : localVolume}
+          onChange={handleVolumeChange}
+          onMouseUp={handleVolumeChangeEnd}
+          onTouchEnd={handleVolumeChangeEnd}
+          className="w-full max-w-[112px] cursor-pointer appearance-none rounded-full bg-white/15 accent-[#fd6d94] h-1.5 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-[#fd6d94] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#fd6d94]"
+          aria-label="Volume"
+        />
       </section>
     </div>
   );

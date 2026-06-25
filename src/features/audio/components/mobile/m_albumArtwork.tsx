@@ -13,17 +13,17 @@ const MAlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
 }) => {
   const mobileAlbumArtClassName = (playing: boolean, buffering: boolean) => {
     const baseClasses =
-      "relative z-[1] overflow-hidden rounded-full cursor-pointer shadow-lg select-none";
+      "relative z-[1] overflow-hidden rounded-md cursor-pointer shadow-[0_10px_24px_rgba(0,0,0,0.32)] ring-1 ring-white/10 select-none";
     const mobileClasses = "w-[54px] h-[54px]";
     const animationClasses =
-      "before:absolute before:top-1/2 before:left-1/2 before:w-[20px] before:h-[20px] before:mt-[-10px] before:ml-[-10px] before:bg-white before:rounded-full before:z-[2]";
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fd6d94] focus-visible:ring-offset-2 focus-visible:ring-offset-black";
 
     let stateClasses = "";
     if (buffering) {
       stateClasses =
-        "before:animate-scale-up-down before:bg-transparent before:border-2 before:border-white before:border-t-transparent before:animate-spin";
+        "[&>img]:opacity-25 [&_#buffer-box]:opacity-100";
     } else if (playing) {
-      stateClasses = "before:animate-scale-up-down active";
+      stateClasses = "active";
     }
 
     return clsx(baseClasses, mobileClasses, stateClasses, animationClasses);
@@ -44,7 +44,7 @@ const MAlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
           src={currentTrackInfo.artworkId}
           alt={currentTrackInfo.album}
           className={clsx(
-            "block absolute top-0 left-0 w-full h-full opacity-100 z-[1] select-none",
+            "absolute inset-0 z-[1] block h-full w-full object-cover opacity-100 select-none",
             isPlaying && "animate-rotate-album active"
           )}
           draggable={false}
