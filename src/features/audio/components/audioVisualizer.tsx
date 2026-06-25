@@ -9,7 +9,12 @@ export interface AudioVisualizerProps {
   className?: string;
 }
 
-const IDLE_BAR_HEIGHTS = [36, 54, 42, 68, 50, 82, 58, 74, 46, 62, 40, 56];
+const BASE_CANVAS_HEIGHT = 224;
+const BAR_WIDTH_RATIO = 2.5;
+const BAR_GAP = 3;
+const SEGMENT_VISIBLE_HEIGHT = 6;
+const SEGMENT_GAP_HEIGHT = 1;
+const LOW_FREQUENCY_PUMPING = 0.6;
 
 function getCanvasContext(canvas: HTMLCanvasElement) {
   try {
@@ -19,12 +24,39 @@ function getCanvasContext(canvas: HTMLCanvasElement) {
   }
 }
 
+function syncCanvasSize(canvas: HTMLCanvasElement) {
+  const pixelRatio = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const width = Math.max(1, Math.round((rect.width || 224) * pixelRatio));
+  const height = Math.max(1, Math.round((rect.height || 224) * pixelRatio));
+
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  return pixelRatio;
+}
+
+function getPumpedBarHeight(
+  value: number,
+  index: number,
+  bufferLength: number,
+  canvasHeight: number
+) {
+  const lowFreqBoost = 1 + LOW_FREQUENCY_PUMPING * (1 - index / bufferLength);
+  const responsiveScale = canvasHeight / BASE_CANVAS_HEIGHT;
+
+  return (value / 1.5) * lowFreqBoost * responsiveScale;
+}
+
 export function AudioVisualizer({
   analyser,
   isActive,
   className,
 }: AudioVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationFrameIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -33,68 +65,96 @@ export function AudioVisualizer({
     const context = getCanvasContext(canvas);
     if (!context) return;
 
-    let frameId = 0;
-    const frequencyData = analyser
-      ? new Uint8Array(analyser.frequencyBinCount)
-      : null;
-    const startedAt = performance.now();
+    let pixelRatio = syncCanvasSize(canvas);
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => {
+            pixelRatio = syncCanvasSize(canvas);
+          })
+        : null;
+
+    resizeObserver?.observe(canvas);
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (!analyser || !isActive) {
+      return () => {
+        resizeObserver?.disconnect();
+        if (animationFrameIdRef.current) {
+          cancelAnimationFrame(animationFrameIdRef.current);
+          animationFrameIdRef.current = null;
+        }
+      };
+    }
+
+    analyser.smoothingTimeConstant = 0.78;
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    const segmentVisibleHeight = SEGMENT_VISIBLE_HEIGHT * pixelRatio;
+    const segmentGapHeight = SEGMENT_GAP_HEIGHT * pixelRatio;
+    const totalSegmentStep = segmentVisibleHeight + segmentGapHeight;
 
     const draw = () => {
-      const pixelRatio = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      const width = Math.max(1, Math.round((rect.width || 640) * pixelRatio));
-      const height = Math.max(1, Math.round((rect.height || 180) * pixelRatio));
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      animationFrameIdRef.current = requestAnimationFrame(draw);
+      analyser.getByteFrequencyData(dataArray);
 
-      if (canvas.width !== width || canvas.height !== height) {
-        canvas.width = width;
-        canvas.height = height;
+      const barWidth = (canvas.width / bufferLength) * BAR_WIDTH_RATIO;
+      let x = 0;
+
+      for (let index = 0; index < bufferLength; index += 1) {
+        const barHeight = getPumpedBarHeight(
+          dataArray[index],
+          index,
+          bufferLength,
+          canvas.height
+        );
+        const red = barHeight + 25 * (index / bufferLength);
+        const green = 200 * (index / bufferLength) + 50;
+        const blue = 100 + barHeight / 3;
+
+        context.fillStyle = `rgb(${Math.min(255, red)},${Math.min(
+          255,
+          green
+        )},${Math.min(255, blue)})`;
+
+        const barPixelTop = canvas.height - barHeight;
+
+        for (
+          let yCurrentSegmentBottom = canvas.height;
+          yCurrentSegmentBottom > barPixelTop;
+          yCurrentSegmentBottom -= totalSegmentStep
+        ) {
+          const yCurrentSegmentTopPotential =
+            yCurrentSegmentBottom - segmentVisibleHeight;
+          const drawableSegmentTop = Math.max(
+            yCurrentSegmentTopPotential,
+            barPixelTop
+          );
+          const drawableSegmentHeight =
+            yCurrentSegmentBottom - drawableSegmentTop;
+
+          if (drawableSegmentHeight > 0) {
+            context.fillRect(
+              x,
+              drawableSegmentTop,
+              barWidth,
+              drawableSegmentHeight
+            );
+          }
+        }
+
+        x += barWidth + BAR_GAP * pixelRatio;
       }
-
-      context.clearRect(0, 0, width, height);
-      context.fillStyle = "rgba(255, 255, 255, 0.08)";
-      context.fillRect(0, height - 1 * pixelRatio, width, 1 * pixelRatio);
-
-      if (frequencyData && analyser && isActive) {
-        analyser.getByteFrequencyData(frequencyData);
-      }
-
-      const barCount = 48;
-      const gap = 3 * pixelRatio;
-      const barWidth = Math.max(2 * pixelRatio, (width - gap * (barCount - 1)) / barCount);
-      const elapsed = (performance.now() - startedAt) / 1000;
-
-      for (let index = 0; index < barCount; index += 1) {
-        const frequencyIndex =
-          frequencyData && frequencyData.length > 0
-            ? Math.floor((index / barCount) * frequencyData.length)
-            : 0;
-        const liveValue =
-          frequencyData && isActive ? frequencyData[frequencyIndex] / 255 : 0;
-        const idleValue =
-          0.28 +
-          Math.sin(elapsed * 1.6 + index * 0.55) * 0.12 +
-          IDLE_BAR_HEIGHTS[index % IDLE_BAR_HEIGHTS.length] / 220;
-        const normalized = Math.max(0.12, Math.min(1, liveValue || idleValue));
-        const barHeight = Math.max(8 * pixelRatio, normalized * height * 0.82);
-        const x = index * (barWidth + gap);
-        const y = height - barHeight;
-
-        context.fillStyle =
-          index % 4 === 0
-            ? "rgba(255, 184, 192, 0.95)"
-            : index % 4 === 1
-              ? "rgba(253, 109, 148, 0.88)"
-              : "rgba(255, 255, 255, 0.62)";
-        context.fillRect(x, y, barWidth, barHeight);
-      }
-
-      frameId = window.requestAnimationFrame(draw);
     };
 
     draw();
 
     return () => {
-      window.cancelAnimationFrame(frameId);
+      resizeObserver?.disconnect();
+      if (animationFrameIdRef.current) {
+        cancelAnimationFrame(animationFrameIdRef.current);
+        animationFrameIdRef.current = null;
+      }
     };
   }, [analyser, isActive]);
 
@@ -125,8 +185,9 @@ export function AudioVisualizer({
 
       <canvas
         ref={canvasRef}
-        className="block h-44 w-full rounded-md bg-black/28"
+        className="block h-56 w-full rounded-md bg-black/28"
         data-testid="audio-visualizer-canvas"
+        data-visualizer-renderer="legacy-segmented-bars"
         aria-hidden="true"
       />
     </section>
