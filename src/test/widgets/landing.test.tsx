@@ -35,14 +35,9 @@ describe("Landing", () => {
       "/library"
     );
     expect(screen.getAllByTestId("parallax")).toHaveLength(2);
-    expect(screen.getByRole("link", { name: "Search" })).toHaveAttribute(
-      "href",
-      "/search"
-    );
-    expect(screen.getByRole("link", { name: "Library" })).toHaveAttribute(
-      "href",
-      "/library"
-    );
+    expect(container.querySelector(".rose-followup__links")).toBeNull();
+    expect(screen.getByTestId("rose-footer")).toBeInTheDocument();
+    expect(screen.getByText("EDMM / Rose Orbit")).toBeInTheDocument();
     expect(screen.queryByText("EDM Marmot")).not.toBeInTheDocument();
   });
 });

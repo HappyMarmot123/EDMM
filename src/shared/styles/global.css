@@ -560,14 +560,13 @@ h1 {
 }
 
 .rose-hero__cta:focus-visible,
-.rose-followup__links a:focus-visible {
+.rose-footer a:focus-visible {
   outline: 2px solid var(--rose-primary-soft);
   outline-offset: 4px;
 }
 
 .rose-followup {
-  min-height: 36dvh;
-  padding: 0 0 72px;
+  padding: 0;
 }
 
 .rose-parallax-band {
@@ -579,28 +578,40 @@ h1 {
   padding: 20px 0;
 }
 
-.rose-followup__links {
+.rose-footer {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  border-top: 1px solid rgba(255, 152, 162, 0.18);
+  padding: 34px clamp(20px, 6vw, 96px) 42px;
+  color: rgba(255, 247, 251, 0.72);
+}
+
+.rose-footer__brand {
+  color: var(--space-text);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.rose-footer__nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  padding: 28px clamp(20px, 6vw, 96px) 0;
+  gap: 16px;
 }
 
-.rose-followup__links a {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid rgba(255, 152, 162, 0.32);
-  border-radius: 8px;
-  color: var(--space-text);
-  background: rgba(255, 255, 255, 0.04);
-  padding: 0 18px;
-  transition: border-color 180ms ease, background-color 180ms ease;
+.rose-footer__nav a {
+  color: rgba(255, 247, 251, 0.78);
+  font-weight: 800;
+  transition: color 180ms ease;
 }
 
-.rose-followup__links a:hover {
-  border-color: rgba(255, 152, 162, 0.7);
-  background: rgba(255, 152, 162, 0.1);
+.rose-footer__nav a:hover {
+  color: var(--rose-primary-soft);
+}
+
+.rose-footer__meta {
+  color: rgba(255, 247, 251, 0.54);
+  font-size: 0.88rem;
 }
 
 @media (min-width: 768px) {

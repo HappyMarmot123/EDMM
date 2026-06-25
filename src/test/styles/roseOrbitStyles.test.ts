@@ -71,4 +71,11 @@ describe("Rose Orbit landing styles", () => {
     expect(hasKeyframes("rose-core-breathe")).toBe(true);
     expect(hasKeyframes("rose-core-pulse")).toBe(true);
   });
+
+  it("replaces followup link strips with a restrained footer", () => {
+    const footerRule = extractRule(".rose-footer");
+
+    expect(hasRule(".rose-followup__links")).toBe(false);
+    expect(footerRule).toContain("border-top");
+  });
 });
