@@ -9,10 +9,6 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "upload.wikimedia.org" },
     ],
   },
-  webpack: (config) => {
-    config.optimization.splitChunks = { chunks: "all", minChunks: 2 };
-    return config;
-  },
 };
 
 export default nextConfig;
