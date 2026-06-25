@@ -35,23 +35,6 @@ const runAnimationFrame = () => {
   frame(performance.now());
 };
 
-const dispatchPointerEvent = (
-  element: Element,
-  type: string,
-  options: { clientX?: number; clientY?: number; pointerId?: number; button?: number } = {}
-) => {
-  const event = new Event(type, { bubbles: true, cancelable: true });
-
-  Object.defineProperties(event, {
-    button: { value: options.button ?? 0 },
-    clientX: { value: options.clientX ?? 0 },
-    clientY: { value: options.clientY ?? 0 },
-    pointerId: { value: options.pointerId ?? 1 },
-  });
-
-  element.dispatchEvent(event);
-};
-
 describe("LandingCobeOrbit", () => {
   beforeEach(() => {
     animationFrames = [];
@@ -93,32 +76,12 @@ describe("LandingCobeOrbit", () => {
     expect(secondState.theta).toBe(0.28);
   });
 
-  it("lets mouse dragging steer the globe rotation", async () => {
+  it("keeps the canvas passive instead of advertising mouse interaction", async () => {
     render(<LandingCobeOrbit />);
 
     const canvas = screen.getByTestId("rose-cobe-canvas");
     await getCobeOptions();
 
-    dispatchPointerEvent(canvas, "pointerdown", {
-      clientX: 100,
-      clientY: 100,
-      pointerId: 1,
-    });
-    dispatchPointerEvent(canvas, "pointermove", {
-      clientX: 170,
-      clientY: 70,
-      pointerId: 1,
-    });
-    runAnimationFrame();
-
-    const [draggedState] = globe.update.mock.calls.at(-1) as [Partial<COBEOptions>];
-
-    expect(draggedState.phi).toBeGreaterThan(0.55);
-    expect(draggedState.theta).toBeLessThan(0.28);
-    expect(canvas).toHaveAttribute("data-dragging", "true");
-
-    dispatchPointerEvent(canvas, "pointerup", { pointerId: 1 });
-
-    expect(canvas).toHaveAttribute("data-dragging", "false");
+    expect(canvas).not.toHaveAttribute("data-dragging");
   });
 });
