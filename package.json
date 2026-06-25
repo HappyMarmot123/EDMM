@@ -8,7 +8,7 @@
     "postcss": "^8.5.15"
   },
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack -p 3999",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
