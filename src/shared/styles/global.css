@@ -83,10 +83,7 @@ h1 {
   z-index: -10;
   overflow: hidden;
   pointer-events: none;
-  background:
-    radial-gradient(circle at 72% 16%, rgba(255, 152, 162, 0.24), transparent 24rem),
-    radial-gradient(circle at 18% 84%, rgba(255, 82, 124, 0.14), transparent 28rem),
-    linear-gradient(180deg, var(--space-bg), var(--space-bg-deep));
+  background: var(--space-bg);
 }
 
 .rose-space-background__depth {
@@ -110,43 +107,86 @@ h1 {
 
 .rose-star {
   position: absolute;
-  top: -16px;
+  top: var(--start-y);
   left: var(--left-pos);
-  width: 4px;
-  height: 4px;
+  width: var(--size);
+  height: var(--size);
   border-radius: 9999px;
   background: var(--rose-primary);
   box-shadow:
-    0 0 10px 2px var(--rose-primary-glow),
-    0 0 22px 8px var(--rose-primary-dim);
+    0 0 calc(var(--glow-size) * 0.45) 1px var(--rose-primary-glow),
+    0 0 var(--glow-size) calc(var(--size) * 0.72) var(--rose-primary-dim);
+  filter: blur(var(--blur));
   opacity: var(--opacity);
-  transform: scale(var(--scale));
+  transform: translate3d(0, 0, 0) scale(var(--scale));
+  will-change: transform, opacity;
   animation:
-    rose-star-glow 2.8s ease-in-out infinite alternate,
-    rose-star-fall var(--duration) var(--delay) linear infinite;
+    rose-star-glow var(--twinkle-duration) ease-in-out infinite alternate,
+    rose-star-fall var(--duration) var(--delay) cubic-bezier(0.42, 0, 0.58, 1) infinite;
+}
+
+.rose-star::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--trail-length);
+  height: max(1px, calc(var(--size) * 0.34));
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 184, 192, var(--trail-opacity)),
+    rgba(255, 184, 192, 0)
+  );
+  transform: translateY(-50%) rotate(var(--trail-angle));
+  transform-origin: left center;
+}
+
+.rose-star--far {
+  background: rgba(255, 184, 192, 0.74);
+}
+
+.rose-star--mid {
+  background: var(--rose-primary-soft);
+}
+
+.rose-star--near {
+  background: var(--rose-primary);
 }
 
 .rose-starfield--reduced .rose-star {
   animation: none;
-  top: calc(var(--scale) * 80vh);
+  top: calc(var(--scale) * 72vh);
+  transform: translate3d(calc(var(--drift-x) * 0.08), 0, 0) scale(var(--scale));
 }
 
 @keyframes rose-star-fall {
+  0% {
+    transform: translate3d(0, 0, 0) scale(var(--scale));
+  }
+  34% {
+    transform: translate3d(calc(var(--sway-x) * -0.5), 38vh, 0) scale(var(--scale));
+  }
+  68% {
+    transform: translate3d(calc(var(--drift-x) * 0.72), 82vh, 0) scale(var(--scale));
+  }
   to {
-    transform: translateY(110vh) scale(var(--scale));
+    transform: translate3d(var(--drift-x), var(--fall-distance), 0) scale(var(--scale));
   }
 }
 
 @keyframes rose-star-glow {
   from {
+    opacity: calc(var(--opacity) * 0.62);
     box-shadow:
-      0 0 8px 1px rgba(255, 152, 162, 0.42),
-      0 0 18px 6px rgba(255, 152, 162, 0.12);
+      0 0 calc(var(--glow-size) * 0.32) 1px rgba(255, 152, 162, 0.34),
+      0 0 calc(var(--glow-size) * 0.72) calc(var(--size) * 0.5) rgba(255, 152, 162, 0.1);
   }
   to {
+    opacity: var(--opacity);
     box-shadow:
-      0 0 14px 3px rgba(255, 152, 162, 0.64),
-      0 0 30px 10px rgba(255, 152, 162, 0.2);
+      0 0 calc(var(--glow-size) * 0.62) 2px rgba(255, 152, 162, 0.58),
+      0 0 var(--glow-size) calc(var(--size) * 0.72) rgba(255, 152, 162, 0.2);
   }
 }
 
@@ -163,6 +203,20 @@ h1 {
   min-height: 100dvh;
   overflow-x: hidden;
   color: var(--space-text);
+}
+
+.my-gradient::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 50%;
+  height: 100vw;
+  width: 200vw;
+  background: radial-gradient(var(--pink-main), rgba(255, 152, 162, 0) 70%);
+  transform: translateX(-50%) translateY(50vh);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: -9;
 }
 
 .rose-hero {
@@ -210,16 +264,15 @@ h1 {
 
 .rose-hero__title {
   font-family: var(--font-display);
-  color: transparent;
-  background: linear-gradient(110deg, #fff7fb 8%, #ffccd3 38%, var(--rose-hot) 78%);
-  -webkit-background-clip: text;
-  background-clip: text;
+  color: var(--space-text);
   max-width: 100%;
   font-size: 5.8rem;
   font-weight: 900;
   line-height: 0.78;
   letter-spacing: 0;
-  filter: drop-shadow(0 0 28px rgba(255, 79, 135, 0.36));
+  text-shadow:
+    0 0 26px rgba(255, 79, 135, 0.34),
+    0 0 64px rgba(255, 152, 162, 0.18);
 }
 
 .rose-hero__kicker {
@@ -259,7 +312,7 @@ h1 {
 }
 
 .rose-hero__cta--primary {
-  background: linear-gradient(135deg, var(--rose-primary), var(--rose-hot));
+  background: var(--rose-primary);
   color: #17070d;
   box-shadow: 0 0 28px rgba(255, 79, 135, 0.34);
 }

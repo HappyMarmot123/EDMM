@@ -12,6 +12,7 @@ describe("Landing", () => {
   it("renders the Rose Orbit landing without old visual clutter", () => {
     render(<Landing />);
 
+    expect(screen.getByRole("main")).toHaveClass("rose-landing", "my-gradient");
     expect(screen.getByTestId("rose-space-background")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "EDMM" })).toBeInTheDocument();
     expect(

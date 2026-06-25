@@ -113,6 +113,27 @@ describe("DustySnow", () => {
   it("renders deterministic stars during server render", () => {
     const html = renderToString(<DustySnow count={3} />);
 
-    expect(html.match(/class="rose-star"/g)).toHaveLength(3);
+    expect(html.match(/class="rose-star\b/g)).toHaveLength(3);
+  });
+
+  it("varies star size, depth, and movement direction naturally", async () => {
+    render(<DustySnow count={18} />);
+
+    const starfield = await screen.findByTestId("rose-starfield");
+    const stars = Array.from(
+      starfield.querySelectorAll<HTMLElement>(".rose-star")
+    );
+
+    const styleValues = (property: string) =>
+      stars.map((star) => star.style.getPropertyValue(property));
+    const driftValues = styleValues("--drift-x").map((value) =>
+      Number.parseFloat(value)
+    );
+
+    expect(new Set(styleValues("--size")).size).toBeGreaterThan(6);
+    expect(new Set(stars.map((star) => star.dataset.depth)).size).toBe(3);
+    expect(styleValues("--trail-length").every(Boolean)).toBe(true);
+    expect(driftValues.some((value) => value < 0)).toBe(true);
+    expect(driftValues.some((value) => value > 0)).toBe(true);
   });
 });
