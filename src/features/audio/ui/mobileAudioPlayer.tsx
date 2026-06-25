@@ -1,19 +1,18 @@
 "use client";
 
 import { useRef, type MouseEvent } from "react";
+import { useRouter } from "next/navigation";
 import MPlayerTrackDetails from "@/features/audio/components/mobile/m_playerTrackDetails";
 import MPlayerControlsSection from "@/features/audio/components/mobile/m_playerControlsSection";
 import MAlbumArtwork from "@/features/audio/components/mobile/m_albumArtwork";
-import { useToggle } from "@/shared/providers/toggleProvider";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 
 // Root here
 export default function MobileAudioPlayer() {
   const { currentTrack, isPlaying, isBuffering, currentTime, duration, seek } =
     useAudioPlayer();
-  const { openToggle } = useToggle();
+  const router = useRouter();
   const seekBarContainerRef = useRef<HTMLDivElement>(null);
-  const isDragging = useRef(false);
 
   const currentProgress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
@@ -24,6 +23,10 @@ export default function MobileAudioPlayer() {
     const clickPosition = event.clientX - rect.left;
     const seekFraction = clickPosition / rect.width;
     seek(seekFraction * duration);
+  };
+  const openTrackDetail = () => {
+    if (!currentTrack) return;
+    router.push(`/track/${encodeURIComponent(currentTrack.assetId)}`);
   };
 
   return (
@@ -58,11 +61,7 @@ export default function MobileAudioPlayer() {
             isPlaying={isPlaying}
             isBuffering={isBuffering}
             currentTrackInfo={currentTrack}
-            onClick={() => {
-              if (!isDragging.current) {
-                openToggle();
-              }
-            }}
+            onClick={openTrackDetail}
           />
           <MPlayerTrackDetails
             isPlaying={isPlaying}

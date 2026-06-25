@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import "@/shared/styles/global.css";
 import { HYDRATION_EXTENSION_ATTRIBUTE_GUARD_SCRIPT } from "@/shared/lib/hydrationExtensionAttributeGuard";
-import { TanstackProvider } from "../shared/providers/tanstackProvider";
+import { AppProviders } from "./appProviders";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://edmm.vercel.app"),
@@ -57,7 +57,7 @@ const RootLayout = ({ children }: { children: React.ReactNode }) => {
         />
       </head>
       <body suppressHydrationWarning={true}>
-        <TanstackProvider>{children}</TanstackProvider>
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

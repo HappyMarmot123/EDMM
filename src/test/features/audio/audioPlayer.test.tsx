@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { fireEvent } from "@testing-library/react";
 import AudioPlayer from "@/features/audio/ui/audioPlayer";
 import MobileAudioPlayer from "@/features/audio/ui/mobileAudioPlayer";
 import type { TrackInfo } from "@/shared/types/dataType";
@@ -45,19 +46,21 @@ let mockAudioPlayerState: MockAudioPlayerState = {
   setLiveVolume: jest.fn(),
   toggleMute: jest.fn(),
 };
+const mockRouterPush = jest.fn();
 
 jest.mock("@/shared/providers/audioPlayerProvider", () => ({
   useAudioPlayer: () => mockAudioPlayerState,
 }));
 
-jest.mock("@/shared/providers/toggleProvider", () => ({
-  useToggle: () => ({
-    openToggle: jest.fn(),
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: mockRouterPush,
   }),
 }));
 
 describe("AudioPlayer", () => {
   beforeEach(() => {
+    mockRouterPush.mockClear();
     mockAudioPlayerState = {
       currentTrack: track,
       isPlaying: false,
@@ -87,6 +90,16 @@ describe("AudioPlayer", () => {
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
   });
 
+  it("navigates to the current track detail when album artwork is clicked", () => {
+    render(<AudioPlayer />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Open details for Track One" })
+    );
+
+    expect(mockRouterPush).toHaveBeenCalledWith("/track/track-1");
+  });
+
   it("keeps the desktop player visible before a track is selected", () => {
     mockAudioPlayerState.currentTrack = null;
     mockAudioPlayerState.currentTime = 0;
@@ -100,6 +113,7 @@ describe("AudioPlayer", () => {
     );
     expect(screen.getByText("No track selected")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "No track artwork" })).toBeDisabled();
   });
 
   it("keeps the mobile player visible before a track is selected", () => {

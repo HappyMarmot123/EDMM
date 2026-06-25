@@ -14,7 +14,7 @@ const MAlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
 }) => {
   const mobileAlbumArtClassName = (playing: boolean, buffering: boolean) => {
     const baseClasses =
-      "relative z-[1] overflow-hidden rounded-md cursor-pointer shadow-[0_10px_24px_rgba(0,0,0,0.32)] ring-1 ring-white/10 select-none";
+      "relative z-[1] overflow-hidden rounded-md cursor-pointer shadow-[0_10px_24px_rgba(0,0,0,0.32)] ring-1 ring-white/10 select-none disabled:pointer-events-none disabled:cursor-default disabled:opacity-50";
     const mobileClasses = "w-[54px] h-[54px]";
     const animationClasses =
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fd6d94] focus-visible:ring-offset-2 focus-visible:ring-offset-black";
@@ -34,10 +34,16 @@ const MAlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
 
   return (
     <button
+      type="button"
       id="album-art"
       onClick={onClick}
       className={finalClassName}
-      aria-label="Toggle player details view"
+      aria-label={
+        currentTrackInfo
+          ? `Open details for ${currentTrackInfo.name}`
+          : "No track artwork"
+      }
+      disabled={!currentTrackInfo}
     >
       {!currentTrackInfo ? (
         <span className="absolute inset-0 flex items-center justify-center bg-white/10 text-[#fd6d94]">

@@ -5,23 +5,9 @@ import AudioPlayerShell from "@/widgets/audioPlayer/audioPlayerShell";
 const mockPlayTrack = jest.fn();
 
 jest.mock("@/shared/providers/audioPlayerProvider", () => ({
-  AudioPlayerProvider: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="audio-provider">{children}</div>
-  ),
   useAudioPlayer: () => ({
     playTrack: mockPlayTrack,
   }),
-}));
-
-jest.mock("@/shared/providers/toggleProvider", () => ({
-  ToggleProvider: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="toggle-provider">{children}</div>
-  ),
-}));
-
-jest.mock("@/widgets/audioPlayer", () => ({
-  __esModule: true,
-  default: () => <div data-testid="audio-widget" />,
 }));
 
 const track: Track = {
@@ -41,7 +27,7 @@ describe("AudioPlayerShell", () => {
     mockPlayTrack.mockClear();
   });
 
-  it("owns the audio provider for routes that render the player shell", () => {
+  it("uses the global audio provider to inject play handlers", () => {
     render(
       <AudioPlayerShell>
         {(onPlay) => (
@@ -51,10 +37,6 @@ describe("AudioPlayerShell", () => {
         )}
       </AudioPlayerShell>
     );
-
-    expect(screen.getByTestId("audio-provider")).toBeInTheDocument();
-    expect(screen.getByTestId("toggle-provider")).toBeInTheDocument();
-    expect(screen.getByTestId("audio-widget")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Play" }));
 
