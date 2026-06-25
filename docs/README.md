@@ -11,7 +11,7 @@
 | Phase | 문서 | 핵심 산출물 | 상태 |
 |---|---|---|---|
 | 0 | [툴체인 버전업](plans/2026-06-23-phase0-toolchain-upgrade.md) | Next/React/TypeScript/ESLint 업그레이드 | 완료 |
-| 1 | [외부 API 어댑터 + Route 프록시](plans/2026-06-23-phase1-api-adapters.md) | Track 모델, Audius/Deezer/lyrics API | 완료 |
+| 1 | [외부 API 어댑터 + Route 프록시](plans/2026-06-23-phase1-api-adapters.md) | Track 모델, Audius/lyrics API | 완료 |
 | 2 | [Dexie 데이터 레이어](plans/2026-06-23-phase2-dexie-data-layer.md) | favorites/recent/playlists/trackCache | 완료 |
 | D | [디자인 시스템](plans/2026-06-23-phaseD-design-system.md) | Neon Glassmorphism 토큰/프리미티브 | 완료 |
 | 3 | [라우트/페이지 골격 + views](plans/2026-06-23-phase3-routes-pages.md) | 홈/검색/트랙 상세/보관함 | 완료 |

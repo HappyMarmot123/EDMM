@@ -78,8 +78,7 @@ const formatDuration = (durationMs: number) => {
   return `${minutes}:${seconds}`;
 };
 
-const sourceLabel = (source: Track["source"]) =>
-  source === "audius" ? "Audius" : "Deezer";
+const SOURCE_LABEL = "Audius";
 
 function SearchSkeleton() {
   return (
@@ -162,7 +161,7 @@ function SearchResults({
                 <span className="block truncate text-sm text-white/58">
                   {track.artistName}
                   {track.albumName ? ` / ${track.albumName}` : ""} /{" "}
-                  {sourceLabel(track.source)}
+                  {SOURCE_LABEL}
                 </span>
               </span>
             </button>

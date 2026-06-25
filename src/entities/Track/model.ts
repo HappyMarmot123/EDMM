@@ -1,6 +1,6 @@
 export interface Track {
   id: string;
-  source: "audius" | "deezer";
+  source: "audius";
   title: string;
   artistId: string;
   artistName: string;

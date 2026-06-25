@@ -34,8 +34,7 @@ const formatDuration = (durationMs: number) => {
   return `${minutes}:${seconds}`;
 };
 
-const sourceLabel = (source: Track["source"]) =>
-  source === "audius" ? "Audius" : "Deezer";
+const SOURCE_LABEL = "Audius";
 
 function TrackDetailSkeleton() {
   return (
@@ -228,7 +227,7 @@ export function TrackDetailView({ trackId, onPlay }: TrackDetailViewProps) {
             <div>
               <p className="inline-flex items-center gap-2 text-xs font-black uppercase text-[#ffb8c0]">
                 <Radio size={16} strokeWidth={2.2} aria-hidden="true" />
-                {sourceLabel(track.source)} track
+                {SOURCE_LABEL} track
               </p>
               <h1 className="mt-3 text-4xl font-black tracking-normal text-white sm:text-5xl lg:text-6xl">
                 {track.title}
@@ -268,7 +267,7 @@ export function TrackDetailView({ trackId, onPlay }: TrackDetailViewProps) {
           <DetailFact label="Album" value={albumLabel} icon={Disc3} />
           <DetailFact
             label="Source"
-            value={sourceLabel(track.source)}
+            value={SOURCE_LABEL}
             icon={Radio}
           />
           <DetailFact label="Track ID" value={track.id} icon={Music2} />
