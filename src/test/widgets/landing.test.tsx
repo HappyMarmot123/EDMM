@@ -22,6 +22,7 @@ describe("Landing", () => {
       screen.getByText("Rose Orbit / Midnight signal / Dance floor")
     ).toBeInTheDocument();
     expect(screen.getByTestId("rose-hero-orbit")).toBeInTheDocument();
+    expect(screen.getAllByTestId("rose-orbit-tracer")).toHaveLength(3);
     expect(screen.getByRole("link", { name: "Start listening" })).toHaveAttribute(
       "href",
       "/search"

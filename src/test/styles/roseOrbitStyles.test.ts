@@ -21,6 +21,7 @@ const extractRule = (selector: string) => {
 };
 
 const hasRule = (selector: string) => styles.includes(`${selector} {`);
+const hasKeyframes = (name: string) => styles.includes(`@keyframes ${name} {`);
 
 describe("Rose Orbit landing styles", () => {
   it("keeps hero title and primary CTA free of gradient fills", () => {
@@ -44,5 +45,14 @@ describe("Rose Orbit landing styles", () => {
 
   it("does not draw linear trail bars on rose stars", () => {
     expect(hasRule(".rose-star::after")).toBe(false);
+  });
+
+  it("uses visible orbit tracers to make hero orbit motion readable", () => {
+    const tracerRule = extractRule(".rose-hero__orbit-tracer");
+    const markerRule = extractRule(".rose-hero__orbit-marker");
+
+    expect(tracerRule).toContain("animation: rose-orbit-marker");
+    expect(markerRule).toContain("box-shadow");
+    expect(hasKeyframes("rose-orbit-marker")).toBe(true);
   });
 });

@@ -41,6 +41,24 @@ export default function Hero() {
           <span className="rose-hero__orbit-ring rose-hero__orbit-ring--outer" />
           <span className="rose-hero__orbit-ring rose-hero__orbit-ring--middle" />
           <span className="rose-hero__orbit-ring rose-hero__orbit-ring--inner" />
+          <span
+            className="rose-hero__orbit-tracer rose-hero__orbit-tracer--outer"
+            data-testid="rose-orbit-tracer"
+          >
+            <span className="rose-hero__orbit-marker" />
+          </span>
+          <span
+            className="rose-hero__orbit-tracer rose-hero__orbit-tracer--middle"
+            data-testid="rose-orbit-tracer"
+          >
+            <span className="rose-hero__orbit-marker" />
+          </span>
+          <span
+            className="rose-hero__orbit-tracer rose-hero__orbit-tracer--inner"
+            data-testid="rose-orbit-tracer"
+          >
+            <span className="rose-hero__orbit-marker" />
+          </span>
           <span className="rose-hero__orbit-core" />
           <span className="rose-hero__orbit-satellite rose-hero__orbit-satellite--one" />
           <span className="rose-hero__orbit-satellite rose-hero__orbit-satellite--two" />

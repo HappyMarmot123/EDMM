@@ -396,6 +396,72 @@ h1 {
   animation: rose-orbit-spin 14s linear infinite;
 }
 
+.rose-hero__orbit-tracer {
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  --marker-start: 0deg;
+  --marker-end: 360deg;
+  --marker-duration: 9s;
+  --marker-size: 12px;
+  --track-tilt: 66deg;
+  animation: rose-orbit-marker var(--marker-duration) linear infinite;
+  pointer-events: none;
+  transform: rotateX(var(--track-tilt)) rotateZ(var(--marker-start));
+  transform-style: preserve-3d;
+  z-index: 4;
+}
+
+.rose-hero__orbit-tracer--outer {
+  inset: 1%;
+  --marker-start: 18deg;
+  --marker-end: 378deg;
+  --marker-duration: 7.5s;
+  --marker-size: 13px;
+  --track-tilt: 64deg;
+}
+
+.rose-hero__orbit-tracer--middle {
+  inset: 15%;
+  --marker-start: 174deg;
+  --marker-end: -186deg;
+  --marker-duration: 10.5s;
+  --marker-size: 10px;
+  --track-tilt: 58deg;
+  animation-direction: reverse;
+}
+
+.rose-hero__orbit-tracer--inner {
+  inset: 28%;
+  --marker-start: 292deg;
+  --marker-end: 652deg;
+  --marker-duration: 5.8s;
+  --marker-size: 8px;
+  --track-tilt: 72deg;
+}
+
+.rose-hero__orbit-marker {
+  position: absolute;
+  top: 50%;
+  right: calc(var(--marker-size) * -0.5);
+  width: var(--marker-size);
+  height: var(--marker-size);
+  border-radius: 50%;
+  background: var(--rose-gold);
+  box-shadow:
+    0 0 14px rgba(255, 214, 165, 0.9),
+    0 0 34px rgba(255, 152, 162, 0.42);
+  transform: translateY(-50%) rotateX(calc(var(--track-tilt) * -1));
+}
+
+.rose-hero__orbit-tracer--middle .rose-hero__orbit-marker {
+  background: var(--rose-primary-soft);
+}
+
+.rose-hero__orbit-tracer--inner .rose-hero__orbit-marker {
+  background: var(--rose-primary);
+}
+
 .rose-hero__orbit-core {
   position: absolute;
   inset: 40%;
@@ -445,6 +511,15 @@ h1 {
 @keyframes rose-orbit-spin {
   to {
     transform: rotateX(var(--orbit-x)) rotateZ(var(--orbit-end));
+  }
+}
+
+@keyframes rose-orbit-marker {
+  from {
+    transform: rotateX(var(--track-tilt)) rotateZ(var(--marker-start));
+  }
+  to {
+    transform: rotateX(var(--track-tilt)) rotateZ(var(--marker-end));
   }
 }
 
@@ -553,7 +628,8 @@ h1 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rose-hero__orbit-ring {
+  .rose-hero__orbit-ring,
+  .rose-hero__orbit-tracer {
     animation: none;
   }
 }
