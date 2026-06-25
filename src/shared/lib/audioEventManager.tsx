@@ -19,7 +19,7 @@ export const setupAudioEventListeners = (actions: any) => {
   };
 
   const handleError = (e: Event) => {
-    if (!audio.currentSrc && !audio.src) {
+    if (!audio.currentSrc) {
       actions.state.storeSetIsBuffering(false);
       return;
     }

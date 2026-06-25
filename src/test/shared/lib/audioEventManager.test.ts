@@ -4,6 +4,14 @@ describe("setupAudioEventListeners", () => {
   it("ignores empty-source audio errors caused by cleanup", () => {
     const audio = document.createElement("audio");
     const consoleError = jest.spyOn(console, "error").mockImplementation();
+    Object.defineProperty(audio, "currentSrc", {
+      configurable: true,
+      value: "",
+    });
+    Object.defineProperty(audio, "src", {
+      configurable: true,
+      value: window.location.href,
+    });
 
     const cleanup = setupAudioEventListeners({
       state: {

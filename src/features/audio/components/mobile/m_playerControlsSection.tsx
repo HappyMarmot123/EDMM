@@ -15,6 +15,7 @@ const MPlayerControlsSection = ({
 
   return (
     <section
+      id="player-controls"
       className="flex items-center justify-end gap-3"
       aria-label={`${currentTrackInfo?.name ?? "Current track"} controls`}
     >

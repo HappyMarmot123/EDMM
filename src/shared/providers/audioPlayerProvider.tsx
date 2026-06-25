@@ -188,12 +188,6 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
     });
   }, [audio, nextTrack]);
 
-  useEffect(() => {
-    return () => {
-      cleanAudioInstance();
-    };
-  }, [cleanAudioInstance]);
-
   return useMemo(
     () => ({
       currentTrack,
