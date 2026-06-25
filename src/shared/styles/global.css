@@ -473,29 +473,6 @@ h1 {
   z-index: 2;
 }
 
-.rose-hero__orbit-satellite {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--rose-gold);
-  box-shadow: 0 0 22px rgba(255, 214, 165, 0.72);
-  z-index: 3;
-}
-
-.rose-hero__orbit-satellite--one {
-  top: 20%;
-  right: 16%;
-}
-
-.rose-hero__orbit-satellite--two {
-  left: 18%;
-  bottom: 24%;
-  width: 10px;
-  height: 10px;
-  background: var(--rose-primary);
-}
-
 .rose-hero__orbit-label {
   position: absolute;
   right: 2%;

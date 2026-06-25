@@ -10,7 +10,7 @@ jest.mock("@/features/landing/components/parallax", () => ({
 
 describe("Landing", () => {
   it("renders the Rose Orbit landing without old visual clutter", () => {
-    render(<Landing />);
+    const { container } = render(<Landing />);
 
     expect(screen.getByRole("main")).toHaveClass("rose-landing", "my-gradient");
     expect(screen.getByTestId("rose-space-background")).toBeInTheDocument();
@@ -23,6 +23,7 @@ describe("Landing", () => {
     ).toBeInTheDocument();
     expect(screen.getByTestId("rose-hero-orbit")).toBeInTheDocument();
     expect(screen.getAllByTestId("rose-orbit-tracer")).toHaveLength(3);
+    expect(container.querySelector(".rose-hero__orbit-satellite")).toBeNull();
     expect(screen.getByRole("link", { name: "Start listening" })).toHaveAttribute(
       "href",
       "/search"

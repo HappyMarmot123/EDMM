@@ -60,8 +60,6 @@ export default function Hero() {
             <span className="rose-hero__orbit-marker" />
           </span>
           <span className="rose-hero__orbit-core" />
-          <span className="rose-hero__orbit-satellite rose-hero__orbit-satellite--one" />
-          <span className="rose-hero__orbit-satellite rose-hero__orbit-satellite--two" />
           <span className="rose-hero__orbit-label">ROSE ORBIT</span>
         </div>
       </div>

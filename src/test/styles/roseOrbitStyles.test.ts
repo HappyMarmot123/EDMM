@@ -55,4 +55,10 @@ describe("Rose Orbit landing styles", () => {
     expect(markerRule).toContain("box-shadow");
     expect(hasKeyframes("rose-orbit-marker")).toBe(true);
   });
+
+  it("does not keep static orbit satellite styles", () => {
+    expect(hasRule(".rose-hero__orbit-satellite")).toBe(false);
+    expect(hasRule(".rose-hero__orbit-satellite--one")).toBe(false);
+    expect(hasRule(".rose-hero__orbit-satellite--two")).toBe(false);
+  });
 });
