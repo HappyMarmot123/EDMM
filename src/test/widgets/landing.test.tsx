@@ -1,6 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import Landing from "@/widgets/landing";
 
+jest.mock("cobe", () => ({
+  __esModule: true,
+  default: jest.fn(() => ({ destroy: jest.fn() })),
+}));
+
 jest.mock("@/features/landing/components/parallax", () => ({
   __esModule: true,
   default: ({ children }: { children: React.ReactNode }) => (
@@ -21,10 +26,12 @@ describe("Landing", () => {
     expect(
       screen.getByText("Rose Orbit / Midnight signal / Dance floor")
     ).toBeInTheDocument();
-    expect(screen.getByTestId("rose-hero-orbit")).toBeInTheDocument();
-    expect(screen.getAllByTestId("rose-orbit-tracer")).toHaveLength(3);
-    expect(screen.getByTestId("rose-orbit-core")).toBeInTheDocument();
-    expect(screen.getAllByTestId("rose-orbit-core-pulse")).toHaveLength(2);
+    expect(screen.getByTestId("rose-cobe-orbit")).toBeInTheDocument();
+    expect(screen.getByTestId("rose-cobe-canvas")).toBeInTheDocument();
+    expect(screen.queryByTestId("rose-hero-orbit")).not.toBeInTheDocument();
+    expect(screen.queryAllByTestId("rose-orbit-tracer")).toHaveLength(0);
+    expect(screen.queryByTestId("rose-orbit-core")).not.toBeInTheDocument();
+    expect(screen.queryAllByTestId("rose-orbit-core-pulse")).toHaveLength(0);
     expect(container.querySelector(".rose-hero__orbit-satellite")).toBeNull();
     expect(screen.getByRole("link", { name: "Start listening" })).toHaveAttribute(
       "href",

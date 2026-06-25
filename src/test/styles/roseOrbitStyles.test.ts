@@ -72,6 +72,15 @@ describe("Rose Orbit landing styles", () => {
     expect(hasKeyframes("rose-core-pulse")).toBe(true);
   });
 
+  it("styles the Cobe hero replacement without removing the deprecated orbit rules", () => {
+    const cobeRule = extractRule(".rose-cobe-orbit");
+    const canvasRule = extractRule(".rose-cobe-orbit__canvas");
+
+    expect(cobeRule).toContain("aspect-ratio: 1");
+    expect(canvasRule).toContain("display: block");
+    expect(hasRule(".rose-hero__orbit")).toBe(true);
+  });
+
   it("replaces followup link strips with a restrained footer", () => {
     const footerRule = extractRule(".rose-footer");
 
