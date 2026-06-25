@@ -13,4 +13,17 @@ describe("next image configuration", () => {
       ])
     );
   });
+
+  it("keeps known Audius content CDN families documented", () => {
+    const remotePatterns = nextConfig.images?.remotePatterns ?? [];
+
+    expect(remotePatterns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          protocol: "https",
+          hostname: "audius-content-*.figment.io",
+        }),
+      ])
+    );
+  });
 });

@@ -1,5 +1,5 @@
+/* eslint-disable @next/next/no-img-element -- Player artwork receives dynamic Audius CDN hosts. */
 import React from "react";
-import Image from "next/image";
 import clsx from "clsx";
 import { ExtendedAlbumArtworkProps } from "@/shared/types/dataType";
 
@@ -39,7 +39,7 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
       aria-label="Toggle player details view"
     >
       {currentTrackInfo?.artworkId ? (
-        <Image
+        <img
           key={currentTrackInfo.artworkId}
           src={currentTrackInfo.artworkId}
           alt={currentTrackInfo.album}

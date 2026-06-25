@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "singhimalaya.github.io" },
       { protocol: "https", hostname: "audius-content-*.cdn.uservice.io" },
+      { protocol: "https", hostname: "audius-content-*.figment.io" },
       { protocol: "https", hostname: "audius.zeogrid.com" },
       { protocol: "https", hostname: "cdns-images.dzcdn.net" },
       { protocol: "https", hostname: "upload.wikimedia.org" },

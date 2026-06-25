@@ -12,6 +12,8 @@ const eslintConfig = [
   {
     ignores: [
       ".next/**",
+      ".superpowers/**",
+      ".tmp-*",
       "node_modules/**",
       "coverage/**",
       "drizzle/**",
