@@ -77,7 +77,9 @@ describe("Rose Orbit landing styles", () => {
     const canvasRule = extractRule(".rose-cobe-orbit__canvas");
 
     expect(cobeRule).toContain("aspect-ratio: 1");
+    expect(cobeRule).toContain("pointer-events: auto");
     expect(canvasRule).toContain("display: block");
+    expect(canvasRule).toContain("cursor: grab");
     expect(hasRule(".rose-hero__orbit")).toBe(true);
   });
 
