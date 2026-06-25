@@ -20,7 +20,7 @@ export interface PlayerTrackDetailsProps {
   seekBarContainerRef: RefObject<HTMLDivElement | null>;
   seek: (time: number) => void;
   isMobile?: boolean;
-  currentTrackInfo?: TrackInfo;
+  currentTrackInfo?: TrackInfo | null;
 }
 
 export interface AlbumArtworkProps {
@@ -86,6 +86,7 @@ export interface IconToggleButtonProps {
   label: string;
   iconProps?: React.SVGProps<SVGSVGElement>;
   className?: string;
+  disabled?: boolean;
 }
 
 export interface ErrorProps {

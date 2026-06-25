@@ -15,10 +15,6 @@ export default function AudioPlayer() {
 
   const currentProgress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
-  if (!currentTrack) {
-    return null;
-  }
-
   return (
     <aside
       id="player-container"

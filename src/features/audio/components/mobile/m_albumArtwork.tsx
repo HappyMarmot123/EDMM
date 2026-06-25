@@ -3,6 +3,7 @@
 
 import React from "react";
 import clsx from "clsx";
+import { Music2 } from "lucide-react";
 import { ExtendedAlbumArtworkProps } from "@/shared/types/dataType";
 
 const MAlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
@@ -38,7 +39,11 @@ const MAlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
       className={finalClassName}
       aria-label="Toggle player details view"
     >
-      {currentTrackInfo?.artworkId ? (
+      {!currentTrackInfo ? (
+        <span className="absolute inset-0 flex items-center justify-center bg-white/10 text-[#fd6d94]">
+          <Music2 width={22} height={22} aria-hidden="true" />
+        </span>
+      ) : currentTrackInfo.artworkId ? (
         <img
           key={currentTrackInfo.artworkId}
           src={currentTrackInfo.artworkId}

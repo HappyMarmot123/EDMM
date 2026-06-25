@@ -33,6 +33,7 @@ const PlayerControlsSection: React.FC<
 
   const playPauseLabel = isPlaying ? "Pause" : "Play";
   const muteLabel = isMuted ? "Unmute" : "Mute";
+  const hasTrack = Boolean(currentTrackInfo);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -90,14 +91,14 @@ const PlayerControlsSection: React.FC<
           className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm font-semibold text-white"
           title={currentTrackInfo?.name}
         >
-          {currentTrackInfo?.name}
+          {currentTrackInfo?.name ?? "No track selected"}
         </div>
         <div
           id="producer-name"
           className="mt-0.5 w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs text-white/55"
           title={currentTrackInfo?.producer}
         >
-          {currentTrackInfo?.producer}
+          {currentTrackInfo?.producer ?? "Choose a song to start playback"}
         </div>
       </section>
       <section
@@ -109,6 +110,7 @@ const PlayerControlsSection: React.FC<
           onClick={prevTrack}
           aria-label="Previous track"
           className="h-10 w-10 text-white/70 hover:text-white"
+          disabled={!hasTrack}
         >
           <SkipBack
             className="m-auto block transition-colors duration-200 ease-out"
@@ -125,6 +127,7 @@ const PlayerControlsSection: React.FC<
           onClick={togglePlayPause}
           label={playPauseLabel}
           className="h-11 w-11 bg-white text-black hover:bg-[#ffd6e1]"
+          disabled={!hasTrack}
           iconProps={{
             width: 22,
             height: 22,
@@ -137,6 +140,7 @@ const PlayerControlsSection: React.FC<
           onClick={nextTrack}
           aria-label="Next track"
           className="h-10 w-10 text-white/70 hover:text-white"
+          disabled={!hasTrack}
         >
           <SkipForward
             className="m-auto block transition-colors duration-200 ease-out"

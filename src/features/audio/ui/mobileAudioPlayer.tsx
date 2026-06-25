@@ -26,10 +26,6 @@ export default function MobileAudioPlayer() {
     seek(seekFraction * duration);
   };
 
-  if (!currentTrack) {
-    return null;
-  }
-
   return (
     <div
       id="player-container-mobile"

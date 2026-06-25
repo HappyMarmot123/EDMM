@@ -11,7 +11,7 @@ const MPlayerTrackDetails: React.FC<
     <div className="mx-3 flex min-w-0 flex-1 flex-col justify-center">
       <div className="flex items-baseline">
         <span className="truncate text-sm font-semibold text-white">
-          {currentTrackInfo?.name}
+          {currentTrackInfo?.name ?? "No track selected"}
         </span>
       </div>
       <div className="mt-0.5 flex text-xs tabular-nums text-white/50">

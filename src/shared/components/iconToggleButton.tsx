@@ -13,6 +13,7 @@ export const IconToggleButton: React.FC<IconToggleButtonProps> = ({
   label,
   iconProps = {},
   className,
+  disabled,
 }) => {
   const commonIconProps = {
     className:
@@ -29,6 +30,7 @@ export const IconToggleButton: React.FC<IconToggleButtonProps> = ({
       onClick={onClick}
       aria-label={label}
       className={className}
+      disabled={disabled}
     >
       {condition ? (
         <IconOnTrue {...commonIconProps} />
