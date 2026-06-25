@@ -14,13 +14,20 @@ describe("Landing", () => {
 
     expect(screen.getByTestId("rose-space-background")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "EDMM" })).toBeInTheDocument();
-    expect(screen.getByText("Electronic Dance Music")).toBeInTheDocument();
     expect(
-      screen.getByText("Rose signal / Dance floor / Night stream")
+      screen.getByText("Electronic dance music in rose orbit")
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Explore" })).toHaveAttribute(
+    expect(
+      screen.getByText("Rose Orbit / Midnight signal / Dance floor")
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("rose-hero-orbit")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Start listening" })).toHaveAttribute(
       "href",
       "/search"
+    );
+    expect(screen.getByRole("link", { name: "Open library" })).toHaveAttribute(
+      "href",
+      "/library"
     );
     expect(screen.getAllByTestId("parallax")).toHaveLength(2);
     expect(screen.getByRole("link", { name: "Search" })).toHaveAttribute(

@@ -77,15 +77,6 @@ export interface AudioPlayerLogicReturnType
   setLiveVolume: (volume: number) => void;
 }
 
-export interface EarthProps {
-  width?: number;
-  height?: number;
-  className?: string;
-  baseColor?: [number, number, number];
-  markerColor?: [number, number, number];
-  glowColor?: [number, number, number];
-}
-
 export interface IconToggleButtonProps {
   id: string;
   condition: boolean;
