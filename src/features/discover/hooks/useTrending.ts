@@ -12,10 +12,11 @@ async function getTrending(normalizedGenre: string): Promise<Track[]> {
   if (!res.ok) throw new Error("trending fetch failed");
 
   const tracks = (await res.json()) as Track[];
-  tracks.forEach((track) => {
-    cacheTrack(track).catch((error) => {
-      console.warn("Failed to cache trending track:", error);
-    });
+  const cacheResults = await Promise.allSettled(tracks.map(cacheTrack));
+  cacheResults.forEach((result) => {
+    if (result.status === "rejected") {
+      console.warn("Failed to cache trending track:", result.reason);
+    }
   });
 
   return tracks;

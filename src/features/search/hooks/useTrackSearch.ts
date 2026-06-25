@@ -9,10 +9,11 @@ async function search(q: string): Promise<Track[]> {
   if (!res.ok) throw new Error("search failed");
 
   const tracks = (await res.json()) as Track[];
-  tracks.forEach((track) => {
-    cacheTrack(track).catch((error) => {
-      console.warn("Failed to cache search track:", error);
-    });
+  const cacheResults = await Promise.allSettled(tracks.map(cacheTrack));
+  cacheResults.forEach((result) => {
+    if (result.status === "rejected") {
+      console.warn("Failed to cache search track:", result.reason);
+    }
   });
 
   return tracks;
