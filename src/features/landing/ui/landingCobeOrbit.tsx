@@ -4,13 +4,9 @@ import { useEffect, useRef } from "react";
 import createGlobe from "cobe";
 import type { COBEOptions, Globe } from "cobe";
 
-type CobeOptionsWithRender = COBEOptions & {
-  onRender?: (state: Partial<COBEOptions>) => void;
-};
-
 const INITIAL_PHI = 0.55;
 const INITIAL_THETA = 0.28;
-const AUTO_ROTATION_SPEED = 0.0036;
+const AUTO_ROTATION_SPEED = 0.006;
 const DRAG_ROTATION_SCALE = 0.0065;
 const DRAG_TILT_SCALE = 0.0035;
 const ROTATION_EASE = 0.1;
@@ -35,12 +31,11 @@ const ROSE_ARCS = [
 const getCanvasSize = (canvas: HTMLCanvasElement, pixelRatio: number) => {
   const rect = canvas.getBoundingClientRect();
   const displaySize = Math.max(320, Math.round(rect.width || canvas.clientWidth || 520));
-  const pixelSize = Math.round(displaySize * pixelRatio);
 
-  canvas.width = pixelSize;
-  canvas.height = pixelSize;
+  canvas.width = Math.round(displaySize * pixelRatio);
+  canvas.height = Math.round(displaySize * pixelRatio);
 
-  return pixelSize;
+  return displaySize;
 };
 
 const clamp = (value: number, min: number, max: number) =>
@@ -69,9 +64,10 @@ export default function LandingCobeOrbit() {
     let dragStartPhiOffset = 0;
     let dragStartTheta = INITIAL_THETA;
     let globe: Globe | undefined;
+    let frameId = 0;
 
     const initialSize = getCanvasSize(canvas, pixelRatio);
-    const options: CobeOptionsWithRender = {
+    const options: COBEOptions = {
       devicePixelRatio: pixelRatio,
       width: initialSize,
       height: initialSize,
@@ -94,17 +90,6 @@ export default function LandingCobeOrbit() {
       arcWidth: 0.45,
       arcHeight: 0.28,
       markerElevation: 0.035,
-      onRender: (state) => {
-        currentPhiOffset += (targetPhiOffset - currentPhiOffset) * ROTATION_EASE;
-        currentTheta += (targetTheta - currentTheta) * ROTATION_EASE;
-
-        state.phi = phi + currentPhiOffset;
-        state.theta = currentTheta;
-
-        if (!reducedMotion) {
-          phi += AUTO_ROTATION_SPEED;
-        }
-      },
     };
 
     try {
@@ -112,6 +97,22 @@ export default function LandingCobeOrbit() {
     } catch {
       return undefined;
     }
+
+    const animate = () => {
+      currentPhiOffset += (targetPhiOffset - currentPhiOffset) * ROTATION_EASE;
+      currentTheta += (targetTheta - currentTheta) * ROTATION_EASE;
+
+      globe?.update({
+        phi: phi + currentPhiOffset,
+        theta: currentTheta,
+      });
+
+      if (!reducedMotion) {
+        phi += AUTO_ROTATION_SPEED;
+      }
+
+      frameId = window.requestAnimationFrame(animate);
+    };
 
     const resize = () => {
       const size = getCanvasSize(canvas, pixelRatio);
@@ -184,6 +185,7 @@ export default function LandingCobeOrbit() {
       typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(resize);
 
     setDragging(false);
+    frameId = window.requestAnimationFrame(animate);
     observer?.observe(canvas);
     canvas.addEventListener("pointerdown", handlePointerDown);
     canvas.addEventListener("pointermove", handlePointerMove);
@@ -192,6 +194,7 @@ export default function LandingCobeOrbit() {
     window.addEventListener("resize", resize);
 
     return () => {
+      window.cancelAnimationFrame(frameId);
       observer?.disconnect();
       canvas.removeEventListener("pointerdown", handlePointerDown);
       canvas.removeEventListener("pointermove", handlePointerMove);
