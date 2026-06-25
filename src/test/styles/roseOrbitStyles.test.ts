@@ -61,4 +61,14 @@ describe("Rose Orbit landing styles", () => {
     expect(hasRule(".rose-hero__orbit-satellite--one")).toBe(false);
     expect(hasRule(".rose-hero__orbit-satellite--two")).toBe(false);
   });
+
+  it("animates the orbit core with visible pulse layers", () => {
+    const coreRule = extractRule(".rose-hero__orbit-core");
+    const pulseRule = extractRule(".rose-hero__orbit-core-pulse");
+
+    expect(coreRule).toContain("animation: rose-core-breathe");
+    expect(pulseRule).toContain("animation: rose-core-pulse");
+    expect(hasKeyframes("rose-core-breathe")).toBe(true);
+    expect(hasKeyframes("rose-core-pulse")).toBe(true);
+  });
 });
