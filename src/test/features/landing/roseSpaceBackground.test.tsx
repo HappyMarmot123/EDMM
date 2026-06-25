@@ -132,7 +132,7 @@ describe("DustySnow", () => {
 
     expect(new Set(styleValues("--size")).size).toBeGreaterThan(6);
     expect(new Set(stars.map((star) => star.dataset.depth)).size).toBe(3);
-    expect(styleValues("--trail-length").every(Boolean)).toBe(true);
+    expect(styleValues("--trail-length").every(Boolean)).toBe(false);
     expect(driftValues.some((value) => value < 0)).toBe(true);
     expect(driftValues.some((value) => value > 0)).toBe(true);
   });

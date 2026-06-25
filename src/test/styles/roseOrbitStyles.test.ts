@@ -20,6 +20,8 @@ const extractRule = (selector: string) => {
   return styles.slice(start, end + 2);
 };
 
+const hasRule = (selector: string) => styles.includes(`${selector} {`);
+
 describe("Rose Orbit landing styles", () => {
   it("keeps hero title and primary CTA free of gradient fills", () => {
     const titleRule = extractRule(".rose-hero__title");
@@ -38,5 +40,9 @@ describe("Rose Orbit landing styles", () => {
     expect(myGradientRule).toContain('content: ""');
     expect(myGradientRule).toContain("radial-gradient(var(--pink-main)");
     expect(myGradientRule).toContain("translateX(-50%) translateY(50vh)");
+  });
+
+  it("does not draw linear trail bars on rose stars", () => {
+    expect(hasRule(".rose-star::after")).toBe(false);
   });
 });

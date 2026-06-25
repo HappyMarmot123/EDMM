@@ -15,7 +15,6 @@ const depthProfiles = [
     blur: [0.6, 1.4],
     drift: [8, 18],
     duration: [28, 44],
-    trail: [8, 18],
   },
   {
     depth: "mid",
@@ -24,7 +23,6 @@ const depthProfiles = [
     blur: [0.2, 0.8],
     drift: [14, 30],
     duration: [22, 36],
-    trail: [14, 32],
   },
   {
     depth: "near",
@@ -33,7 +31,6 @@ const depthProfiles = [
     blur: [0, 0.35],
     drift: [22, 46],
     duration: [16, 28],
-    trail: [24, 58],
   },
 ] as const;
 
@@ -84,12 +81,6 @@ const createStars = (count: number) =>
         3
       )}s`,
       delay: `${toFixed(-between(seed + 1009, 0, profile.duration[1]), 3)}s`,
-      trailLength: `${toFixed(
-        between(seed + 1103, profile.trail[0], profile.trail[1]),
-        3
-      )}px`,
-      trailOpacity: Number(toFixed(between(seed + 1201, 0.16, 0.42))),
-      trailAngle: direction < 0 ? "28deg" : "152deg",
       twinkleDuration: `${toFixed(between(seed + 1301, 2.4, 5.8), 3)}s`,
       glowSize: `${toFixed(between(seed + 1409, 12, 30), 3)}px`,
     };
@@ -121,9 +112,6 @@ export default function DustySnow({
           "--fall-distance": star.fallDistance,
           "--duration": star.duration,
           "--delay": star.delay,
-          "--trail-length": star.trailLength,
-          "--trail-opacity": star.trailOpacity,
-          "--trail-angle": star.trailAngle,
           "--twinkle-duration": star.twinkleDuration,
           "--glow-size": star.glowSize,
         } as React.CSSProperties;
