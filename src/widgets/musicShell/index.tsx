@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Track } from "@/entities/track/model";
-import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
+import {
+  useCloudinaryTracks,
+} from "@/features/cloudinary/hooks/useCloudinaryTracks";
+import type { ResourceTypeFilter } from "@/shared/api/cloudinary/cloudinaryClient";
 import { useFavorites } from "@/features/library/hooks/useFavorites";
 import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
 import { getCachedTracks } from "@/shared/db/repositories/trackCacheRepo";
@@ -14,6 +17,7 @@ export interface MusicShellProps {
   onPlay?: (track: Track, queue?: Track[]) => void;
   initialView?: MusicView;
   initialTrackId?: string | null;
+  initialResourceType?: ResourceTypeFilter;
 }
 
 type CachedTrackState = {
@@ -26,6 +30,8 @@ const noop: NonNullable<MusicShellProps["onPlay"]> = () => {};
 const dedupeIds = (ids: Iterable<string>) => [...new Set(ids)];
 const isMusicView = (view: MusicView | undefined): view is MusicView =>
   view === "all" || view === "favorites" || view === "recent";
+const isResourceType = (value: ResourceTypeFilter | undefined): value is ResourceTypeFilter =>
+  value === "video" || value === "image" || value === "all";
 
 function useCachedTrackList(ids: string[]): CachedTrackState {
   const [state, setState] = useState<CachedTrackState>({
@@ -66,8 +72,12 @@ export function MusicShell({
   onPlay = noop,
   initialView,
   initialTrackId = null,
+  initialResourceType,
 }: MusicShellProps) {
   const normalizedInitialView = isMusicView(initialView) ? initialView : "all";
+  const [resourceType, setResourceType] = useState<ResourceTypeFilter>(
+    isResourceType(initialResourceType) ? initialResourceType : "all",
+  );
   const normalizedInitialTrackId =
     initialTrackId?.trim().length ? initialTrackId : null;
 
@@ -95,7 +105,10 @@ export function MusicShell({
     isLoading: isCatalogLoading,
     isError: isCatalogError,
     refetch,
-  } = useCloudinaryTracks(normalizedQuery);
+  } = useCloudinaryTracks(
+    normalizedQuery,
+    resourceType === "video" ? undefined : { resourceType },
+  );
   const catalogTracks = useMemo(() => cloudinaryData ?? [], [cloudinaryData]);
 
   const { favoriteIds } = useFavorites();
@@ -162,16 +175,18 @@ export function MusicShell({
 
   return (
     <main className="min-h-screen bg-[#050306] px-4 pb-32 pt-5 text-white sm:px-6 lg:px-8">
-      <section className="mx-auto grid w-full max-w-[1440px] gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <section className="mx-auto grid w-full gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         <section className="min-w-0 space-y-5">
           <MusicShellHeader
             query={query}
             view={view}
+            resourceType={resourceType}
             resultCount={catalogTracks.length}
             favoriteCount={favoriteTrackIds.length}
             recentCount={recentTrackIds.length}
             onQueryChange={setQuery}
             onViewChange={setView}
+            onResourceTypeChange={setResourceType}
           />
 
           <main

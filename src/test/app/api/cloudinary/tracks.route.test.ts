@@ -52,10 +52,10 @@ it("returns JSON tracks", async () => {
   const res = await GET(request("http://x/api/cloudinary/tracks"));
   const body = await res.json();
 
-  expect(fetchCloudinaryTracks).toHaveBeenCalledWith("", { resourceType: "video" });
+  expect(fetchCloudinaryTracks).toHaveBeenCalledWith("", { resourceType: "all" });
   expect(res.status).toBe(200);
   expect(res.headers.get("cache-control")).toBe(
-    buildCloudinaryCacheHeader(getCloudinaryTrackCachePolicy("video")),
+    buildCloudinaryCacheHeader(getCloudinaryTrackCachePolicy("all")),
   );
   expect(body).toEqual([{ id: "cloudinary:asset-1" }]);
 });
@@ -63,9 +63,7 @@ it("returns JSON tracks", async () => {
 it("passes q to the Cloudinary client", async () => {
   await GET(request("http://x/api/cloudinary/tracks?q=lemonade"));
 
-  expect(fetchCloudinaryTracks).toHaveBeenCalledWith("lemonade", {
-    resourceType: "video",
-  });
+  expect(fetchCloudinaryTracks).toHaveBeenCalledWith("lemonade", { resourceType: "all" });
 });
 
 it("passes filterPlayable=true to the Cloudinary client", async () => {

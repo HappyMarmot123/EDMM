@@ -86,7 +86,7 @@ describe("MusicShell", () => {
     expect(
       screen.getByRole("heading", { name: "EDMM catalog" }),
     ).toBeInTheDocument();
-    expect(mockUseCloudinaryTracks).toHaveBeenLastCalledWith("");
+    expect(mockUseCloudinaryTracks).toHaveBeenLastCalledWith("", { resourceType: "all" });
     expect(screen.getByText("Cloud Track One")).toBeInTheDocument();
     expect(screen.getByText("Cloud Track Two")).toBeInTheDocument();
   });
@@ -100,7 +100,7 @@ describe("MusicShell", () => {
       "  lemonade  ",
     );
 
-    expect(mockUseCloudinaryTracks).toHaveBeenLastCalledWith("lemonade");
+    expect(mockUseCloudinaryTracks).toHaveBeenLastCalledWith("lemonade", { resourceType: "all" });
     expect(screen.getByText("Cloud Track Two")).toBeInTheDocument();
   });
 

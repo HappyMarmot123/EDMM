@@ -7,11 +7,17 @@ import {
 } from "@/shared/api/cloudinary/cloudinaryClient";
 
 const parseResourceType = (value: string | null): ResourceTypeFilter => {
-  if (value === "video" || value === "image" || value === "all") {
-    return value;
+  const normalized = value?.trim().toLowerCase();
+
+  if (
+    normalized === "video" ||
+    normalized === "image" ||
+    normalized === "all"
+  ) {
+    return normalized;
   }
 
-  return "video";
+  return "all";
 };
 
 const parseFilterPlayable = (value: string | null) => {

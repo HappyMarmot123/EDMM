@@ -166,7 +166,7 @@ const PlayerControlsSection: React.FC<
           IconOnFalse={Play}
           onClick={togglePlayPause}
           label={playPauseLabel}
-          className="h-11 w-11 bg-white text-black hover:bg-[#ffd6e1]"
+          className="bg-white text-black hover:bg-[#ffd6e1]"
           disabled={!hasTrack}
           iconProps={{
             width: 22,
