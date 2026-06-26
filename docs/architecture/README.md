@@ -1,7 +1,8 @@
-﻿# search/library 플레이어 아키텍처 (2026-06-27)
+﻿# search 플레이어 아키텍처 (2026-06-27)
 
 ## 1) 런타임 범위
-- 주요 동작 진입점은 `/search`이고, `/library`는 `/search?view=favorites`로 리다이렉트되는 별칭 라우트입니다.
+- 주요 동작 진입점은 `/search`입니다.
+- `/library` 라우트는 제거되었고, 즐겨찾기 화면은 `/search?view=favorites` 쿼리로 접근합니다.
 - 플레이어 관련 동작은 `MusicShell`과 `AudioPlayerProvider` 조합이 담당합니다.
 - `/track/[id]`는 `/search?track=<id>`로 라우팅되는 기존 설계를 유지합니다.
 - 현재 작업 기준으로 초기 결합 지점은 정리되었고, 초기 시드/디테일/재생 동기화는 책임별 분리된 훅/도우미로 관리됩니다.
@@ -17,8 +18,7 @@ flowchart TD
   PS --> VL[views/search/index.tsx]
   VL --> MS[widgets/musicShell/index.tsx]
 
-  L --> LP[app/library/page.tsx]
-  LP -->|redirect| SRV[/search?view=favorites]
+
 
   TR[app/track/[id]/page.tsx] -->|decode+route| SRV2[/search?track=id]
   SRV2 --> SP
@@ -43,7 +43,7 @@ flowchart TD
 
 - 라우트 레이어
   - `app/search/page.tsx`, `app/search/searchPageClient.tsx`
-  - `app/library/page.tsx`, `app/track/[id]/page.tsx`
+  - `app/track/[id]/page.tsx`
 
 - 기능 레이어
   - `views/search/index.tsx` (검색 화면 구성)
@@ -131,7 +131,7 @@ sequenceDiagram
   - `recentPlaysRepo`: `addRecentPlay`
 
 - 라우팅/쿼리
-  - `/library` 리다이렉트, `/track/[id]` 라우트 정규화 로직
+  - `/track/[id]` 정규화 라우팅 로직, `/search` 쿼리(view/track) 바인딩
 
 - UI 효과
   - `MusicShell`: 상세 열림 상태, 선택 트랙 id, 시드 소스 제어
@@ -230,7 +230,7 @@ sequenceDiagram
    - 목록 행 클릭 시 상세 표시 후 재생 전환
    - 썸네일(상세/플레이어) 동기화
    - hydration mismatch 경고 없음
-   - 라우팅 리다이렉트(`/library`, `/track/[id]`) 정상 동작
+  - 라우팅/쿼리(`/track/[id]`, `/search` view/track) 정상 동작
 
 ## 14) 작업별 실패 포인트 / 롤백 포인트
 
@@ -299,8 +299,25 @@ sequenceDiagram
 ### 14-7) 라우팅/쿼리 변경
 
 - 실패 포인트
-  - `/library` 리다이렉트 또는 `/track/[id]` decode 분기에서 view 파라미터가 유실됨
+  - `/track/[id]` decode 분기에서 `view` 파라미터가 유실됨
   - 쿼리 갱신 타이밍에 따라 첫 시드가 비어 있음
 - 롤백 포인트
-  - 라우팅 전환은 `app/library/page.tsx`, `app/track/[id]/page.tsx` 각각 개별 파일 단위로 되돌릴 수 있음
+  - 라우팅 전환은 `app/track/[id]/page.tsx` 각각 개별 파일 단위로 되돌릴 수 있음
   - 쿼리 우선순위 규칙을 임시로 `trackId` > `view` > 기본값으로 고정해 안정 동작 확보
+
+### 14-8) `"/" -> "/search"` 진입 초기화 이슈
+
+- 원인
+  - `"/"` 에서 `"/search"` 이동 시 `initialTrackId`가 비어 있으므로, `MusicShell`가 새 세션처럼 `selectionSource`를 `null`로 두고 최근 트랙/첫 곡 시드를 시도할 가능성이 있음.
+  - 재생 중이어도 링크가 단순 `/search` 고정 경로라면 `SearchPage`가 현재 트랙을 알 수 없음.
+
+- 대응(현재 적용)
+  - 랜딩 Hero/Footer에서 현재 플레이어 `currentTrackId`를 읽어 `/search` 링크에 `track` 쿼리를 붙임.
+    - 예: `/search?track=<assetId>`
+  - `/track/[id]` 및 `/search` 진입에서 `view`/`track` 쿼리 보존 규칙으로 현재 컨텍스트 복구를 유지.
+  - `MusicShell`는 `initialTrackId` 또는 현재 오디오 트랙(`currentTrackId`)를 기반으로 초기 `selectionSource`/`selectedTrackId`를 유지하도록 보정.
+
+- 롤백 포인트
+  - 링크 보존 로직만 되돌리면 즉시 기존 동작으로 복귀 가능
+  - 필요 시 `MusicShell`의 `selectionSource` 초기화 로직만 이전 버전으로 되돌려 비교 검증
+

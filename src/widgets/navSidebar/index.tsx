@@ -3,7 +3,6 @@ import Link from "next/link";
 const navItems = [
   { href: "/", label: "Home" },
   { href: "/search", label: "Search" },
-  { href: "/library", label: "Library" },
 ];
 
 export function NavSidebar() {

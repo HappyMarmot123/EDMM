@@ -37,10 +37,6 @@ describe("Landing", () => {
       "href",
       "/search"
     );
-    expect(screen.getByRole("link", { name: "Open library" })).toHaveAttribute(
-      "href",
-      "/library"
-    );
     expect(screen.getAllByTestId("parallax")).toHaveLength(2);
     expect(container.querySelector(".rose-followup__links")).toBeNull();
     expect(screen.getByTestId("rose-footer")).toBeInTheDocument();

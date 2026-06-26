@@ -7,7 +7,6 @@ import {
   Clock3,
   Disc3,
   ExternalLink,
-  Library,
   Music2,
   Play,
   Radio,
@@ -86,13 +85,6 @@ function MissingTrackState({ trackId }: { trackId: string }) {
             >
               <Search size={18} aria-hidden="true" />
               Search for music
-            </Link>
-            <Link
-              href="/library"
-              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/10 px-5 text-sm font-bold text-white/72 transition-colors hover:border-white/30 hover:text-white"
-            >
-              <Library size={18} aria-hidden="true" />
-              Open library
             </Link>
           </div>
         </div>
@@ -202,13 +194,6 @@ export function TrackDetailView({ trackId, onPlay }: TrackDetailViewProps) {
           >
             <ArrowLeft size={17} aria-hidden="true" />
             Back to search
-          </Link>
-          <Link
-            href="/library"
-            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/10 px-4 text-sm font-bold text-white/58 transition-colors hover:border-white/30 hover:text-white"
-          >
-            <Library size={17} aria-hidden="true" />
-            Library
           </Link>
         </nav>
 

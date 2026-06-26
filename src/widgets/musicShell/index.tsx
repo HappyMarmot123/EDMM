@@ -7,6 +7,7 @@ import type { ResourceTypeFilter } from "@/shared/api/cloudinary/cloudinaryClien
 import { useFavorites } from "@/features/library/hooks/useFavorites";
 import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
 import { getCachedTracks } from "@/shared/db/repositories/trackCacheRepo";
+import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import MusicShellHeader, { type MusicView } from "./musicShellHeader";
 import MusicTrackList from "./musicTrackList";
 import TrackDetailAside from "./trackDetailAside";
@@ -97,6 +98,7 @@ export function MusicShell({
     normalizedInitialTrackId ? "initial" : null,
   );
   const [isDetailOpen, setIsDetailOpen] = useState(true);
+  const currentTrackId = useAudioPlayer().currentTrack?.assetId ?? null;
 
   const seededTrackIdRef = useRef<string | null>(null);
   useEffect(() => {
@@ -104,9 +106,23 @@ export function MusicShell({
   }, [normalizedInitialView]);
 
   useEffect(() => {
-    setSelectedTrackId(normalizedInitialTrackId);
-    setSelectionSource(normalizedInitialTrackId ? "initial" : null);
-  }, [normalizedInitialTrackId]);
+    if (normalizedInitialTrackId) {
+      setSelectedTrackId(normalizedInitialTrackId);
+      setSelectionSource("initial");
+      return;
+    }
+
+    if (currentTrackId) {
+      setSelectedTrackId((previousId) =>
+        previousId === currentTrackId ? previousId : currentTrackId,
+      );
+      setSelectionSource("visible");
+      return;
+    }
+
+    setSelectedTrackId(null);
+    setSelectionSource(null);
+  }, [currentTrackId, normalizedInitialTrackId]);
 
   const normalizedQuery = query.trim();
   const {
@@ -151,7 +167,7 @@ export function MusicShell({
   }, [selectedTrackId, visibleTracks]);
   const visibleSelectedTrackId = selectedTrack?.id ?? null;
   const detailSelectedTrackId =
-    selectionSource === "initial" ? selectedTrackId : visibleSelectedTrackId;
+    selectionSource === "initial" ? selectedTrackId : visibleSelectedTrackId ?? selectedTrackId;
 
   const queueForTrack = useCallback(
     (track: Track) =>
@@ -188,41 +204,20 @@ export function MusicShell({
   };
 
   const handlePlay = (track: Track) => {
-    activateTrackInPlayer(track, true, "visible", visibleTracks);
+    activateTrackInPlayer(track, true, "visible", queueForTrack(track));
   };
-
-  const clearSelectedTrack = useCallback(() => {
-    setSelectedTrackId(null);
-    setSelectionSource(null);
-  }, []);
-
-  const clearSeededTrack = useCallback(() => {
-    if (selectedTrackId && seededTrackIdRef.current === selectedTrackId) {
-      seededTrackIdRef.current = null;
-    }
-  }, [selectedTrackId]);
 
   const fallbackToFirstPlayable = useCallback(() => {
     const fallbackTrack = firstPlayableTrack(visibleTracks);
 
     if (!fallbackTrack) {
-      clearSelectedTrack();
+      setSelectedTrackId(null);
+      setSelectionSource(null);
       return;
     }
 
     activateTrackInPlayer(fallbackTrack, false, "initial", queueForTrack(fallbackTrack));
-  }, [clearSelectedTrack, activateTrackInPlayer, queueForTrack, visibleTracks]);
-
-  useEffect(() => {
-    if (
-      selectedTrackId &&
-      selectionSource === "visible" &&
-      !visibleTrackIds.has(selectedTrackId)
-    ) {
-      clearSelectedTrack();
-      clearSeededTrack();
-    }
-  }, [selectedTrackId, selectionSource, clearSeededTrack, clearSelectedTrack, visibleTrackIds]);
+  }, [activateTrackInPlayer, queueForTrack, visibleTracks]);
 
   useMusicShellTrackSeed({
     selectionSource,

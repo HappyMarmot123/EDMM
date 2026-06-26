@@ -1,8 +1,16 @@
+"use client";
+
 import Link from "next/link";
 import DeprecatedRoseHeroOrbit from "./deprecatedRoseHeroOrbit";
 import LandingCobeOrbit from "./landingCobeOrbit";
+import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 
 export default function Hero() {
+  const currentTrackId = useAudioPlayer().currentTrack?.assetId ?? "";
+  const searchHref = currentTrackId
+    ? `/search?track=${encodeURIComponent(currentTrackId)}`
+    : "/search";
+
   return (
     <section className="rose-hero" aria-labelledby="rose-hero-title">
       <div className="rose-hero__inner">
@@ -21,11 +29,11 @@ export default function Hero() {
             with you, and keep the whole session inside a rose-lit signal.
           </p>
           <div className="rose-hero__actions">
-            <Link className="rose-hero__cta rose-hero__cta--primary" href="/search">
+            <Link
+              className="rose-hero__cta rose-hero__cta--primary"
+              href={searchHref}
+            >
               Start listening
-            </Link>
-            <Link className="rose-hero__cta rose-hero__cta--secondary" href="/library">
-              Open library
             </Link>
           </div>
           <div className="rose-hero__meta" aria-label="EDMM landing signals">

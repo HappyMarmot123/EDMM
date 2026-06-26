@@ -10,9 +10,5 @@ describe("NavSidebar", () => {
       "href",
       "/search",
     );
-    expect(screen.getByRole("link", { name: "Library" })).toHaveAttribute(
-      "href",
-      "/library",
-    );
   });
 });

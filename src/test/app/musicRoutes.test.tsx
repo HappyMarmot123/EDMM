@@ -1,4 +1,3 @@
-import LibraryPage from "@/app/library/page";
 import TrackPage from "@/app/track/[id]/page";
 
 jest.mock("next/navigation", () => ({
@@ -11,10 +10,6 @@ jest.mock("next/navigation", () => ({
 describe("music route compatibility redirects", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-  });
-
-  it("redirects /library to the shell favorites view", () => {
-    expect(() => LibraryPage()).toThrow("NEXT_REDIRECT:/search?view=favorites");
   });
 
   it("redirects /track/[id] to the shell detail aside selection", async () => {
