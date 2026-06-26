@@ -88,7 +88,7 @@ const createStars = (count: number) =>
 
 export default function DustySnow({
   reducedMotion = false,
-  count = 96,
+  count = 72,
 }: DustySnowProps) {
   const starCount = reducedMotion ? Math.min(count, 54) : count;
   const stars = useMemo(() => createStars(starCount), [starCount]);

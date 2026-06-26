@@ -102,11 +102,11 @@ describe("DustySnow", () => {
     expect(starfield).toHaveClass("rose-starfield");
   });
 
-  it("renders 96 stars by default", async () => {
+  it("renders 72 stars by default", async () => {
     render(<DustySnow />);
 
     const starfield = await screen.findByTestId("rose-starfield");
-    expect(starfield.querySelectorAll(".rose-star")).toHaveLength(96);
+    expect(starfield.querySelectorAll(".rose-star")).toHaveLength(72);
   });
 
   it("keeps the starfield right aligned at 80 percent width", () => {
