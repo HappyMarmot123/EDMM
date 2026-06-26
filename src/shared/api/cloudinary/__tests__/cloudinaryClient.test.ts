@@ -1,7 +1,9 @@
 import {
   buildCloudinaryExpression,
   clearCloudinaryTrackCacheForTests,
+  buildCloudinaryCacheHeader,
   fetchCloudinaryTracks,
+  getCloudinaryTrackCachePolicy,
 } from "../cloudinaryClient";
 
 global.fetch = jest.fn();
@@ -106,6 +108,25 @@ describe("buildCloudinaryExpression", () => {
 
     expect(expression).toContain("public_id:eight*");
     expect(expression).not.toContain("public_id:nine*");
+  });
+});
+
+describe("cache policy", () => {
+  it("returns default cache policies by resource type", () => {
+    expect(getCloudinaryTrackCachePolicy("video").cacheTtlMs).toBe(60_000);
+    expect(getCloudinaryTrackCachePolicy("image").cacheTtlMs).toBe(300_000);
+    expect(getCloudinaryTrackCachePolicy("all").cacheTtlMs).toBe(120_000);
+  });
+
+  it("builds cache headers from policy", () => {
+    const header = buildCloudinaryCacheHeader({
+      cacheTtlMs: 90_000,
+      maxResults: 50,
+    });
+
+    expect(header).toBe(
+      "public, max-age=90, s-maxage=90, stale-while-revalidate=90",
+    );
   });
 });
 

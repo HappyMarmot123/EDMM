@@ -46,7 +46,7 @@ it("calls the Cloudinary tracks route with encoded nonblank query", async () => 
 
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-  expect(mockFetch).toHaveBeenCalledWith("/api/cloudinary/tracks?q=lemonade");
+  expect(mockFetch).toHaveBeenCalledWith("/api/cloudinary/tracks/video?q=lemonade");
   expect(mockCacheTrack).toHaveBeenCalledWith(
     expect.objectContaining({
       id: "cloudinary:asset-1",
@@ -70,8 +70,26 @@ it("calls the Cloudinary tracks route with all resource type", async () => {
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
   expect(mockFetch).toHaveBeenCalledWith(
-    "/api/cloudinary/tracks?q=lemonade&resourceType=all",
+    "/api/cloudinary/tracks?resourceType=all&q=lemonade",
   );
+});
+
+it("calls the dedicated image tracks route", async () => {
+  mockFetch.mockResolvedValue({
+    ok: true,
+    json: async () => [{ id: "cloudinary:asset-1" }],
+  });
+
+  const { result } = renderHook(
+    () => useCloudinaryTracks("  lemonade  ", { resourceType: "image" }),
+    {
+      wrapper: createWrapper(),
+    },
+  );
+
+  await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+  expect(mockFetch).toHaveBeenCalledWith("/api/cloudinary/tracks/image?q=lemonade");
 });
 
 it("calls the Cloudinary tracks route with filterPlayable=false", async () => {
@@ -94,7 +112,7 @@ it("calls the Cloudinary tracks route with filterPlayable=false", async () => {
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
   expect(mockFetch).toHaveBeenCalledWith(
-    "/api/cloudinary/tracks?q=lemonade&resourceType=all&filterPlayable=false",
+    "/api/cloudinary/tracks?resourceType=all&q=lemonade&filterPlayable=false",
   );
 });
 
@@ -110,7 +128,7 @@ it("omits q for blank queries", async () => {
 
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-  expect(mockFetch).toHaveBeenCalledWith("/api/cloudinary/tracks");
+  expect(mockFetch).toHaveBeenCalledWith("/api/cloudinary/tracks/video");
 });
 
 it("logs cache failures without failing the query", async () => {

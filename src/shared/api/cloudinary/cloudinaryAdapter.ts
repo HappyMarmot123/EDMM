@@ -41,6 +41,7 @@ const readString = (
 export function adaptCloudinaryTrack(resource: CloudinaryResource): Track {
   const custom = resource.context?.custom;
   const metadata = resource.metadata;
+  const resourceType = resource.resource_type ?? "video";
   const assetId = resource.asset_id || resource.public_id;
   const title =
     readString(custom, "title") ??
@@ -54,10 +55,12 @@ export function adaptCloudinaryTrack(resource: CloudinaryResource): Track {
     readString(custom, "album") ??
     readString(metadata, "album") ??
     folderName(resource.public_id);
-  const artworkUrl =
+  const artworkFromSource =
     readString(custom, "artworkUrl") ??
     readString(metadata, "artworkUrl") ??
-    "";
+    (resourceType === "image" ? resource.secure_url ?? "" : "");
+  const artworkUrl =
+    artworkFromSource ?? "";
 
   return {
     id: `cloudinary:${assetId}`,
@@ -73,7 +76,7 @@ export function adaptCloudinaryTrack(resource: CloudinaryResource): Track {
       publicId: resource.public_id,
       assetId: resource.asset_id,
       format: resource.format,
-      resourceType: resource.resource_type,
+      resourceType,
       type: resource.type,
       bytes: resource.bytes,
       createdAt: resource.created_at,

@@ -4,14 +4,24 @@ import {
   type CloudinaryResource,
 } from "./cloudinaryAdapter";
 
-const CACHE_TTL_MS = 60_000;
-const MAX_CACHE_ENTRIES = 100;
-const MAX_RESULTS = 100;
+export type ResourceTypeFilter = "video" | "image" | "all";
+
+const DEFAULT_MAX_CACHE_ENTRIES = 100;
+const VIDEO_CACHE_TTL_MS = 60_000;
+const VIDEO_MAX_RESULTS = 100;
+const IMAGE_CACHE_TTL_MS = 300_000;
+const IMAGE_MAX_RESULTS = 100;
+const ALL_CACHE_TTL_MS = 120_000;
+const ALL_MAX_RESULTS = 100;
 const MAX_PAGES = 20;
 const MAX_SEARCH_TOKENS = 8;
 const SEARCH_TOKEN_REGEX = /[\p{L}\p{N}_-]+/gu;
 const SEARCH_FIELDS = ["public_id", "filename", "tags", "context"] as const;
-type ResourceTypeFilter = "video" | "image" | "all";
+
+export type CloudinaryCachePolicy = {
+  cacheTtlMs: number;
+  maxResults?: number;
+};
 
 type CacheEntry = {
   expiresAt: number;
@@ -19,6 +29,12 @@ type CacheEntry = {
 };
 
 const responseCache = new Map<string, CacheEntry>();
+
+const policyByResourceType: Record<ResourceTypeFilter, CloudinaryCachePolicy> = {
+  video: { cacheTtlMs: VIDEO_CACHE_TTL_MS, maxResults: VIDEO_MAX_RESULTS },
+  image: { cacheTtlMs: IMAGE_CACHE_TTL_MS, maxResults: IMAGE_MAX_RESULTS },
+  all: { cacheTtlMs: ALL_CACHE_TTL_MS, maxResults: ALL_MAX_RESULTS },
+};
 
 const assertServerEnvironment = () => {
   const hasNodeProcess =
@@ -60,7 +76,7 @@ const pruneCloudinaryTrackCache = (now: number) => {
     if (entry.expiresAt <= now) responseCache.delete(key);
   }
 
-  while (responseCache.size > MAX_CACHE_ENTRIES) {
+  while (responseCache.size > DEFAULT_MAX_CACHE_ENTRIES) {
     const oldestKey = responseCache.keys().next().value;
     if (oldestKey === undefined) break;
     responseCache.delete(oldestKey);
@@ -70,6 +86,24 @@ const pruneCloudinaryTrackCache = (now: number) => {
 type FetchCloudinaryTrackOptions = {
   resourceType?: ResourceTypeFilter;
   filterPlayable?: boolean;
+  cachePolicy?: CloudinaryCachePolicy;
+};
+
+const getCloudinaryTrackPolicy = (
+  resourceType: ResourceTypeFilter,
+  filterPlayable = false,
+): CloudinaryCachePolicy => {
+  const defaultPolicy = policyByResourceType[resourceType];
+
+  if (resourceType === "all" && filterPlayable) {
+    return {
+      ...defaultPolicy,
+      cacheTtlMs: Math.max(Math.floor(defaultPolicy.cacheTtlMs / 2), 30_000),
+      maxResults: defaultPolicy.maxResults,
+    };
+  }
+
+  return defaultPolicy;
 };
 
 const isPlayableCloudinaryTrack = (track: Track) => {
@@ -103,6 +137,21 @@ export function clearCloudinaryTrackCacheForTests() {
   responseCache.clear();
 }
 
+export const getCloudinaryTrackCachePolicy = (
+  resourceType: ResourceTypeFilter,
+  filterPlayable = false,
+): CloudinaryCachePolicy => {
+  return getCloudinaryTrackPolicy(resourceType, filterPlayable);
+};
+
+export const buildCloudinaryCacheHeader = (
+  policy: CloudinaryCachePolicy,
+) => {
+  const maxAgeSeconds = Math.max(1, Math.floor(policy.cacheTtlMs / 1000));
+
+  return `public, max-age=${maxAgeSeconds}, s-maxage=${maxAgeSeconds}, stale-while-revalidate=${maxAgeSeconds}`;
+};
+
 export async function fetchCloudinaryTracks(
   query = "",
   options: FetchCloudinaryTrackOptions = {},
@@ -113,6 +162,8 @@ export async function fetchCloudinaryTracks(
   const normalizedQuery = query.trim();
   const resourceType = options?.resourceType ?? "video";
   const filterPlayable = options.filterPlayable ?? false;
+  const cachePolicy =
+    options.cachePolicy ?? getCloudinaryTrackPolicy(resourceType, filterPlayable);
   const now = Date.now();
   pruneCloudinaryTrackCache(now);
 
@@ -120,6 +171,7 @@ export async function fetchCloudinaryTracks(
     query: normalizedQuery,
     resourceType,
     filterPlayable,
+    maxResults: cachePolicy.maxResults ?? 100,
   });
 
   const cached = responseCache.get(cacheKey);
@@ -137,7 +189,10 @@ export async function fetchCloudinaryTracks(
       `https://api.cloudinary.com/v1_1/${cloudName}/resources/search`,
     );
     url.searchParams.set("expression", expression);
-    url.searchParams.set("max_results", String(MAX_RESULTS));
+    url.searchParams.set(
+      "max_results",
+      String(cachePolicy.maxResults ?? 100),
+    );
     url.searchParams.append("with_field", "tags");
     url.searchParams.append("with_field", "context");
 
@@ -176,7 +231,7 @@ export async function fetchCloudinaryTracks(
   const fetchedAt = Date.now();
 
   responseCache.set(cacheKey, {
-    expiresAt: fetchedAt + CACHE_TTL_MS,
+    expiresAt: fetchedAt + cachePolicy.cacheTtlMs,
     tracks,
   });
   pruneCloudinaryTrackCache(fetchedAt);

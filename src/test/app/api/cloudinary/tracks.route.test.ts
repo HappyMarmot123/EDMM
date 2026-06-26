@@ -1,20 +1,37 @@
 import { GET } from "@/app/api/cloudinary/tracks/route";
-import { fetchCloudinaryTracks } from "@/shared/api/cloudinary/cloudinaryClient";
+import {
+  buildCloudinaryCacheHeader,
+  fetchCloudinaryTracks,
+  getCloudinaryTrackCachePolicy,
+} from "@/shared/api/cloudinary/cloudinaryClient";
 
-jest.mock("@/shared/api/cloudinary/cloudinaryClient", () => ({
-  fetchCloudinaryTracks: jest.fn(async () => [{ id: "cloudinary:asset-1" }]),
-}));
+jest.mock("@/shared/api/cloudinary/cloudinaryClient", () => {
+  const actual = jest.requireActual(
+    "@/shared/api/cloudinary/cloudinaryClient",
+  );
+
+  return {
+    ...actual,
+    fetchCloudinaryTracks: jest.fn(async () => [{ id: "cloudinary:asset-1" }]),
+  };
+});
 
 jest.mock("next/server", () => ({
   NextResponse: {
-    json: (body: unknown, init?: { status?: number }) => ({
+    json: (body: unknown, init?: { status?: number; headers?: Record<string, string> }) => {
+      const headers = init?.headers ?? {};
+      const map = new Map<string, string>();
+
+      Object.entries(headers).forEach(([key, value]) => {
+        map.set(key.toLowerCase(), String(value));
+      });
+
+      return {
       status: init?.status ?? 200,
-      headers: {
-        get: (name: string) =>
-          name.toLowerCase() === "content-type" ? "application/json" : null,
-      },
+      headers: { get: (name: string) => map.get(name.toLowerCase()) ?? null },
       json: async () => body,
-    }),
+      };
+    },
   },
 }));
 
@@ -37,6 +54,9 @@ it("returns JSON tracks", async () => {
 
   expect(fetchCloudinaryTracks).toHaveBeenCalledWith("", { resourceType: "video" });
   expect(res.status).toBe(200);
+  expect(res.headers.get("cache-control")).toBe(
+    buildCloudinaryCacheHeader(getCloudinaryTrackCachePolicy("video")),
+  );
   expect(body).toEqual([{ id: "cloudinary:asset-1" }]);
 });
 

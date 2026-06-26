@@ -2,38 +2,71 @@ import { useQuery } from "@tanstack/react-query";
 import type { Track } from "@/entities/track/model";
 import { cacheTrack } from "@/shared/db/repositories/trackCacheRepo";
 import { useHydrated } from "@/shared/hooks/useHydrated";
+import type { ResourceTypeFilter } from "@/shared/api/cloudinary/cloudinaryClient";
 
-type ResourceTypeFilter = "video" | "image" | "all";
 type CloudinaryTrackQueryOptions = {
   resourceType?: ResourceTypeFilter;
   filterPlayable?: boolean;
 };
 
-const toSearchParams = (query: string, options?: CloudinaryTrackQueryOptions) => {
-  const suffix = query ? `?q=${encodeURIComponent(query)}` : "";
-  const params = new URLSearchParams(suffix ? suffix.slice(1) : undefined);
+const TRACK_LIST_BASE = "/api/cloudinary/tracks";
+const TRACK_LIST_ENDPOINTS: Record<ResourceTypeFilter, string> = {
+  video: `${TRACK_LIST_BASE}/video`,
+  image: `${TRACK_LIST_BASE}/image`,
+  all: TRACK_LIST_BASE,
+};
 
-  if (options?.resourceType) {
-    params.set("resourceType", options.resourceType);
+const toSearchParams = (
+  resourceType: ResourceTypeFilter,
+  query: string,
+  includeFilterPlayable: boolean,
+  filterPlayable?: boolean,
+) => {
+  const params = new URLSearchParams();
+
+  if (resourceType === "all") {
+    params.set("resourceType", resourceType);
   }
 
-  if (options?.filterPlayable !== undefined) {
-    params.set("filterPlayable", options.filterPlayable ? "true" : "false");
+  if (query) {
+    params.set("q", query);
+  }
+
+  if (includeFilterPlayable && filterPlayable !== undefined) {
+    params.set("filterPlayable", filterPlayable ? "true" : "false");
   }
 
   const serialized = params.toString();
+
   return serialized ? `?${serialized}` : "";
+};
+
+const toEndpoint = (options?: CloudinaryTrackQueryOptions) => {
+  const resourceType = options?.resourceType ?? "video";
+  return TRACK_LIST_ENDPOINTS[resourceType];
+};
+
+const shouldIncludeFilterPlayable = (resourceType: ResourceTypeFilter) => {
+  return resourceType === "all";
+};
+
+const toFetchUrl = (query: string, options?: CloudinaryTrackQueryOptions) => {
+  const resourceType = options?.resourceType ?? "video";
+  const suffix = toSearchParams(
+    resourceType,
+    query,
+    shouldIncludeFilterPlayable(resourceType),
+    options?.filterPlayable,
+  );
+
+  return `${toEndpoint({ ...options, resourceType })}${suffix}`;
 };
 
 async function getCloudinaryTracks(
   query: string,
   options?: CloudinaryTrackQueryOptions,
 ): Promise<Track[]> {
-  const suffix = toSearchParams(query, {
-    ...options,
-    filterPlayable: options?.filterPlayable,
-  });
-  const response = await fetch(`/api/cloudinary/tracks${suffix}`);
+  const response = await fetch(toFetchUrl(query, options));
 
   if (!response.ok) throw new Error("cloudinary tracks fetch failed");
 

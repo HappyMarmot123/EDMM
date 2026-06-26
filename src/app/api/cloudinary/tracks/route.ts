@@ -1,22 +1,53 @@
 import { NextResponse } from "next/server";
-import { fetchCloudinaryTracks } from "@/shared/api/cloudinary/cloudinaryClient";
+import {
+  buildCloudinaryCacheHeader,
+  fetchCloudinaryTracks,
+  getCloudinaryTrackCachePolicy,
+  type ResourceTypeFilter,
+} from "@/shared/api/cloudinary/cloudinaryClient";
+
+const parseResourceType = (value: string | null): ResourceTypeFilter => {
+  if (value === "video" || value === "image" || value === "all") {
+    return value;
+  }
+
+  return "video";
+};
+
+const parseFilterPlayable = (value: string | null) => {
+  if (value === null) return undefined;
+  return value === "true";
+};
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const query = requestUrl.searchParams.get("q") ?? "";
-  const resourceTypeParam = requestUrl.searchParams.get("resourceType");
-  const filterPlayableParam = requestUrl.searchParams.get("filterPlayable");
-  const filterPlayable =
-    filterPlayableParam === null ? undefined : filterPlayableParam === "true";
-  const resourceType = ["video", "image", "all"].includes(
-    resourceTypeParam ?? "",
-  )
-    ? (resourceTypeParam as "video" | "image" | "all")
-    : "video";
+  const resourceType = parseResourceType(requestUrl.searchParams.get("resourceType"));
+  const filterPlayable = parseFilterPlayable(
+    requestUrl.searchParams.get("filterPlayable"),
+  );
+  const cachePolicy = getCloudinaryTrackCachePolicy(resourceType, filterPlayable ?? false);
+  const fetchOptions: { resourceType: ResourceTypeFilter; filterPlayable?: boolean } =
+    {
+      resourceType,
+    };
 
   try {
+    if (filterPlayable !== undefined) {
+      fetchOptions.filterPlayable = filterPlayable;
+    }
+
+    const tracks = await fetchCloudinaryTracks(query, {
+      ...fetchOptions,
+    });
+
     return NextResponse.json(
-      await fetchCloudinaryTracks(query, { resourceType, filterPlayable }),
+      tracks,
+      {
+        headers: {
+          "Cache-Control": buildCloudinaryCacheHeader(cachePolicy),
+        },
+      },
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
