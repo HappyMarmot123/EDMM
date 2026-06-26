@@ -45,6 +45,12 @@ describe("buildCloudinaryExpression", () => {
     );
   });
 
+  it("builds unscoped video expression when folder mode is all", () => {
+    expect(buildCloudinaryExpression("all", "")).toBe("resource_type:video");
+    expect(buildCloudinaryExpression("*", "")).toBe("resource_type:video");
+    expect(buildCloudinaryExpression("any", "")).toBe("resource_type:video");
+  });
+
   it("builds prefix wildcard search clauses from safe tokens", () => {
     const expression = buildCloudinaryExpression(
       "edmm/media-pipeline",
@@ -120,6 +126,21 @@ describe("fetchCloudinaryTracks", () => {
       id: "cloudinary:asset-1",
       source: "cloudinary",
     });
+  });
+
+  it("calls Cloudinary Search without folder scope for wildcard folder mode", async () => {
+    process.env.CLOUDINARY_AUDIO_FOLDER = "all";
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ resources: [rawResource] }),
+    });
+
+    await fetchCloudinaryTracks("");
+
+    const requestUrl = mockFetch.mock.calls[0][0];
+    const url = new URL(requestUrl.toString());
+
+    expect(url.searchParams.get("expression")).toBe("resource_type:video");
   });
 
   it("fetches all Cloudinary pages using next_cursor", async () => {
