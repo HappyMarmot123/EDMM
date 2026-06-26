@@ -45,12 +45,6 @@ describe("buildCloudinaryExpression", () => {
     );
   });
 
-  it("builds unscoped video expression when folder mode is all", () => {
-    expect(buildCloudinaryExpression("all", "")).toBe("resource_type:video");
-    expect(buildCloudinaryExpression("*", "")).toBe("resource_type:video");
-    expect(buildCloudinaryExpression("any", "")).toBe("resource_type:video");
-  });
-
   it("builds prefix wildcard search clauses from safe tokens", () => {
     const expression = buildCloudinaryExpression(
       "edmm/media-pipeline",
@@ -94,7 +88,7 @@ describe("buildCloudinaryExpression", () => {
 });
 
 describe("fetchCloudinaryTracks", () => {
-  it("calls Cloudinary Search with unscoped resource_type:video by default", async () => {
+  it("calls Cloudinary Search with folder-scoped video expression by default", async () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({ resources: [rawResource] }),
@@ -110,7 +104,9 @@ describe("fetchCloudinaryTracks", () => {
 
     expect(url.origin).toBe("https://api.cloudinary.com");
     expect(url.pathname).toBe("/v1_1/demo/resources/search");
-    expect(url.searchParams.get("expression")).toBe("resource_type:video");
+    expect(url.searchParams.get("expression")).toBe(
+      'resource_type:video AND (asset_folder="edmm/media-pipeline" OR folder="edmm/media-pipeline")',
+    );
     expect(url.searchParams.getAll("with_field")).toEqual(["tags", "context"]);
     expect(init).toMatchObject({
       cache: "no-store",
@@ -124,23 +120,6 @@ describe("fetchCloudinaryTracks", () => {
       id: "cloudinary:asset-1",
       source: "cloudinary",
     });
-  });
-
-  it("keeps folder scope when explicitly requested", async () => {
-    process.env.CLOUDINARY_CATALOG_SCOPE = "folder";
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ resources: [rawResource] }),
-    });
-
-    await fetchCloudinaryTracks("");
-
-    const requestUrl = mockFetch.mock.calls[0][0];
-    const url = new URL(requestUrl.toString());
-
-    expect(url.searchParams.get("expression")).toBe(
-      'resource_type:video AND (asset_folder="edmm/media-pipeline" OR folder="edmm/media-pipeline")',
-    );
   });
 
   it("fetches all Cloudinary pages using next_cursor", async () => {

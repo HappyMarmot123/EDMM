@@ -37,28 +37,16 @@ const requiredEnv = () => {
   const apiKey = process.env.CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
   const folder = process.env.CLOUDINARY_AUDIO_FOLDER?.trim() ?? "";
-  const catalogScope = process.env.CLOUDINARY_CATALOG_SCOPE?.trim().toLowerCase() ?? "";
-  const isFolderScope = catalogScope === "folder";
 
-  if (!cloudName || !apiKey || !apiSecret) {
+  if (!cloudName || !apiKey || !apiSecret || !folder) {
     throw new Error("Cloudinary configuration is missing");
   }
 
-  return { cloudName, apiKey, apiSecret, folder: isFolderScope ? folder : "" };
+  return { cloudName, apiKey, apiSecret, folder };
 };
 
 const escapeExpressionValue = (value: string) =>
   value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-
-const isFolderScoped = (value: string) => {
-  const normalized = value.trim().toLowerCase();
-  return (
-    normalized.length > 0 &&
-    normalized !== "all" &&
-    normalized !== "*" &&
-    normalized !== "any"
-  );
-};
 
 const searchTokens = (query: string) =>
   (query.match(SEARCH_TOKEN_REGEX) ?? []).slice(0, MAX_SEARCH_TOKENS);
@@ -80,9 +68,7 @@ const pruneCloudinaryTrackCache = (now: number) => {
 
 export function buildCloudinaryExpression(folder: string, query: string) {
   const normalizedFolder = folder.trim();
-  const base = isFolderScoped(normalizedFolder)
-    ? `resource_type:video AND (asset_folder="${escapeExpressionValue(normalizedFolder)}" OR folder="${escapeExpressionValue(normalizedFolder)}")`
-    : "resource_type:video";
+  const base = `resource_type:video AND (asset_folder="${escapeExpressionValue(normalizedFolder)}" OR folder="${escapeExpressionValue(normalizedFolder)}")`;
   const tokens = searchTokens(query);
 
   if (tokens.length === 0) return base;
