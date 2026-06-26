@@ -1,6 +1,32 @@
 import React from "react";
-import { PlayerTrackDetailsProps } from "@/shared/types/dataType";
+import { PlayerTrackDetailsProps, TrackInfo } from "@/shared/types/dataType";
 import { formatTime, handleMouseMove, handleMouseOut } from "@/shared/lib/util";
+
+export const PlayerTrackSummary: React.FC<{
+  currentTrackInfo: TrackInfo | null;
+}> = ({ currentTrackInfo }) => {
+  return (
+    <section
+      className="min-w-0 overflow-hidden"
+      aria-label="Track Information"
+    >
+      <div
+        id="track-name"
+        className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm font-semibold text-white"
+        title={currentTrackInfo?.name}
+      >
+        {currentTrackInfo?.name ?? "No track selected"}
+      </div>
+      <div
+        id="producer-name"
+        className="mt-0.5 w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs text-white/55"
+        title={currentTrackInfo?.producer}
+      >
+        {currentTrackInfo?.producer ?? "Choose a song to start playback"}
+      </div>
+    </section>
+  );
+};
 
 const PlayerTrackDetails: React.FC<
   Omit<PlayerTrackDetailsProps, "isMobile">

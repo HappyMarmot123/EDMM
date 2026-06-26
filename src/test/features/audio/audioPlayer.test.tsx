@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { fireEvent } from "@testing-library/react";
 import AudioPlayer from "@/features/audio/ui/audioPlayer";
 import MobileAudioPlayer from "@/features/audio/ui/mobileAudioPlayer";
@@ -90,6 +90,39 @@ describe("AudioPlayer", () => {
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
   });
 
+  it("renders desktop player content in Spotify-like track, control, and volume zones", () => {
+    render(<AudioPlayer />);
+
+    const player = screen.getByLabelText("Audio Player");
+    const playerGrid = player.firstElementChild;
+    const trackZone = screen.getByTestId("player-track-zone");
+    const controlZone = screen.getByTestId("player-control-zone");
+    const volumeZone = screen.getByTestId("player-volume-zone");
+    const seekSlider = within(controlZone).getByRole("slider");
+    const volumeSlider = within(volumeZone).getByRole("slider", {
+      name: "Volume",
+    });
+
+    expect(playerGrid).toHaveClass(
+      "grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]",
+      "lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.75fr)]",
+      "xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1fr)]"
+    );
+    expect(playerGrid?.className).not.toMatch(/minmax\(\d+px,/);
+    expect(trackZone).toContainElement(
+      screen.getByRole("button", { name: "Open details for Track One" })
+    );
+    expect(trackZone).toHaveTextContent("Track One");
+    expect(trackZone).toHaveTextContent("Artist One");
+    expect(controlZone).toContainElement(
+      screen.getByRole("button", { name: "Play" })
+    );
+    expect(seekSlider).toHaveAttribute("aria-valuenow", "12");
+    expect(seekSlider).toHaveAttribute("aria-valuemax", "180");
+    expect(volumeZone).toHaveClass("lg:flex");
+    expect(volumeSlider).toHaveValue("0.7");
+  });
+
   it("navigates to the current track detail when album artwork is clicked", () => {
     render(<AudioPlayer />);
 
@@ -98,6 +131,16 @@ describe("AudioPlayer", () => {
     );
 
     expect(mockRouterPush).toHaveBeenCalledWith("/track/track-1");
+  });
+
+  it("does not rotate persistent desktop artwork while playback is active", () => {
+    mockAudioPlayerState.isPlaying = true;
+
+    render(<AudioPlayer />);
+
+    expect(screen.getByAltText("Album One")).not.toHaveClass(
+      "animate-rotate-album"
+    );
   });
 
   it("keeps the desktop player visible before a track is selected", () => {
@@ -112,7 +155,10 @@ describe("AudioPlayer", () => {
       "player-container"
     );
     expect(screen.getByText("No track selected")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
+    const playButton = screen.getByRole("button", { name: "Play" });
+    expect(playButton).toBeDisabled();
+    fireEvent.click(playButton);
+    expect(mockAudioPlayerState.togglePlayPause).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "No track artwork" })).toBeDisabled();
   });
 

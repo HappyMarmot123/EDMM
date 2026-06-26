@@ -52,10 +52,7 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
           key={currentTrackInfo.artworkId}
           src={currentTrackInfo.artworkId}
           alt={currentTrackInfo.album}
-          className={clsx(
-            "absolute inset-0 z-[1] block h-full w-full object-cover opacity-100 select-none",
-            isPlaying && "animate-rotate-album active"
-          )}
+          className="absolute inset-0 z-[1] block h-full w-full object-cover opacity-100 select-none"
           draggable={false}
           width={92}
           height={92}

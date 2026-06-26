@@ -56,7 +56,10 @@ export default function MobileAudioPlayer() {
         id="player-mobile"
         className="relative flex min-h-[78px] items-center justify-between px-4 pt-2"
       >
-        <div className="flex items-center flex-1 min-w-0">
+        <div
+          className="flex min-w-0 flex-1 items-center"
+          aria-label="Mobile track summary"
+        >
           <MAlbumArtwork
             isPlaying={isPlaying}
             isBuffering={isBuffering}
