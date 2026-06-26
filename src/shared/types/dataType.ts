@@ -1,4 +1,4 @@
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/Track/model";
 import type { Method } from "axios";
 import type { LucideProps } from "lucide-react";
 import type { ReactNode, RefObject } from "react";

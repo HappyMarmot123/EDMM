@@ -1,4 +1,4 @@
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/Track/model";
 import { db } from "@/shared/db/edmmDB";
 
 export async function cacheTrack(track: Track): Promise<void> {

@@ -47,7 +47,7 @@ export const metadata: Metadata = {
 const RootLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <html lang="en" suppressHydrationWarning={true}>
-      <head>
+      <body suppressHydrationWarning={true}>
         <Script
           id="hydration-extension-attribute-guard"
           strategy="beforeInteractive"
@@ -55,8 +55,6 @@ const RootLayout = ({ children }: { children: React.ReactNode }) => {
             __html: HYDRATION_EXTENSION_ATTRIBUTE_GUARD_SCRIPT,
           }}
         />
-      </head>
-      <body suppressHydrationWarning={true}>
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

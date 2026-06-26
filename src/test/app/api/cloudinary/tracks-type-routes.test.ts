@@ -3,7 +3,7 @@ import {
   fetchCloudinaryTracks,
   getCloudinaryTrackCachePolicy,
 } from "@/shared/api/cloudinary/cloudinaryClient";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/Track/model";
 import { GET as GET_IMAGE } from "@/app/api/cloudinary/tracks/image/route";
 import { GET as GET_VIDEO } from "@/app/api/cloudinary/tracks/video/route";
 

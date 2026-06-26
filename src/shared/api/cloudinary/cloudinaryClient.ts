@@ -1,4 +1,4 @@
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/Track/model";
 import {
   adaptCloudinaryTrack,
   type CloudinaryResource,

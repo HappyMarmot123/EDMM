@@ -1,7 +1,7 @@
 import type { PropsWithChildren } from "react";
 import { act, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/Track/model";
 import { getCachedTracks } from "@/shared/db/repositories/trackCacheRepo";
 import { useFavorites } from "@/features/library/hooks/useFavorites";
 import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";

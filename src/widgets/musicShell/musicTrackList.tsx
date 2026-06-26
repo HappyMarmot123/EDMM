@@ -1,8 +1,9 @@
 "use client";
 
 import { Disc3, Play } from "lucide-react";
-import type { Track } from "@/entities/track/model";
-import { isPlayable } from "@/entities/track/model";
+import { type KeyboardEvent, type MouseEvent } from "react";
+import type { Track } from "@/entities/Track/model";
+import { isPlayable } from "@/entities/Track/model";
 
 type MusicTrackListProps = {
   tracks: Track[];
@@ -80,6 +81,27 @@ export function MusicTrackList({
       {tracks.map((track, index) => {
         const isSelected = selectedTrackId === track.id;
         const isTrackPlayable = isPlayable(track);
+        const selectLabel = `Select ${track.title}`;
+
+        const handleSelect = () => {
+          onSelect(track);
+        };
+
+        const handleSelectKeyDown = (
+          event: KeyboardEvent<HTMLElement>,
+        ) => {
+          if (event.key !== "Enter" && event.key !== " ") {
+            return;
+          }
+
+          event.preventDefault();
+          onSelect(track);
+        };
+
+        const handlePlay = (event: MouseEvent<HTMLButtonElement>) => {
+          event.stopPropagation();
+          onPlay(track);
+        };
 
         return (
           <li
@@ -91,10 +113,12 @@ export function MusicTrackList({
                 : "border-transparent bg-white/[0.035] hover:border-white/10 hover:bg-white/[0.06]",
             ].join(" ")}
           >
-            <button
-              type="button"
-              aria-label={`Select ${track.title}`}
-              onClick={() => onSelect(track)}
+            <div
+              tabIndex={0}
+              role="button"
+              aria-label={selectLabel}
+              onClick={handleSelect}
+              onKeyDown={handleSelectKeyDown}
               className="grid min-w-0 grid-cols-[30px_48px_minmax(0,1fr)] items-center gap-3 rounded p-1.5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb8c0]"
             >
               <span className="text-sm font-black text-white/38">{index + 1}</span>
@@ -122,7 +146,7 @@ export function MusicTrackList({
                   {track.albumName ? ` / ${track.albumName}` : ""}
                 </span>
               </span>
-            </button>
+            </div>
 
             <div className="flex items-center gap-2 pr-1">
               <span className="hidden min-w-10 text-right text-xs font-bold text-white/42 sm:inline">
@@ -131,10 +155,11 @@ export function MusicTrackList({
               <button
                 type="button"
                 aria-label={`Play ${track.title}`}
-                onClick={() => onPlay(track)}
+                onClick={handlePlay}
+                onKeyDown={(event) => event.stopPropagation()}
                 disabled={!isTrackPlayable}
                 className="grid h-10 w-10 place-items-center rounded-full bg-[#ff98a2] text-black transition-transform hover:scale-[1.05] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff98a2] disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/45"
-                >
+              >
                 <Play size={18} fill="currentColor" strokeWidth={2.1} />
               </button>
             </div>

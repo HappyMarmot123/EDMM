@@ -1,7 +1,7 @@
 import type { PropsWithChildren } from "react";
 import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/Track/model";
 import { useFavorites } from "@/features/library/hooks/useFavorites";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import { HomeView } from "@/views/home";

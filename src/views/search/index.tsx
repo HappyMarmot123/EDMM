@@ -1,6 +1,6 @@
 "use client";
 
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/Track/model";
 import MusicShell from "@/widgets/musicShell";
 import type { MusicView } from "@/widgets/musicShell/musicShellHeader";
 import type { ResourceTypeFilter } from "@/shared/api/cloudinary/cloudinaryClient";

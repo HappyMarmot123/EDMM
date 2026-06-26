@@ -10,6 +10,15 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
   currentTrackInfo,
   onClick,
 }) => {
+  const artworkSrc = currentTrackInfo?.artworkId?.trim() ?? "";
+  const [hasArtworkError, setHasArtworkError] = React.useState(false);
+
+  React.useEffect(() => {
+    setHasArtworkError(false);
+  }, [artworkSrc]);
+
+  const shouldRenderArtwork = Boolean(artworkSrc) && !hasArtworkError;
+
   const webAlbumArtClassName = (playing: boolean, buffering: boolean) => {
     return clsx(
       "relative h-16 w-16 flex-none overflow-hidden rounded-md bg-white/10",
@@ -39,7 +48,7 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
       aria-label={
         currentTrackInfo
           ? `Open details for ${currentTrackInfo.name}`
-          : "No track artwork"
+        : "No track artwork"
       }
       disabled={!currentTrackInfo}
     >
@@ -47,34 +56,22 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
         <span className="absolute inset-0 flex items-center justify-center bg-white/10 text-[#fd6d94]">
           <Music2 width={26} height={26} aria-hidden="true" />
         </span>
-      ) : currentTrackInfo.artworkId ? (
+      ) : shouldRenderArtwork ? (
         <img
-          key={currentTrackInfo.artworkId}
-          src={currentTrackInfo.artworkId}
+          key={artworkSrc}
+          src={artworkSrc}
           alt={currentTrackInfo.album}
           className="absolute inset-0 z-[1] block h-full w-full object-cover opacity-100 select-none"
           draggable={false}
           width={92}
           height={92}
           loading="lazy"
+          onError={() => setHasArtworkError(true)}
         />
       ) : (
-        <div
-          id="buffer-box"
-          className={clsx(
-            "absolute top-1/2 right-0 left-0 text-white text-sm font-medium text-center p-2 mt-[-16px] mx-auto backdrop-blur-sm rounded-lg z-[2] transition-all duration-300 pointer-events-none flex items-center justify-center animate-pulse"
-          )}
-          role="status"
-          aria-live="polite"
-        >
-          <span className="sr-only">Loading audio...</span>
-          <div
-            className={clsx(
-              "border-white border-t-transparent rounded-full animate-spin",
-              "w-8 h-8 border-4"
-            )}
-          />
-        </div>
+        <span className="absolute inset-0 flex items-center justify-center bg-white/10 text-[#fd6d94]">
+          <Music2 width={26} height={26} aria-hidden="true" />
+        </span>
       )}
     </button>
   );

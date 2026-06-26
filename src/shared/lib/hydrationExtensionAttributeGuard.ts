@@ -1,10 +1,15 @@
 export const HYDRATION_EXTENSION_ATTRIBUTE_GUARD_SCRIPT = String.raw`
 (() => {
-  const blockedNames = new Set(["bis_skin_checked", "bis_register"]);
-  const blockedPrefix = "__processed_";
+  const blockedNames = new Set([
+    "bis_skin_checked",
+    "bis_register",
+    "data-locator-hook-status-message",
+  ]);
+  const blockedPrefix = ["__processed_", "data-locator-"];
 
   const shouldRemove = (name) =>
-    blockedNames.has(name) || name.startsWith(blockedPrefix);
+    blockedNames.has(name) ||
+    blockedPrefix.some((prefix) => name.startsWith(prefix));
 
   const stripElement = (element) => {
     if (!element || !element.attributes) return;

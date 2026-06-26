@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Disc3, Music2, Play, Radio, X } from "lucide-react";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/Track/model";
 import { AudioVisualizer } from "@/features/audio/components/audioVisualizer";
 import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
@@ -79,7 +79,11 @@ export function TrackDetailAside({
 
   const track =
     cachedTrack?.id === selectedTrackId
-      ? cachedTrack
+      ? {
+          ...fallbackTrack,
+          ...cachedTrack,
+          artworkUrl: cachedTrack.artworkUrl || (fallbackTrack?.artworkUrl ?? ""),
+        }
       : fallbackTrack?.id === selectedTrackId
         ? fallbackTrack
         : null;

@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { flushSync } from "react-dom";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/Track/model";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import { useFavorites } from "@/features/library/hooks/useFavorites";
 import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
@@ -290,13 +290,19 @@ describe("MusicShell", () => {
     expect(onPlay).toHaveBeenCalledWith(cloudTracks[0], cloudTracks, false);
   });
 
-  it("injects a selected list item into controller without auto-play", () => {
+  it("selects a visible row without auto-playing", async () => {
     const onPlay = jest.fn();
 
     render(<MusicShell onPlay={onPlay} />);
     fireEvent.click(screen.getByRole("button", { name: "Select Cloud Track Two" }));
 
-    expect(onPlay).toHaveBeenCalledWith(cloudTracks[1], cloudTracks, false);
+    expect(onPlay).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockGetCachedTrack).toHaveBeenCalledWith("cloudinary:all-2");
+      expect(screen.getByTestId("track-detail-title")).toHaveTextContent(
+        "Cloud Track Two",
+      );
+    });
   });
 
   it("prefers latest recent play as first controller seed when present", async () => {

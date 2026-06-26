@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/Track/model";
 import { cacheTrack } from "@/shared/db/repositories/trackCacheRepo";
 import { useHydrated } from "@/shared/hooks/useHydrated";
 import type { ResourceTypeFilter } from "@/shared/api/cloudinary/cloudinaryClient";

@@ -1,6 +1,6 @@
 "use client";
 
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/Track/model";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import { TrackList } from "@/widgets/trackList";
 

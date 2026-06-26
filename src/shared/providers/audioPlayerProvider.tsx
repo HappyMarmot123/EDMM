@@ -1,9 +1,9 @@
 "use client";
 
-import type { Track } from "@/entities/track/model";
-import { isPlayable } from "@/entities/track/model";
+import type { Track } from "@/entities/Track/model";
+import { isPlayable } from "@/entities/Track/model";
 import useAudioInstanceStore from "@/app/store/audioInstanceStore";
-import { cacheTrack } from "@/shared/db/repositories/trackCacheRepo";
+import { cacheTrack, getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
 import { addRecentPlay } from "@/shared/db/repositories/recentPlaysRepo";
 import { CLAMP_VOLUME } from "@/shared/lib/util";
 import { setupAudioEventListeners } from "@/shared/lib/audioEventManager";
@@ -25,14 +25,36 @@ const AudioPlayerContext = createContext<
   AudioPlayerLogicReturnType | undefined
 >(undefined);
 
-const toTrackInfo = (track: Track): TrackInfo => ({
+const normalizeText = (value: string | undefined) =>
+  value?.trim().length ? value.trim() : "";
+
+const toTrackInfo = (track: Track, artworkId?: string): TrackInfo => ({
   assetId: track.id,
   album: track.albumName ?? track.source,
   name: track.title,
-  artworkId: track.artworkUrl,
+  artworkId: normalizeText(artworkId ?? track.artworkUrl),
   url: isPlayable(track) ? track.streamUrl ?? "" : "",
   producer: track.artistName,
 });
+
+const resolveArtworkForTrack = async (track: Track): Promise<string> => {
+  const directArtworkId = normalizeText(track.artworkUrl);
+  if (directArtworkId) {
+    return directArtworkId;
+  }
+
+  try {
+    const cachedTrack = await getCachedTrack(track.id);
+    return normalizeText(cachedTrack?.artworkUrl);
+  } catch {
+    return "";
+  }
+};
+
+const toTrackInfoWithCache = async (track: Track): Promise<TrackInfo> => {
+  const artworkId = await resolveArtworkForTrack(track);
+  return toTrackInfo(track, artworkId);
+};
 
 function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
   const audio = useAudioInstanceStore((state) => state.audioInstance);
@@ -73,18 +95,39 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
   const setTrack = useCallback((track: TrackInfo, playImmediately = false) => {
     setCurrentTrack(track);
     setCurrentTime(0);
-    setIsBuffering(Boolean(track.url));
+    setIsBuffering(playImmediately && Boolean(track.url));
     setIsPlaying(playImmediately && Boolean(track.url));
   }, []);
 
   const playTrack = useCallback(
-    (track: Track, nextQueue?: Track[], playImmediately = true) => {
-      const trackInfo = toTrackInfo(track);
-      const queueInfo = (nextQueue?.length ? nextQueue : [track]).map(toTrackInfo);
+    async (track: Track, nextQueue?: Track[], playImmediately = true) => {
+      const resolvedTrackInfo = await toTrackInfoWithCache(track);
+      const tracksForQueue = nextQueue?.length ? nextQueue : [track];
+      const queueInfo = await Promise.all(
+        tracksForQueue.map(async (queuedTrack) =>
+          queuedTrack.id === track.id
+            ? resolvedTrackInfo
+            : toTrackInfo(queuedTrack),
+        ),
+      );
       const shouldAutoPlay = playImmediately && isPlayable(track);
 
       setQueue(queueInfo);
-      setTrack(trackInfo, shouldAutoPlay);
+      setTrack(resolvedTrackInfo, shouldAutoPlay);
+
+      if (shouldAutoPlay && audio && resolvedTrackInfo.url) {
+        if (audio.src !== resolvedTrackInfo.url) {
+          audio.src = resolvedTrackInfo.url;
+          setCurrentTime(0);
+        }
+        if (audioContext?.state === "suspended") {
+          try {
+            await audioContext.resume();
+          } catch (error) {
+            console.warn("Error resuming audio context:", error);
+          }
+        }
+      }
 
       cacheTrack(track).catch((error) => {
         console.warn("Failed to cache track:", error);
@@ -95,7 +138,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
         });
       }
     },
-    [setTrack]
+    [audio, audioContext, setTrack]
   );
 
   const handleSelectTrack = useCallback(
@@ -147,26 +190,48 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
   );
 
   useEffect(() => {
-    if (!audio || !currentTrack?.url) return;
-
-    if (audio.src !== currentTrack.url) {
-      audio.src = currentTrack.url;
-      setCurrentTime(0);
-    }
-  }, [audio, currentTrack]);
-
-  useEffect(() => {
     if (!audio) return;
+    const trackUrl = currentTrack?.url;
 
-    if (isPlaying) {
-      audio.play().catch((error) => {
-        console.warn("Error playing audio:", error);
-        setIsPlaying(false);
-      });
+    if (trackUrl) {
+      if (audio.src !== trackUrl) {
+        audio.src = trackUrl;
+        setCurrentTime(0);
+      }
+      audio.load();
     } else {
+      setIsBuffering(false);
       audio.pause();
+      return;
     }
-  }, [audio, isPlaying, currentTrack]);
+
+    if (!isPlaying) {
+      audio.pause();
+      return;
+    }
+
+    if (audioContext?.state === "suspended") {
+      audioContext
+        .resume()
+        .catch((error) => {
+          console.warn("Error resuming audio context:", error);
+        })
+        .finally(() => {
+          void audio
+            .play()
+            .catch((error) => {
+              console.warn("Error playing audio:", error);
+              setIsPlaying(false);
+            });
+        });
+      return;
+    }
+
+    void audio.play().catch((error) => {
+      console.warn("Error playing audio:", error);
+      setIsPlaying(false);
+    });
+  }, [audio, audioContext, isPlaying, currentTrack]);
 
   useEffect(() => {
     if (audio) {
