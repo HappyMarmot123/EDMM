@@ -71,6 +71,42 @@ describe("adaptCloudinaryTrack", () => {
     expect(track.artworkUrl).toBe("https://example.com/metadata-art.jpg");
   });
 
+  it("uses flat context fields for title and artwork", () => {
+    const track = adaptCloudinaryTrack({
+      ...raw,
+      context: {
+        title: "Context Title",
+        artist: "Context Artist",
+        album: "Context Album",
+        artworkUrl: "https://example.com/context-art.jpg",
+      },
+    });
+
+    expect(track.title).toBe("Context Title");
+    expect(track.artistName).toBe("Context Artist");
+    expect(track.albumName).toBe("Context Album");
+    expect(track.artworkUrl).toBe("https://example.com/context-art.jpg");
+  });
+
+  it("uses metadata.context fields when available", () => {
+    const track = adaptCloudinaryTrack({
+      ...raw,
+      metadata: {
+        context: {
+          title: "Metadata Context Title",
+          artist: "Metadata Context Artist",
+          album: "Metadata Context Album",
+          artworkUrl: "https://example.com/metadata-context-art.jpg",
+        },
+      },
+    });
+
+    expect(track.title).toBe("Metadata Context Title");
+    expect(track.artistName).toBe("Metadata Context Artist");
+    expect(track.albumName).toBe("Metadata Context Album");
+    expect(track.artworkUrl).toBe("https://example.com/metadata-context-art.jpg");
+  });
+
   it("uses public_id for the Track id when asset_id is missing", () => {
     const track = adaptCloudinaryTrack({
       ...raw,

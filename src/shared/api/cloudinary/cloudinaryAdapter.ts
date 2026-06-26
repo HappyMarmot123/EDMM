@@ -2,6 +2,7 @@ import type { Track } from "@/entities/track/model";
 
 type CloudinaryContext = {
   custom?: Record<string, string | undefined>;
+  [key: string]: unknown;
 };
 
 export interface CloudinaryResource {
@@ -38,26 +39,74 @@ const readString = (
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 };
 
+const asRecord = (value: unknown) =>
+  typeof value === "object" && value !== null ? (value as Record<string, unknown>) : undefined;
+
+const readStringFromRecords = (
+  records: Array<Record<string, unknown> | undefined>,
+  keys: string[],
+) => {
+  for (const key of keys) {
+    for (const record of records) {
+      const value = readString(record, key);
+      if (value) {
+        return value;
+      }
+    }
+  }
+
+  return undefined;
+};
+
 export function adaptCloudinaryTrack(resource: CloudinaryResource): Track {
   const custom = resource.context?.custom;
-  const metadata = resource.metadata;
+  const metadata = resource.metadata as Record<string, unknown> | undefined;
   const resourceType = resource.resource_type ?? "video";
   const assetId = resource.asset_id || resource.public_id;
+  const context = resource.context as Record<string, unknown> | undefined;
+  const metadataContext = asRecord(metadata?.context);
+  const contextCustom = asRecord(context?.custom);
+
   const title =
-    readString(custom, "title") ??
-    readString(metadata, "title") ??
+    readStringFromRecords(
+      [custom, context, contextCustom, metadataContext, metadata],
+      ["title", "caption"],
+    ) ??
     basename(resource.public_id);
   const artistName =
-    readString(custom, "artist") ??
-    readString(metadata, "artist") ??
+    readStringFromRecords(
+      [custom, context, contextCustom, metadataContext, metadata],
+      ["artist"],
+    ) ??
     "Cloudinary";
   const albumName =
-    readString(custom, "album") ??
-    readString(metadata, "album") ??
+    readStringFromRecords(
+      [custom, context, contextCustom, metadataContext, metadata],
+      ["album"],
+    ) ??
     folderName(resource.public_id);
   const artworkFromSource =
-    readString(custom, "artworkUrl") ??
-    readString(metadata, "artworkUrl") ??
+    readStringFromRecords(
+      [
+        custom,
+        context,
+        contextCustom,
+        metadataContext,
+        metadata,
+      ],
+      [
+        "artworkUrl",
+        "artwork_url",
+        "artwork",
+        "cover",
+        "coverArt",
+        "cover_art",
+        "cover_url",
+        "coverUrl",
+        "image",
+        "imageUrl",
+      ],
+    ) ??
     (resourceType === "image" ? resource.secure_url ?? "" : "");
   const artworkUrl =
     artworkFromSource ?? "";
