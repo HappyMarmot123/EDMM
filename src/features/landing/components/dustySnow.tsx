@@ -59,7 +59,7 @@ const createStars = (count: number) =>
     return {
       id: index,
       depth: profile.depth,
-      left: `${(pseudoRandom(seed) * 100).toFixed(4)}vw`,
+      left: `${(pseudoRandom(seed) * 100).toFixed(4)}%`,
       startY: `${toFixed(-between(seed + 701, 2, 18), 3)}vh`,
       size: `${toFixed(
         between(seed + 101, profile.size[0], profile.size[1]),
@@ -88,7 +88,7 @@ const createStars = (count: number) =>
 
 export default function DustySnow({
   reducedMotion = false,
-  count = 150,
+  count = 96,
 }: DustySnowProps) {
   const starCount = reducedMotion ? Math.min(count, 54) : count;
   const stars = useMemo(() => createStars(starCount), [starCount]);

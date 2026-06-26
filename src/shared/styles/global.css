@@ -99,7 +99,10 @@ h1 {
 
 .rose-starfield {
   position: absolute;
-  inset: 0;
+  inset-block: 0;
+  right: 0;
+  left: auto;
+  width: 80%;
   z-index: 0;
   overflow: hidden;
   pointer-events: none;

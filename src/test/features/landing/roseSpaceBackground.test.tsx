@@ -1,7 +1,28 @@
+import fs from "fs";
+import path from "path";
 import { render, screen, waitFor } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import DustySnow from "@/features/landing/components/dustySnow";
 import RoseSpaceBackground from "@/features/landing/components/roseSpaceBackground";
+
+const styles = fs.readFileSync(
+  path.join(process.cwd(), "src/shared/styles/global.css"),
+  "utf8"
+);
+
+const extractRule = (selector: string) => {
+  const start = styles.indexOf(`${selector} {`);
+  if (start === -1) {
+    throw new Error(`Missing CSS rule for ${selector}`);
+  }
+
+  const end = styles.indexOf("\n}", start);
+  if (end === -1) {
+    throw new Error(`Unclosed CSS rule for ${selector}`);
+  }
+
+  return styles.slice(start, end + 2);
+};
 
 const originalMatchMedia = window.matchMedia;
 
@@ -81,6 +102,23 @@ describe("DustySnow", () => {
     expect(starfield).toHaveClass("rose-starfield");
   });
 
+  it("renders 96 stars by default", async () => {
+    render(<DustySnow />);
+
+    const starfield = await screen.findByTestId("rose-starfield");
+    expect(starfield.querySelectorAll(".rose-star")).toHaveLength(96);
+  });
+
+  it("keeps the starfield right aligned at 80 percent width", () => {
+    const starfieldRule = extractRule(".rose-starfield");
+
+    expect(starfieldRule).toContain("inset-block: 0;");
+    expect(starfieldRule).toContain("right: 0;");
+    expect(starfieldRule).toContain("left: auto;");
+    expect(starfieldRule).toContain("width: 80%;");
+    expect(starfieldRule).not.toContain("inset: 0;");
+  });
+
   it("caps reduced-motion stars at 54", async () => {
     render(<DustySnow reducedMotion count={150} />);
 
@@ -114,6 +152,19 @@ describe("DustySnow", () => {
     const html = renderToString(<DustySnow count={3} />);
 
     expect(html.match(/class="rose-star\b/g)).toHaveLength(3);
+  });
+
+  it("uses starfield-relative percent left positions", async () => {
+    render(<DustySnow count={8} />);
+
+    const starfield = await screen.findByTestId("rose-starfield");
+    const leftPositions = Array.from(
+      starfield.querySelectorAll<HTMLElement>(".rose-star")
+    ).map((star) => star.style.getPropertyValue("--left-pos"));
+
+    expect(leftPositions).toHaveLength(8);
+    expect(leftPositions.every((value) => value.endsWith("%"))).toBe(true);
+    expect(leftPositions.some((value) => value.endsWith("vw"))).toBe(false);
   });
 
   it("varies star size, depth, and movement direction naturally", async () => {
