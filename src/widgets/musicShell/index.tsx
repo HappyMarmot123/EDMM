@@ -17,6 +17,7 @@ import {
   dedupeIds,
   findTrackById,
   firstPlayableTrack,
+  buildRecentSeedKey,
   resolveInitialSeedTrack,
   resolveRecentSeedTrack,
 } from "./trackSeedUtils";
@@ -32,12 +33,15 @@ type CachedTrackState = {
   tracks: Track[];
   isLoading: boolean;
 };
+type SelectionSource = "initial" | "visible";
 
 const noop: NonNullable<MusicShellProps["onPlay"]> = () => {};
 
 const isMusicView = (view: MusicView | undefined): view is MusicView =>
   view === "all" || view === "favorites" || view === "recent";
-const isResourceType = (value: ResourceTypeFilter | undefined): value is ResourceTypeFilter =>
+const isResourceType = (
+  value: ResourceTypeFilter | undefined,
+): value is ResourceTypeFilter =>
   value === "video" || value === "image" || value === "all";
 
 function useCachedTrackList(ids: string[]): CachedTrackState {
@@ -93,9 +97,9 @@ export function MusicShell({
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(
     normalizedInitialTrackId,
   );
-  const [selectionSource, setSelectionSource] = useState<
-    "initial" | "visible" | null
-  >(normalizedInitialTrackId ? "initial" : null);
+  const [selectionSource, setSelectionSource] = useState<SelectionSource | null>(
+    normalizedInitialTrackId ? "initial" : null,
+  );
   const [isDetailOpen, setIsDetailOpen] = useState(true);
 
   const seededTrackIdRef = useRef<string | null>(null);
@@ -167,7 +171,7 @@ export function MusicShell({
     (
       track: Track,
       playImmediately = false,
-      source: "initial" | "visible" = "visible",
+      source: SelectionSource = "visible",
       queueOverride?: Track[],
     ) => {
       if (!playImmediately && seededTrackIdRef.current === track.id) {
@@ -195,19 +199,39 @@ export function MusicShell({
     activateTrackInPlayer(track, true, "visible", visibleTracks);
   };
 
+  const clearSelectedTrack = useCallback(() => {
+    setSelectedTrackId(null);
+    setSelectionSource(null);
+  }, []);
+
+  const clearSeededTrack = useCallback(() => {
+    if (selectedTrackId && seededTrackIdRef.current === selectedTrackId) {
+      seededTrackIdRef.current = null;
+    }
+  }, [selectedTrackId]);
+
+  const fallbackToFirstPlayable = useCallback(() => {
+    const fallbackTrack = firstPlayableTrack(visibleTracks);
+
+    if (!fallbackTrack) {
+      clearSelectedTrack();
+      resolvedInitialTrackRef.current = null;
+      return;
+    }
+
+    activateTrackInPlayer(fallbackTrack, false, "initial", queueForTrack(fallbackTrack));
+  }, [clearSelectedTrack, activateTrackInPlayer, queueForTrack, visibleTracks]);
+
   useEffect(() => {
     if (
       selectedTrackId &&
       selectionSource === "visible" &&
       !visibleTrackIds.has(selectedTrackId)
     ) {
-      setSelectedTrackId(null);
-      setSelectionSource(null);
-      if (seededTrackIdRef.current === selectedTrackId) {
-        seededTrackIdRef.current = null;
-      }
+      clearSelectedTrack();
+      clearSeededTrack();
     }
-  }, [selectedTrackId, selectionSource, visibleTrackIds]);
+  }, [selectedTrackId, selectionSource, clearSeededTrack, clearSelectedTrack, visibleTrackIds]);
 
   useEffect(() => {
     if (selectionSource !== "initial" || !selectedTrackId) {
@@ -220,23 +244,6 @@ export function MusicShell({
 
     resolvedInitialTrackRef.current = selectedTrackId;
     let isActive = true;
-    const fallbackToFirstPlayable = () => {
-      const fallbackTrack = firstPlayableTrack(visibleTracks);
-      if (!fallbackTrack) {
-        setSelectionSource(null);
-        setSelectedTrackId(null);
-        resolvedInitialTrackRef.current = null;
-        return;
-      }
-
-      activateTrackInPlayer(
-        fallbackTrack,
-        false,
-        "initial",
-        queueForTrack(fallbackTrack),
-      );
-    };
-
     if (selectedTrack) {
       if (!isPlayable(selectedTrack)) {
         fallbackToFirstPlayable();
@@ -285,6 +292,7 @@ export function MusicShell({
     selectedTrack,
     selectedTrackId,
     selectionSource,
+    fallbackToFirstPlayable,
     visibleTracks,
   ]);
 
@@ -301,9 +309,7 @@ export function MusicShell({
       return;
     }
 
-    const dedupeKey = latestRecentId
-      ? `recent:${latestRecentId}:first:${firstVisibleTrackId ?? "none"}`
-      : `first:${firstVisibleTrackId}`;
+    const dedupeKey = buildRecentSeedKey(latestRecentId, firstVisibleTrackId);
     if (resolvedRecentTrackRef.current === dedupeKey) {
       return;
     }
@@ -337,7 +343,13 @@ export function MusicShell({
     return () => {
       isActive = false;
     };
-  }, [activateTrackInPlayer, queueForTrack, recentTrackIds, selectionSource, visibleTracks]);
+  }, [
+    activateTrackInPlayer,
+    queueForTrack,
+    recentTrackIds,
+    selectionSource,
+    visibleTracks,
+  ]);
 
   const isVisibleLoading =
     view === "all"

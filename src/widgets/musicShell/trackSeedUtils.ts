@@ -2,11 +2,22 @@ import { isPlayable, type Track } from "@/entities/Track/model";
 
 export const dedupeIds = (ids: Iterable<string>) => [...new Set(ids)];
 
-export const firstPlayableTrack = (tracks: Track[]) =>
+export const firstPlayableTrack = (tracks: Track[]): Track | null =>
   tracks.find((track) => isPlayable(track)) ?? null;
 
-export const findTrackById = (tracks: Track[], trackId: string | null): Track | null =>
+export const findTrackById = (
+  tracks: Track[],
+  trackId: string | null,
+): Track | null =>
   trackId ? tracks.find((track) => track.id === trackId) ?? null : null;
+
+export const buildRecentSeedKey = (
+  latestRecentId: string | null,
+  firstVisibleTrackId: string | null,
+) =>
+  latestRecentId
+    ? `recent:${latestRecentId}:first:${firstVisibleTrackId ?? "none"}`
+    : `first:${firstVisibleTrackId}`;
 
 export const resolveInitialSeedTrack = ({
   selectedTrackId,
@@ -18,7 +29,7 @@ export const resolveInitialSeedTrack = ({
   selectedTrack: Track | null;
   visibleTracks: Track[];
   cachedTrack: Track | null;
-}) => {
+}): Track | null => {
   if (!selectedTrackId) {
     return null;
   }
@@ -49,7 +60,7 @@ export const resolveRecentSeedTrack = ({
   latestRecentId: string;
   visibleTracks: Track[];
   cachedTrack: Track | null;
-}) => {
+}): Track | null => {
   const visibleMatch = findTrackById(visibleTracks, latestRecentId);
   if (visibleMatch && isPlayable(visibleMatch)) {
     return visibleMatch;
