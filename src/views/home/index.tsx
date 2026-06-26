@@ -11,7 +11,7 @@ export interface HomeViewProps {
 const noop = () => {};
 
 export function HomeView({ onPlay = noop }: HomeViewProps) {
-  const { data, isLoading } = useCloudinaryTracks();
+  const { data, isLoading } = useCloudinaryTracks("", { resourceType: "all" });
 
   return (
     <main className="bg-black min-h-screen px-4 py-8 text-white">
