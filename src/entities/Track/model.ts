@@ -1,6 +1,8 @@
+export type TrackSource = "audius" | "cloudinary";
+
 export interface Track {
   id: string;
-  source: "audius";
+  source: TrackSource;
   title: string;
   artistId: string;
   artistName: string;
