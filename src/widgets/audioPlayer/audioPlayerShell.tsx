@@ -5,7 +5,9 @@ import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import type { ReactNode } from "react";
 
 interface AudioPlayerShellProps {
-  children: (onPlay: (track: Track, queue?: Track[]) => void) => ReactNode;
+  children: (
+    onPlay: (track: Track, queue?: Track[], playImmediately?: boolean) => void,
+  ) => ReactNode;
 }
 
 export default function AudioPlayerShell({ children }: AudioPlayerShellProps) {

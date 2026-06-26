@@ -6,7 +6,7 @@ import type { MusicView } from "@/widgets/musicShell/musicShellHeader";
 import type { ResourceTypeFilter } from "@/shared/api/cloudinary/cloudinaryClient";
 
 export interface SearchViewProps {
-  onPlay?: (track: Track, queue?: Track[]) => void;
+  onPlay?: (track: Track, queue?: Track[], playImmediately?: boolean) => void;
   initialView?: MusicView;
   initialTrackId?: string | null;
   initialResourceType?: ResourceTypeFilter;

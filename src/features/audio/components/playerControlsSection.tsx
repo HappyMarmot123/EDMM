@@ -76,7 +76,7 @@ const PlayerControlsSection: React.FC<
   } = useAudioPlayer();
 
   const playPauseLabel = isPlaying ? "Pause" : "Play";
-  const hasTrack = Boolean(currentTrackInfo);
+  const hasPlayableTrack = Boolean(currentTrackInfo?.url);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -89,6 +89,10 @@ const PlayerControlsSection: React.FC<
 
       switch (event.code) {
         case "Space":
+          if (!hasPlayableTrack) {
+            return;
+          }
+
           event.preventDefault();
           togglePlayPause();
           break;
@@ -134,7 +138,7 @@ const PlayerControlsSection: React.FC<
             isShuffleEnabled ? "Disable shuffle playback" : "Enable shuffle playback"
           }
           className="h-9 w-9 text-white/60 hover:text-white"
-          disabled={!hasTrack}
+          disabled={!hasPlayableTrack}
         >
           <Shuffle
             className="m-auto block transition-colors duration-200 ease-out"
@@ -149,7 +153,7 @@ const PlayerControlsSection: React.FC<
           onClick={prevTrack}
           aria-label="Previous track"
           className="h-10 w-10 text-white/70 hover:text-white"
-          disabled={!hasTrack}
+          disabled={!hasPlayableTrack}
         >
           <SkipBack
             className="m-auto block transition-colors duration-200 ease-out"
@@ -167,7 +171,7 @@ const PlayerControlsSection: React.FC<
           onClick={togglePlayPause}
           label={playPauseLabel}
           className="bg-white text-black hover:bg-[#ffd6e1]"
-          disabled={!hasTrack}
+          disabled={!hasPlayableTrack}
           iconProps={{
             width: 22,
             height: 22,
@@ -181,7 +185,7 @@ const PlayerControlsSection: React.FC<
           onClick={nextTrack}
           aria-label="Next track"
           className="h-10 w-10 text-white/70 hover:text-white"
-          disabled={!hasTrack}
+          disabled={!hasPlayableTrack}
         >
           <SkipForward
             className="m-auto block transition-colors duration-200 ease-out"
@@ -198,7 +202,7 @@ const PlayerControlsSection: React.FC<
             isRepeatEnabled ? "Disable repeat playback" : "Enable repeat playback"
           }
           className={`h-9 w-9 text-white/60 hover:text-white transition-colors ${isRepeatEnabled ? "text-[#ff98a2]" : ""}`}
-          disabled={!hasTrack}
+          disabled={!hasPlayableTrack}
         >
           <Repeat2
             className="m-auto block transition-colors duration-200 ease-out"

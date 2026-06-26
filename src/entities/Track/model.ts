@@ -14,5 +14,13 @@ export interface Track {
 }
 
 export function isPlayable(t: Track): boolean {
-  return typeof t.streamUrl === "string" && t.streamUrl.length > 0;
+  if (typeof t.streamUrl !== "string" || t.streamUrl.trim().length === 0) {
+    return false;
+  }
+
+  const resourceType = typeof t.metadata?.resourceType === "string"
+    ? t.metadata.resourceType.toLowerCase()
+    : "video";
+
+  return resourceType !== "image";
 }

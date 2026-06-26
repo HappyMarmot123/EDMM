@@ -1,20 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Track } from "@/entities/track/model";
-import {
-  useCloudinaryTracks,
-} from "@/features/cloudinary/hooks/useCloudinaryTracks";
+import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import type { ResourceTypeFilter } from "@/shared/api/cloudinary/cloudinaryClient";
 import { useFavorites } from "@/features/library/hooks/useFavorites";
 import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
-import { getCachedTracks } from "@/shared/db/repositories/trackCacheRepo";
+import {
+  getCachedTrack,
+  getCachedTracks,
+} from "@/shared/db/repositories/trackCacheRepo";
 import MusicShellHeader, { type MusicView } from "./musicShellHeader";
 import MusicTrackList from "./musicTrackList";
 import TrackDetailAside from "./trackDetailAside";
 
 export interface MusicShellProps {
-  onPlay?: (track: Track, queue?: Track[]) => void;
+  onPlay?: (track: Track, queue?: Track[], playImmediately?: boolean) => void;
   initialView?: MusicView;
   initialTrackId?: string | null;
   initialResourceType?: ResourceTypeFilter;
@@ -86,9 +87,14 @@ export function MusicShell({
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(
     normalizedInitialTrackId,
   );
-  const [selectionSource, setSelectionSource] = useState<"initial" | "visible" | null>(
-    normalizedInitialTrackId ? "initial" : null,
-  );
+  const [selectionSource, setSelectionSource] = useState<
+    "initial" | "visible" | null
+  >(normalizedInitialTrackId ? "initial" : null);
+  const [isDetailOpen, setIsDetailOpen] = useState(true);
+
+  const seededTrackIdRef = useRef<string | null>(null);
+  const resolvedInitialTrackRef = useRef<string | null>(null);
+  const resolvedRecentTrackRef = useRef<string | null>(null);
 
   useEffect(() => {
     setView(normalizedInitialView);
@@ -97,6 +103,7 @@ export function MusicShell({
   useEffect(() => {
     setSelectedTrackId(normalizedInitialTrackId);
     setSelectionSource(normalizedInitialTrackId ? "initial" : null);
+    resolvedInitialTrackRef.current = null;
   }, [normalizedInitialTrackId]);
 
   const normalizedQuery = query.trim();
@@ -144,6 +151,42 @@ export function MusicShell({
   const detailSelectedTrackId =
     selectionSource === "initial" ? selectedTrackId : visibleSelectedTrackId;
 
+  const queueForTrack = useCallback(
+    (track: Track) =>
+      visibleTrackIds.has(track.id) ? visibleTracks : [track],
+    [visibleTrackIds, visibleTracks],
+  );
+
+  const activateTrackInPlayer = useCallback(
+    (
+      track: Track,
+      playImmediately = false,
+      source: "initial" | "visible" = "visible",
+      queueOverride?: Track[],
+    ) => {
+      if (!playImmediately && seededTrackIdRef.current === track.id) {
+        return;
+      }
+
+      const queue = queueOverride ?? queueForTrack(track);
+
+      seededTrackIdRef.current = track.id;
+      onPlay(track, queue, playImmediately);
+      setSelectedTrackId(track.id);
+      setSelectionSource(source);
+      setIsDetailOpen(true);
+    },
+    [onPlay, queueForTrack],
+  );
+
+  const handleSelect = (track: Track) => {
+    activateTrackInPlayer(track, false, "visible");
+  };
+
+  const handlePlay = (track: Track) => {
+    activateTrackInPlayer(track, true, "visible", visibleTracks);
+  };
+
   useEffect(() => {
     if (
       selectedTrackId &&
@@ -152,8 +195,91 @@ export function MusicShell({
     ) {
       setSelectedTrackId(null);
       setSelectionSource(null);
+      if (seededTrackIdRef.current === selectedTrackId) {
+        seededTrackIdRef.current = null;
+      }
     }
   }, [selectedTrackId, selectionSource, visibleTrackIds]);
+
+  useEffect(() => {
+    if (selectionSource !== "initial" || !selectedTrackId) {
+      return;
+    }
+
+    if (resolvedInitialTrackRef.current === selectedTrackId) {
+      return;
+    }
+
+    resolvedInitialTrackRef.current = selectedTrackId;
+    let isActive = true;
+
+    if (selectedTrack) {
+      activateTrackInPlayer(selectedTrack, false, "initial");
+      return;
+    }
+
+    void (async () => {
+      try {
+        const cachedTrack = await getCachedTrack(selectedTrackId);
+        if (!isActive || !cachedTrack) {
+          return;
+        }
+
+        activateTrackInPlayer(cachedTrack, false, "initial", [cachedTrack]);
+      } catch (error) {
+        console.warn("Failed to resolve initial track from cache:", error);
+      }
+    })();
+
+    return () => {
+      isActive = false;
+    };
+  }, [activateTrackInPlayer, selectedTrack, selectedTrackId, selectionSource]);
+
+  useEffect(() => {
+    if (selectionSource || seededTrackIdRef.current) {
+      return;
+    }
+
+    const latestRecentId = recentTrackIds[0] ?? null;
+    const seedTrackId = latestRecentId || visibleTracks[0]?.id || null;
+
+    if (!seedTrackId) {
+      return;
+    }
+
+    const dedupeKey = latestRecentId ?? `first-${seedTrackId}`;
+    if (resolvedRecentTrackRef.current === dedupeKey) {
+      return;
+    }
+    resolvedRecentTrackRef.current = dedupeKey;
+
+    let isActive = true;
+
+    void (async () => {
+      let track: Track | null = null;
+
+      if (latestRecentId) {
+        track =
+          (await getCachedTrack(latestRecentId).catch(() => null)) ?? null;
+        if (!track) {
+          track = visibleTracks[0] ?? null;
+        }
+      } else {
+        track = visibleTracks[0] ?? null;
+      }
+
+      if (!isActive || !track) {
+        return;
+      }
+
+      activateTrackInPlayer(track, false, "initial", queueForTrack(track));
+    })();
+
+    return () => {
+      isActive = false;
+    };
+  }, [activateTrackInPlayer, queueForTrack, recentTrackIds, selectionSource, visibleTracks]);
 
   const isVisibleLoading =
     view === "all"
@@ -168,10 +294,6 @@ export function MusicShell({
         ? `No tracks found for "${normalizedQuery}".`
         : "No tracks in this view."
       : "No tracks in this view.";
-
-  const handlePlay = (track: Track) => {
-    onPlay(track, visibleTracks);
-  };
 
   return (
     <main className="min-h-screen bg-[#050306] px-4 pb-32 pt-5 text-white sm:px-6 lg:px-8">
@@ -199,10 +321,7 @@ export function MusicShell({
               isLoading={isVisibleLoading}
               isError={isVisibleError}
               emptyMessage={emptyMessage}
-              onSelect={(track) => {
-                setSelectedTrackId(track.id);
-                setSelectionSource("visible");
-              }}
+              onSelect={handleSelect}
               onPlay={handlePlay}
               onRetry={view === "all" ? () => void refetch?.() : undefined}
             />
@@ -218,12 +337,24 @@ export function MusicShell({
         </section>
 
         <aside aria-label="Track detail aside" className="xl:pb-0">
-          <TrackDetailAside
-            selectedTrackId={detailSelectedTrackId}
-            fallbackTrack={selectedTrack}
-            queue={visibleTracks}
-            onPlay={onPlay}
-          />
+          {isDetailOpen ? (
+            <TrackDetailAside
+              selectedTrackId={detailSelectedTrackId}
+              fallbackTrack={selectedTrack}
+              queue={visibleTracks}
+              onPlay={handlePlay}
+              onClose={() => setIsDetailOpen(false)}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsDetailOpen(true)}
+              className="w-full rounded-lg border border-white/10 bg-[#0b0609] px-4 py-3 text-sm font-black text-[#ffb8c0] transition-colors hover:border-[#ff98a2]/50 hover:bg-white/[0.05]"
+              aria-label="Open track detail"
+            >
+              Open track detail
+            </button>
+          )}
         </aside>
       </section>
     </main>

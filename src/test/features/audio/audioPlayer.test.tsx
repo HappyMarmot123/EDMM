@@ -123,6 +123,30 @@ describe("AudioPlayer", () => {
     expect(volumeSlider).toHaveValue("0.7");
   });
 
+  it("fires previous and next actions from desktop controls", () => {
+    render(<AudioPlayer />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous track" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next track" }));
+
+    expect(mockAudioPlayerState.prevTrack).toHaveBeenCalledTimes(1);
+    expect(mockAudioPlayerState.nextTrack).toHaveBeenCalledTimes(1);
+  });
+
+  it("applies volume slider interaction to live and persisted volume", () => {
+    render(<AudioPlayer />);
+
+    const volumeSlider = screen.getByRole("slider", {
+      name: "Volume",
+    });
+
+    fireEvent.change(volumeSlider, { target: { value: "0.2" } });
+    fireEvent.mouseUp(volumeSlider);
+
+    expect(mockAudioPlayerState.setLiveVolume).toHaveBeenCalledWith(0.2);
+    expect(mockAudioPlayerState.setVolume).toHaveBeenCalledWith(0.2);
+  });
+
   it("navigates to the current track detail when album artwork is clicked", () => {
     render(<AudioPlayer />);
 

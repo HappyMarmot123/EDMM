@@ -2,6 +2,7 @@
 
 import { Disc3, Play } from "lucide-react";
 import type { Track } from "@/entities/track/model";
+import { isPlayable } from "@/entities/track/model";
 
 type MusicTrackListProps = {
   tracks: Track[];
@@ -78,6 +79,7 @@ export function MusicTrackList({
     <ul className="space-y-1.5" aria-label="Track list">
       {tracks.map((track, index) => {
         const isSelected = selectedTrackId === track.id;
+        const isTrackPlayable = isPlayable(track);
 
         return (
           <li
@@ -130,8 +132,9 @@ export function MusicTrackList({
                 type="button"
                 aria-label={`Play ${track.title}`}
                 onClick={() => onPlay(track)}
-                className="grid h-10 w-10 place-items-center rounded-full bg-[#ff98a2] text-black transition-transform hover:scale-[1.05] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb8c0]"
-              >
+                disabled={!isTrackPlayable}
+                className="grid h-10 w-10 place-items-center rounded-full bg-[#ff98a2] text-black transition-transform hover:scale-[1.05] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff98a2] disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/45"
+                >
                 <Play size={18} fill="currentColor" strokeWidth={2.1} />
               </button>
             </div>

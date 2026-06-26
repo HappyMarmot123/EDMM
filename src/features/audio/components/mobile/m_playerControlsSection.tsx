@@ -12,7 +12,7 @@ const MPlayerControlsSection = ({
 }: Pick<PlayerControlsSectionProps, "currentTrackInfo">) => {
   const { isPlaying, togglePlayPause, nextTrack, prevTrack } = useAudioPlayer();
   const playPauseLabel = isPlaying ? "Pause" : "Play";
-  const hasTrack = Boolean(currentTrackInfo);
+  const hasPlayableTrack = Boolean(currentTrackInfo?.url);
 
   return (
     <section
@@ -25,7 +25,7 @@ const MPlayerControlsSection = ({
         onClick={prevTrack}
         aria-label="Previous track"
         className="h-10 w-10 text-white/70 hover:text-white"
-        disabled={!hasTrack}
+        disabled={!hasPlayableTrack}
       >
         <SkipBack
           className="m-auto block"
@@ -43,7 +43,7 @@ const MPlayerControlsSection = ({
         onClick={togglePlayPause}
         label={playPauseLabel}
         className="h-11 w-11 bg-white text-black hover:bg-[#ffd6e1]"
-        disabled={!hasTrack}
+        disabled={!hasPlayableTrack}
         iconProps={{
           width: 28,
           height: 28,
@@ -56,7 +56,7 @@ const MPlayerControlsSection = ({
         onClick={nextTrack}
         aria-label="Next track"
         className="h-10 w-10 text-white/70 hover:text-white"
-        disabled={!hasTrack}
+        disabled={!hasPlayableTrack}
       >
         <SkipForward
           className="m-auto block"

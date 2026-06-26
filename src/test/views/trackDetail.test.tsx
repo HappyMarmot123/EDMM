@@ -3,27 +3,51 @@ import type { Track } from "@/entities/track/model";
 import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
 import TrackDetailAside from "@/widgets/musicShell/trackDetailAside";
 import { decodeTrackId } from "@/app/track/[id]/trackId";
+import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 
 jest.mock("@/shared/db/repositories/trackCacheRepo");
+jest.mock("@/shared/providers/audioPlayerProvider", () => ({
+  useAudioPlayer: jest.fn(),
+}));
+jest.mock("@/features/audio/components/audioVisualizer", () => ({
+  AudioVisualizer: () => <div>Audio visualizer</div>,
+}));
 
 const mockGetCachedTrack = getCachedTrack as jest.MockedFunction<typeof getCachedTrack>;
+const mockUseAudioPlayer = useAudioPlayer as jest.MockedFunction<
+  typeof useAudioPlayer
+>;
+
+const track: Track = {
+  id: "cloudinary:asset-1",
+  source: "cloudinary",
+  title: "Cached Track",
+  artistId: "artist-1",
+  artistName: "Cached Artist",
+  albumName: "Cached Album",
+  artworkUrl: "https://example.com/artwork.png",
+  durationMs: 240000,
+  streamUrl: "https://example.com/stream.mp3",
+  metadata: {},
+};
+
+const mockAudioState = {
+  currentTrack: {
+    assetId: track.id,
+    album: "Cached Album",
+    name: "Cached Track",
+    artworkId: "https://example.com/artwork.png",
+    url: "https://example.com/stream.mp3",
+    producer: "Cached Artist",
+  },
+  isPlaying: false,
+  audioAnalyser: null,
+};
 
 describe("TrackDetailAside", () => {
-  const track: Track = {
-    id: "cloudinary:asset-1",
-    source: "cloudinary",
-    title: "Cached Track",
-    artistId: "artist-1",
-    artistName: "Cached Artist",
-    albumName: "Cached Album",
-    artworkUrl: "https://example.com/artwork.png",
-    durationMs: 240000,
-    streamUrl: "https://example.com/stream.mp3",
-    metadata: {},
-  };
-
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseAudioPlayer.mockReturnValue(mockAudioState);
   });
 
   it("renders cached track details from the shell aside without lyrics", async () => {
@@ -43,6 +67,7 @@ describe("TrackDetailAside", () => {
     expect(screen.getByText("Cached Album")).toBeInTheDocument();
     expect(screen.getByText("4:00")).toBeInTheDocument();
     expect(screen.getByText("cloudinary")).toBeInTheDocument();
+    expect(screen.getByText("Audio visualizer")).toBeInTheDocument();
   });
 
   it("plays the cached track with the visible queue", async () => {

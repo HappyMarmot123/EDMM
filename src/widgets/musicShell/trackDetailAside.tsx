@@ -1,15 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Disc3, Music2, Play, Radio } from "lucide-react";
+import { Disc3, Music2, Play, Radio, X } from "lucide-react";
 import type { Track } from "@/entities/track/model";
+import { AudioVisualizer } from "@/features/audio/components/audioVisualizer";
 import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
+import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 
 type TrackDetailAsideProps = {
   selectedTrackId: string | null;
   fallbackTrack?: Track | null;
   queue: Track[];
   onPlay?: (track: Track, queue?: Track[]) => void;
+  onClose?: () => void;
 };
 
 const formatDuration = (durationMs: number) => {
@@ -36,9 +39,11 @@ export function TrackDetailAside({
   fallbackTrack = null,
   queue,
   onPlay,
+  onClose,
 }: TrackDetailAsideProps) {
   const [cachedTrack, setCachedTrack] = useState<Track | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { currentTrack, isPlaying, audioAnalyser } = useAudioPlayer();
 
   useEffect(() => {
     let isActive = true;
@@ -78,12 +83,28 @@ export function TrackDetailAside({
       : fallbackTrack?.id === selectedTrackId
         ? fallbackTrack
         : null;
+  const isCurrentTrack = track && currentTrack?.assetId === track.id;
+  const isVisualizerActive = Boolean(isCurrentTrack && isPlaying);
 
   return (
     <aside
       aria-label="Track details"
       className="min-h-[420px] rounded-lg border border-white/10 bg-[#0b0609] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)]"
     >
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <h2 className="text-sm font-black text-white/72">Track detail</h2>
+        {onClose ? (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close track detail"
+            className="grid h-8 w-8 place-items-center rounded-full border border-white/15 text-white/62 transition-colors hover:border-[#ff98a2]/35 hover:text-[#ffb8c0]"
+          >
+            <X size={15} strokeWidth={2.2} aria-hidden="true" />
+          </button>
+        ) : null}
+      </div>
+
       {!selectedTrackId ? (
         <div className="flex h-full min-h-[360px] flex-col justify-center rounded-md border border-dashed border-white/12 p-5 text-center">
           <Music2 className="mx-auto text-[#ff98a2]" size={34} strokeWidth={1.8} />
@@ -162,6 +183,14 @@ export function TrackDetailAside({
             <DetailLine label="Source" value={track.source} />
             <DetailLine label="Track ID" value={track.id} />
           </dl>
+
+          <AudioVisualizer
+            analyser={audioAnalyser}
+            isActive={isVisualizerActive}
+            isCurrentTrack={Boolean(isCurrentTrack)}
+            trackTitle={track.title}
+            artistName={track.artistName}
+          />
         </div>
       ) : null}
     </aside>

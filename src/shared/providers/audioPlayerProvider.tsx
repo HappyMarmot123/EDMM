@@ -30,7 +30,7 @@ const toTrackInfo = (track: Track): TrackInfo => ({
   album: track.albumName ?? track.source,
   name: track.title,
   artworkId: track.artworkUrl,
-  url: track.streamUrl ?? "",
+  url: isPlayable(track) ? track.streamUrl ?? "" : "",
   producer: track.artistName,
 });
 
@@ -78,21 +78,22 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
   }, []);
 
   const playTrack = useCallback(
-    (track: Track, nextQueue?: Track[]) => {
+    (track: Track, nextQueue?: Track[], playImmediately = true) => {
       const trackInfo = toTrackInfo(track);
-      const queueInfo = (nextQueue?.length ? nextQueue : [track]).map(
-        toTrackInfo
-      );
+      const queueInfo = (nextQueue?.length ? nextQueue : [track]).map(toTrackInfo);
+      const shouldAutoPlay = playImmediately && isPlayable(track);
 
       setQueue(queueInfo);
-      setTrack(trackInfo, isPlayable(track));
+      setTrack(trackInfo, shouldAutoPlay);
 
       cacheTrack(track).catch((error) => {
         console.warn("Failed to cache track:", error);
       });
-      addRecentPlay(track.id).catch((error) => {
-        console.warn("Failed to record recent play:", error);
-      });
+      if (shouldAutoPlay) {
+        addRecentPlay(track.id).catch((error) => {
+          console.warn("Failed to record recent play:", error);
+        });
+      }
     },
     [setTrack]
   );

@@ -8,11 +8,15 @@ import {
   getCachedTracks,
 } from "@/shared/db/repositories/trackCacheRepo";
 import { SearchView } from "@/views/search";
+import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 
 jest.mock("@/features/cloudinary/hooks/useCloudinaryTracks");
 jest.mock("@/features/library/hooks/useFavorites");
 jest.mock("@/features/library/hooks/useRecentPlays");
 jest.mock("@/shared/db/repositories/trackCacheRepo");
+jest.mock("@/shared/providers/audioPlayerProvider", () => ({
+  useAudioPlayer: jest.fn(),
+}));
 
 const mockUseCloudinaryTracks = useCloudinaryTracks as jest.Mock;
 const mockUseFavorites = useFavorites as jest.Mock;
@@ -22,6 +26,9 @@ const mockGetCachedTracks = getCachedTracks as jest.MockedFunction<
 >;
 const mockGetCachedTrack = getCachedTrack as jest.MockedFunction<
   typeof getCachedTrack
+>;
+const mockUseAudioPlayer = useAudioPlayer as jest.MockedFunction<
+  typeof useAudioPlayer
 >;
 
 const wrapperTrack: Track = {
@@ -52,6 +59,35 @@ const deepLinkedTrack: Track = {
 describe("SearchView", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseAudioPlayer.mockReturnValue({
+      currentTrack: null,
+      isPlaying: false,
+      isBuffering: false,
+      currentTime: 0,
+      duration: 0,
+      volume: 1,
+      isMuted: false,
+      queue: [],
+      audioInstance: null,
+      audioContext: null,
+      audioAnalyser: null,
+      cleanAudioInstance: jest.fn(),
+      setTrack: jest.fn(),
+      playTrack: jest.fn(),
+      handleSelectTrack: jest.fn(),
+      togglePlayPause: jest.fn(),
+      setIsPlaying: jest.fn(),
+      setCurrentTime: jest.fn(),
+      setDuration: jest.fn(),
+      setIsBuffering: jest.fn(),
+      setVolume: jest.fn(),
+      toggleMute: jest.fn(),
+      seekTo: jest.fn(),
+      seek: jest.fn(),
+      nextTrack: jest.fn(),
+      prevTrack: jest.fn(),
+      setLiveVolume: jest.fn(),
+    });
     mockUseCloudinaryTracks.mockReturnValue({
       data: [wrapperTrack],
       isLoading: false,
@@ -84,7 +120,7 @@ describe("SearchView", () => {
     render(<SearchView onPlay={onPlay} />);
     fireEvent.click(screen.getByRole("button", { name: "Play Wrapper Track" }));
 
-    expect(onPlay).toHaveBeenCalledWith(wrapperTrack, [wrapperTrack]);
+    expect(onPlay).toHaveBeenCalledWith(wrapperTrack, [wrapperTrack], true);
   });
 
   it("starts on the Favorites view from prop", async () => {

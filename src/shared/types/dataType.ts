@@ -49,7 +49,11 @@ export interface AudioPlayerState {
   volume: number;
   isMuted: boolean;
   setTrack: (track: TrackInfo, playImmediately?: boolean) => void;
-  playTrack: (track: Track, queue?: Track[]) => void;
+  playTrack: (
+    track: Track,
+    queue?: Track[],
+    playImmediately?: boolean,
+  ) => void;
   togglePlayPause: () => void | Promise<void>;
   setIsPlaying: (playing: boolean) => void;
   setCurrentTime: (time: number) => void;
