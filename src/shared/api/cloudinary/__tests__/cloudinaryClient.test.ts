@@ -19,6 +19,16 @@ const rawResource = {
   duration: 191.28,
   tags: ["edmm"],
 };
+const rawImageResource = {
+  asset_id: "asset-img",
+  public_id: "edmm/media-pipeline/example-artwork",
+  resource_type: "image",
+  type: "upload",
+  format: "jpg",
+  secure_url: "https://res.cloudinary.com/demo/image/upload/art.jpg",
+  duration: 0,
+  tags: ["edmm"],
+};
 
 const setCloudinaryEnv = () => {
   process.env.CLOUDINARY_CLOUD_NAME = "demo";
@@ -164,6 +174,64 @@ describe("fetchCloudinaryTracks", () => {
     expect(url.searchParams.get("expression")).toBe(
       '(resource_type:video OR resource_type:image) AND (asset_folder="edmm/media-pipeline" OR folder="edmm/media-pipeline")',
     );
+  });
+
+  it("returns mixed resources when resourceType=all and filterPlayable is disabled", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ resources: [rawResource, rawImageResource] }),
+    });
+
+    const tracks = await fetchCloudinaryTracks("", { resourceType: "all" });
+
+    expect(tracks).toHaveLength(2);
+    expect(tracks[0]).toMatchObject({
+      id: "cloudinary:asset-1",
+      source: "cloudinary",
+      metadata: expect.objectContaining({ resourceType: "video" }),
+    });
+    expect(tracks[1]).toMatchObject({
+      id: "cloudinary:asset-img",
+      source: "cloudinary",
+      metadata: expect.objectContaining({ resourceType: "image" }),
+    });
+  });
+
+  it("filters image resources when filterPlayable is enabled", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ resources: [rawResource, rawImageResource] }),
+    });
+
+    const tracks = await fetchCloudinaryTracks("", {
+      resourceType: "all",
+      filterPlayable: true,
+    });
+
+    expect(tracks).toHaveLength(1);
+    expect(tracks[0]).toMatchObject({
+      id: "cloudinary:asset-1",
+      source: "cloudinary",
+      metadata: expect.objectContaining({ resourceType: "video" }),
+    });
+  });
+
+  it("returns image resources when filterPlayable is disabled", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ resources: [rawImageResource] }),
+    });
+
+    const tracks = await fetchCloudinaryTracks("", {
+      resourceType: "all",
+      filterPlayable: false,
+    });
+
+    expect(tracks).toHaveLength(1);
+    expect(tracks[0]).toMatchObject({
+      id: "cloudinary:asset-img",
+      metadata: expect.objectContaining({ resourceType: "image" }),
+    });
   });
 
   it("fetches all Cloudinary pages using next_cursor", async () => {

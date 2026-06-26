@@ -48,6 +48,28 @@ it("passes q to the Cloudinary client", async () => {
   });
 });
 
+it("passes filterPlayable=true to the Cloudinary client", async () => {
+  await GET(
+    request("http://x/api/cloudinary/tracks?resourceType=all&filterPlayable=true"),
+  );
+
+  expect(fetchCloudinaryTracks).toHaveBeenCalledWith("", {
+    resourceType: "all",
+    filterPlayable: true,
+  });
+});
+
+it("passes explicit filterPlayable=false to the Cloudinary client", async () => {
+  await GET(
+    request("http://x/api/cloudinary/tracks?resourceType=all&filterPlayable=false"),
+  );
+
+  expect(fetchCloudinaryTracks).toHaveBeenCalledWith("", {
+    resourceType: "all",
+    filterPlayable: false,
+  });
+});
+
 it("passes resourceType query parameter through", async () => {
   await GET(request("http://x/api/cloudinary/tracks?resourceType=all"));
 

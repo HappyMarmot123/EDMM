@@ -67,6 +67,20 @@ const pruneCloudinaryTrackCache = (now: number) => {
   }
 };
 
+type FetchCloudinaryTrackOptions = {
+  resourceType?: ResourceTypeFilter;
+  filterPlayable?: boolean;
+};
+
+const isPlayableCloudinaryTrack = (track: Track) => {
+  const resourceType =
+    typeof track.metadata?.resourceType === "string"
+      ? track.metadata.resourceType
+      : "video";
+
+  return resourceType.toLowerCase() !== "image";
+};
+
 export function buildCloudinaryExpression(
   folder: string,
   query: string,
@@ -91,17 +105,24 @@ export function clearCloudinaryTrackCacheForTests() {
 
 export async function fetchCloudinaryTracks(
   query = "",
-  options?: { resourceType?: ResourceTypeFilter },
+  options: FetchCloudinaryTrackOptions = {},
 ): Promise<Track[]> {
   assertServerEnvironment();
 
   const { cloudName, apiKey, apiSecret, folder } = requiredEnv();
   const normalizedQuery = query.trim();
   const resourceType = options?.resourceType ?? "video";
+  const filterPlayable = options.filterPlayable ?? false;
   const now = Date.now();
   pruneCloudinaryTrackCache(now);
 
-  const cached = responseCache.get(normalizedQuery);
+  const cacheKey = JSON.stringify({
+    query: normalizedQuery,
+    resourceType,
+    filterPlayable,
+  });
+
+  const cached = responseCache.get(cacheKey);
 
   if (cached && cached.expiresAt > now) return cached.tracks;
 
@@ -138,7 +159,12 @@ export async function fetchCloudinaryTracks(
       next_cursor?: string;
     };
 
-    tracks.push(...(body.resources ?? []).map(adaptCloudinaryTrack));
+    const mappedTracks = (body.resources ?? []).map(adaptCloudinaryTrack);
+    const filtered = filterPlayable
+      ? mappedTracks.filter(isPlayableCloudinaryTrack)
+      : mappedTracks;
+
+    tracks.push(...filtered);
     page += 1;
     nextCursor = body.next_cursor ?? null;
   } while (nextCursor && page < MAX_PAGES);
@@ -149,7 +175,7 @@ export async function fetchCloudinaryTracks(
 
   const fetchedAt = Date.now();
 
-  responseCache.set(normalizedQuery, {
+  responseCache.set(cacheKey, {
     expiresAt: fetchedAt + CACHE_TTL_MS,
     tracks,
   });

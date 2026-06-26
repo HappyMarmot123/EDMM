@@ -54,6 +54,50 @@ it("calls the Cloudinary tracks route with encoded nonblank query", async () => 
   );
 });
 
+it("calls the Cloudinary tracks route with all resource type", async () => {
+  mockFetch.mockResolvedValue({
+    ok: true,
+    json: async () => [{ id: "cloudinary:asset-1" }],
+  });
+
+  const { result } = renderHook(
+    () => useCloudinaryTracks("  lemonade  ", { resourceType: "all" }),
+    {
+      wrapper: createWrapper(),
+    },
+  );
+
+  await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+  expect(mockFetch).toHaveBeenCalledWith(
+    "/api/cloudinary/tracks?q=lemonade&resourceType=all",
+  );
+});
+
+it("calls the Cloudinary tracks route with filterPlayable=false", async () => {
+  mockFetch.mockResolvedValue({
+    ok: true,
+    json: async () => [{ id: "cloudinary:asset-1" }],
+  });
+
+  const { result } = renderHook(
+    () =>
+      useCloudinaryTracks("  lemonade  ", {
+        resourceType: "all",
+        filterPlayable: false,
+      }),
+    {
+      wrapper: createWrapper(),
+    },
+  );
+
+  await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+  expect(mockFetch).toHaveBeenCalledWith(
+    "/api/cloudinary/tracks?q=lemonade&resourceType=all&filterPlayable=false",
+  );
+});
+
 it("omits q for blank queries", async () => {
   mockFetch.mockResolvedValue({
     ok: true,
