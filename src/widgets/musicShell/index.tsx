@@ -12,6 +12,8 @@ import TrackDetailAside from "./trackDetailAside";
 
 export interface MusicShellProps {
   onPlay?: (track: Track, queue?: Track[]) => void;
+  initialView?: MusicView;
+  initialTrackId?: string | null;
 }
 
 type CachedTrackState = {
@@ -22,6 +24,8 @@ type CachedTrackState = {
 const noop: NonNullable<MusicShellProps["onPlay"]> = () => {};
 
 const dedupeIds = (ids: Iterable<string>) => [...new Set(ids)];
+const isMusicView = (view: MusicView | undefined): view is MusicView =>
+  view === "all" || view === "favorites" || view === "recent";
 
 function useCachedTrackList(ids: string[]): CachedTrackState {
   const [state, setState] = useState<CachedTrackState>({
@@ -58,10 +62,32 @@ function useCachedTrackList(ids: string[]): CachedTrackState {
   return state;
 }
 
-export function MusicShell({ onPlay = noop }: MusicShellProps) {
+export function MusicShell({
+  onPlay = noop,
+  initialView,
+  initialTrackId = null,
+}: MusicShellProps) {
+  const normalizedInitialView = isMusicView(initialView) ? initialView : "all";
+  const normalizedInitialTrackId =
+    initialTrackId?.trim().length ? initialTrackId : null;
+
   const [query, setQuery] = useState("");
-  const [view, setView] = useState<MusicView>("all");
-  const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
+  const [view, setView] = useState<MusicView>(normalizedInitialView);
+  const [selectedTrackId, setSelectedTrackId] = useState<string | null>(
+    normalizedInitialTrackId,
+  );
+  const [selectionSource, setSelectionSource] = useState<"initial" | "visible" | null>(
+    normalizedInitialTrackId ? "initial" : null,
+  );
+
+  useEffect(() => {
+    setView(normalizedInitialView);
+  }, [normalizedInitialView]);
+
+  useEffect(() => {
+    setSelectedTrackId(normalizedInitialTrackId);
+    setSelectionSource(normalizedInitialTrackId ? "initial" : null);
+  }, [normalizedInitialTrackId]);
 
   const normalizedQuery = query.trim();
   const {
@@ -101,13 +127,20 @@ export function MusicShell({ onPlay = noop }: MusicShellProps) {
 
     return visibleTracks.find((track) => track.id === selectedTrackId) ?? null;
   }, [selectedTrackId, visibleTracks]);
-  const validSelectedTrackId = selectedTrack?.id ?? null;
+  const visibleSelectedTrackId = selectedTrack?.id ?? null;
+  const detailSelectedTrackId =
+    selectionSource === "initial" ? selectedTrackId : visibleSelectedTrackId;
 
   useEffect(() => {
-    if (selectedTrackId && !visibleTrackIds.has(selectedTrackId)) {
+    if (
+      selectedTrackId &&
+      selectionSource === "visible" &&
+      !visibleTrackIds.has(selectedTrackId)
+    ) {
       setSelectedTrackId(null);
+      setSelectionSource(null);
     }
-  }, [selectedTrackId, visibleTrackIds]);
+  }, [selectedTrackId, selectionSource, visibleTrackIds]);
 
   const isVisibleLoading =
     view === "all"
@@ -130,7 +163,7 @@ export function MusicShell({ onPlay = noop }: MusicShellProps) {
   return (
     <main className="min-h-screen bg-[#050306] px-4 pb-32 pt-5 text-white sm:px-6 lg:px-8">
       <section className="mx-auto grid w-full max-w-[1440px] gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="min-w-0 space-y-5">
+        <section className="min-w-0 space-y-5">
           <MusicShellHeader
             query={query}
             view={view}
@@ -141,29 +174,42 @@ export function MusicShell({ onPlay = noop }: MusicShellProps) {
             onViewChange={setView}
           />
 
-          <section
+          <main
             aria-label="Music catalog"
-            className="rounded-lg border border-white/10 bg-black/24 p-3 sm:p-4"
+            className="min-h-0 flex-1 rounded-lg border border-white/10 bg-black/24 p-3 sm:p-4"
           >
             <MusicTrackList
               tracks={visibleTracks}
-              selectedTrackId={validSelectedTrackId}
+              selectedTrackId={visibleSelectedTrackId}
               isLoading={isVisibleLoading}
               isError={isVisibleError}
               emptyMessage={emptyMessage}
-              onSelect={(track) => setSelectedTrackId(track.id)}
+              onSelect={(track) => {
+                setSelectedTrackId(track.id);
+                setSelectionSource("visible");
+              }}
               onPlay={handlePlay}
               onRetry={view === "all" ? () => void refetch?.() : undefined}
             />
-          </section>
-        </div>
+          </main>
 
-        <TrackDetailAside
-          selectedTrackId={validSelectedTrackId}
-          fallbackTrack={selectedTrack}
-          queue={visibleTracks}
-          onPlay={onPlay}
-        />
+          <footer className="rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-xs text-white/58">
+            <p className="font-semibold text-white/72">Now playing context</p>
+            <p className="mt-1">
+              Cloudinary catalog is the single runtime source. Favorites and recent
+              play views are assembled from local cache.
+            </p>
+          </footer>
+        </section>
+
+        <aside aria-label="Track detail aside" className="xl:pb-0">
+          <TrackDetailAside
+            selectedTrackId={detailSelectedTrackId}
+            fallbackTrack={selectedTrack}
+            queue={visibleTracks}
+            onPlay={onPlay}
+          />
+        </aside>
       </section>
     </main>
   );

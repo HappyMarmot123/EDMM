@@ -53,6 +53,7 @@ const deferred = <T,>() => {
 const cloudTracks = [
   track("cloudinary:all-1", "Cloud Track One", "Cloud Artist"),
   track("cloudinary:all-2", "Cloud Track Two", "Cloud Artist"),
+  track("cloudinary:all-3", "Cloud Track Three", "Cloud Artist"),
 ];
 const favoriteTrack = track("cloudinary:fav-1", "Favorite Track");
 const recentTrack = track("cloudinary:recent-1", "Recent Track");
@@ -129,6 +130,58 @@ describe("MusicShell", () => {
 
     expect(mockGetCachedTracks).toHaveBeenCalledWith(["cloudinary:recent-1"]);
     expect(await screen.findByText("Recent Track")).toBeInTheDocument();
+  });
+
+  it("starts on an initial Favorites view", async () => {
+    mockUseFavorites.mockReturnValue({
+      favoriteIds: new Set(["cloudinary:fav-1"]),
+      isFavorite: (id: string) => id === "cloudinary:fav-1",
+      toggle: jest.fn(),
+    });
+    mockGetCachedTracks.mockResolvedValue([favoriteTrack]);
+
+    render(<MusicShell initialView="favorites" />);
+
+    expect(screen.getByRole("button", { name: "Favorites" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(await screen.findByText("Favorite Track")).toBeInTheDocument();
+  });
+
+  it("updates detail selection when initialTrackId changes", async () => {
+    mockGetCachedTrack.mockImplementation(async (trackId: string) =>
+      [favoriteTrack, recentTrack, ...cloudTracks].find((item) => item.id === trackId),
+    );
+
+    const { rerender } = render(
+      <MusicShell initialTrackId="cloudinary:fav-1" />,
+    );
+
+    expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
+      "Favorite Track",
+    );
+
+    rerender(<MusicShell initialTrackId="cloudinary:all-3" />);
+
+    expect(mockGetCachedTrack).toHaveBeenLastCalledWith("cloudinary:all-3");
+    expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
+      "Cloud Track Three",
+    );
+  });
+
+  it("opens an initial cached track detail even when it is not visible", async () => {
+    const deepLinkedTrack = track("cloudinary:asset-1", "Route Selected Track");
+    mockGetCachedTrack.mockImplementation(async (trackId: string) =>
+      trackId === "cloudinary:asset-1" ? deepLinkedTrack : undefined,
+    );
+
+    render(<MusicShell initialTrackId="cloudinary:asset-1" />);
+
+    expect(mockGetCachedTrack).toHaveBeenCalledWith("cloudinary:asset-1");
+    expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
+      "Route Selected Track",
+    );
   });
 
   it("selects a row and hydrates the right-side detail aside from cache", async () => {
