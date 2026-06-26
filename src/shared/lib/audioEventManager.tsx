@@ -1,6 +1,17 @@
-// actions.audio, actions.isSeekingRef를 제외한 모든 프롭은 actions.state.로 접근하도록 수정
+type AudioEventManagerState = {
+  audio: HTMLAudioElement;
+  storeSetCurrentTime: (time: number) => void;
+  storeSetDuration: (duration: number) => void;
+  storeSetIsBuffering: (isBuffering: boolean) => void;
+};
 
-export const setupAudioEventListeners = (actions: any) => {
+type AudioEventManagerActions = {
+  state: AudioEventManagerState;
+  isSeekingRef: { current: boolean };
+  nextTrack: () => void;
+};
+
+export const setupAudioEventListeners = (actions: AudioEventManagerActions) => {
   const audio = actions.state.audio;
 
   const handleTimeUpdate = () => {
@@ -18,13 +29,13 @@ export const setupAudioEventListeners = (actions: any) => {
     }
   };
 
-  const handleError = (e: Event) => {
+  const handleError = (event: Event) => {
     if (!audio.currentSrc) {
       actions.state.storeSetIsBuffering(false);
       return;
     }
 
-    console.error("Audio Error:", e);
+    console.error("Audio Error:", event);
     actions.state.storeSetIsBuffering(false);
   };
 
