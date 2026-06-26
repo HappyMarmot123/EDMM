@@ -35,7 +35,7 @@ it("returns JSON tracks", async () => {
   const res = await GET(request("http://x/api/cloudinary/tracks"));
   const body = await res.json();
 
-  expect(fetchCloudinaryTracks).toHaveBeenCalledWith("");
+  expect(fetchCloudinaryTracks).toHaveBeenCalledWith("", { resourceType: "video" });
   expect(res.status).toBe(200);
   expect(body).toEqual([{ id: "cloudinary:asset-1" }]);
 });
@@ -43,7 +43,17 @@ it("returns JSON tracks", async () => {
 it("passes q to the Cloudinary client", async () => {
   await GET(request("http://x/api/cloudinary/tracks?q=lemonade"));
 
-  expect(fetchCloudinaryTracks).toHaveBeenCalledWith("lemonade");
+  expect(fetchCloudinaryTracks).toHaveBeenCalledWith("lemonade", {
+    resourceType: "video",
+  });
+});
+
+it("passes resourceType query parameter through", async () => {
+  await GET(request("http://x/api/cloudinary/tracks?resourceType=all"));
+
+  expect(fetchCloudinaryTracks).toHaveBeenCalledWith("", {
+    resourceType: "all",
+  });
 });
 
 it("returns 500 when Cloudinary configuration is missing", async () => {

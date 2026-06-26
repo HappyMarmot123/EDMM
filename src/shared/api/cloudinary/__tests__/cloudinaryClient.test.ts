@@ -45,6 +45,18 @@ describe("buildCloudinaryExpression", () => {
     );
   });
 
+  it("builds an image expression when requested", () => {
+    expect(buildCloudinaryExpression("edmm/media-pipeline", "", "image")).toBe(
+      'resource_type:image AND (asset_folder="edmm/media-pipeline" OR folder="edmm/media-pipeline")',
+    );
+  });
+
+  it("builds an all-type expression when requested", () => {
+    expect(buildCloudinaryExpression("edmm/media-pipeline", "", "all")).toBe(
+      '(resource_type:video OR resource_type:image) AND (asset_folder="edmm/media-pipeline" OR folder="edmm/media-pipeline")',
+    );
+  });
+
   it("builds prefix wildcard search clauses from safe tokens", () => {
     const expression = buildCloudinaryExpression(
       "edmm/media-pipeline",
@@ -120,6 +132,38 @@ describe("fetchCloudinaryTracks", () => {
       id: "cloudinary:asset-1",
       source: "cloudinary",
     });
+  });
+
+  it("calls Cloudinary Search with image expression when resourceType=image", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ resources: [rawResource] }),
+    });
+
+    await fetchCloudinaryTracks("", { resourceType: "image" });
+
+    const requestUrl = mockFetch.mock.calls[0][0];
+    const url = new URL(requestUrl.toString());
+
+    expect(url.searchParams.get("expression")).toBe(
+      'resource_type:image AND (asset_folder="edmm/media-pipeline" OR folder="edmm/media-pipeline")',
+    );
+  });
+
+  it("calls Cloudinary Search with combined expression when resourceType=all", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ resources: [rawResource] }),
+    });
+
+    await fetchCloudinaryTracks("", { resourceType: "all" });
+
+    const requestUrl = mockFetch.mock.calls[0][0];
+    const url = new URL(requestUrl.toString());
+
+    expect(url.searchParams.get("expression")).toBe(
+      '(resource_type:video OR resource_type:image) AND (asset_folder="edmm/media-pipeline" OR folder="edmm/media-pipeline")',
+    );
   });
 
   it("fetches all Cloudinary pages using next_cursor", async () => {

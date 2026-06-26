@@ -11,6 +11,7 @@ const MAX_PAGES = 20;
 const MAX_SEARCH_TOKENS = 8;
 const SEARCH_TOKEN_REGEX = /[\p{L}\p{N}_-]+/gu;
 const SEARCH_FIELDS = ["public_id", "filename", "tags", "context"] as const;
+type ResourceTypeFilter = "video" | "image" | "all";
 
 type CacheEntry = {
   expiresAt: number;
@@ -66,9 +67,17 @@ const pruneCloudinaryTrackCache = (now: number) => {
   }
 };
 
-export function buildCloudinaryExpression(folder: string, query: string) {
+export function buildCloudinaryExpression(
+  folder: string,
+  query: string,
+  resourceType: ResourceTypeFilter = "video",
+) {
   const normalizedFolder = folder.trim();
-  const base = `resource_type:video AND (asset_folder="${escapeExpressionValue(normalizedFolder)}" OR folder="${escapeExpressionValue(normalizedFolder)}")`;
+  const resourceTypeExpression =
+    resourceType === "all"
+      ? "(resource_type:video OR resource_type:image)"
+      : `resource_type:${resourceType}`;
+  const base = `${resourceTypeExpression} AND (asset_folder="${escapeExpressionValue(normalizedFolder)}" OR folder="${escapeExpressionValue(normalizedFolder)}")`;
   const tokens = searchTokens(query);
 
   if (tokens.length === 0) return base;
@@ -80,11 +89,15 @@ export function clearCloudinaryTrackCacheForTests() {
   responseCache.clear();
 }
 
-export async function fetchCloudinaryTracks(query = ""): Promise<Track[]> {
+export async function fetchCloudinaryTracks(
+  query = "",
+  options?: { resourceType?: ResourceTypeFilter },
+): Promise<Track[]> {
   assertServerEnvironment();
 
   const { cloudName, apiKey, apiSecret, folder } = requiredEnv();
   const normalizedQuery = query.trim();
+  const resourceType = options?.resourceType ?? "video";
   const now = Date.now();
   pruneCloudinaryTrackCache(now);
 
@@ -94,7 +107,7 @@ export async function fetchCloudinaryTracks(query = ""): Promise<Track[]> {
 
   const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
   const tracks: Track[] = [];
-  const expression = buildCloudinaryExpression(folder, normalizedQuery);
+  const expression = buildCloudinaryExpression(folder, normalizedQuery, resourceType);
   let nextCursor: string | null = null;
   let page = 0;
 
