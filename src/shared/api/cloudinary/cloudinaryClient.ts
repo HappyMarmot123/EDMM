@@ -37,12 +37,14 @@ const requiredEnv = () => {
   const apiKey = process.env.CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
   const folder = process.env.CLOUDINARY_AUDIO_FOLDER?.trim() ?? "";
+  const catalogScope = process.env.CLOUDINARY_CATALOG_SCOPE?.trim().toLowerCase() ?? "";
+  const isFolderScope = catalogScope === "folder";
 
   if (!cloudName || !apiKey || !apiSecret) {
     throw new Error("Cloudinary configuration is missing");
   }
 
-  return { cloudName, apiKey, apiSecret, folder };
+  return { cloudName, apiKey, apiSecret, folder: isFolderScope ? folder : "" };
 };
 
 const escapeExpressionValue = (value: string) =>
