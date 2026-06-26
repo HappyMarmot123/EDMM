@@ -6,6 +6,8 @@ import {
 
 const CACHE_TTL_MS = 60_000;
 const MAX_CACHE_ENTRIES = 100;
+const MAX_RESULTS = 100;
+const MAX_PAGES = 20;
 const MAX_SEARCH_TOKENS = 8;
 const SEARCH_TOKEN_REGEX = /[\p{L}\p{N}_-]+/gu;
 const SEARCH_FIELDS = ["public_id", "filename", "tags", "context"] as const;
@@ -90,29 +92,48 @@ export async function fetchCloudinaryTracks(query = ""): Promise<Track[]> {
 
   if (cached && cached.expiresAt > now) return cached.tracks;
 
-  const url = new URL(
-    `https://api.cloudinary.com/v1_1/${cloudName}/resources/search`,
-  );
-  url.searchParams.set(
-    "expression",
-    buildCloudinaryExpression(folder, normalizedQuery),
-  );
-  url.searchParams.set("max_results", "100");
-  url.searchParams.append("with_field", "tags");
-  url.searchParams.append("with_field", "context");
-
   const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
-  const response = await fetch(url, {
-    headers: { Authorization: `Basic ${auth}` },
-    cache: "no-store",
-  });
+  const tracks: Track[] = [];
+  const expression = buildCloudinaryExpression(folder, normalizedQuery);
+  let nextCursor: string | null = null;
+  let page = 0;
 
-  if (!response.ok) {
-    throw new Error(`Cloudinary search failed with status ${response.status}`);
+  do {
+    const url = new URL(
+      `https://api.cloudinary.com/v1_1/${cloudName}/resources/search`,
+    );
+    url.searchParams.set("expression", expression);
+    url.searchParams.set("max_results", String(MAX_RESULTS));
+    url.searchParams.append("with_field", "tags");
+    url.searchParams.append("with_field", "context");
+
+    if (nextCursor) {
+      url.searchParams.set("next_cursor", nextCursor);
+    }
+
+    const response = await fetch(url, {
+      headers: { Authorization: `Basic ${auth}` },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new Error(`Cloudinary search failed with status ${response.status}`);
+    }
+
+    const body = (await response.json()) as {
+      resources?: CloudinaryResource[];
+      next_cursor?: string;
+    };
+
+    tracks.push(...(body.resources ?? []).map(adaptCloudinaryTrack));
+    page += 1;
+    nextCursor = body.next_cursor ?? null;
+  } while (nextCursor && page < MAX_PAGES);
+
+  if (page >= MAX_PAGES && nextCursor) {
+    throw new Error("Cloudinary search pagination exceeded safety limit");
   }
 
-  const body = (await response.json()) as { resources?: CloudinaryResource[] };
-  const tracks = (body.resources ?? []).map(adaptCloudinaryTrack);
   const fetchedAt = Date.now();
 
   responseCache.set(normalizedQuery, {

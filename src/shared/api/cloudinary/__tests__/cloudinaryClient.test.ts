@@ -122,6 +122,50 @@ describe("fetchCloudinaryTracks", () => {
     });
   });
 
+  it("fetches all Cloudinary pages using next_cursor", async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          resources: [rawResource],
+          next_cursor: "cursor-1",
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          resources: [{ ...rawResource, asset_id: "asset-2", public_id: "edmm/media-pipeline/b.mp3" }],
+        }),
+      });
+
+    const tracks = await fetchCloudinaryTracks();
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch.mock.calls[0][0].toString()).toContain("max_results=100");
+    expect(mockFetch.mock.calls[1][0].toString()).toContain("next_cursor=cursor-1");
+    expect(mockFetch.mock.calls[0][1]).toMatchObject({ cache: "no-store" });
+    expect(mockFetch.mock.calls[1][1]).toMatchObject({ cache: "no-store" });
+    expect(tracks).toHaveLength(2);
+    expect(tracks[0]).toMatchObject({ id: "cloudinary:asset-1" });
+    expect(tracks[1]).toMatchObject({ id: "cloudinary:asset-2" });
+  });
+
+  it("errors when pagination loops too much", async () => {
+    mockFetch.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: async () => ({
+          resources: [rawResource],
+          next_cursor: "cursor-loop",
+        }),
+      }),
+    );
+
+    await expect(fetchCloudinaryTracks()).rejects.toThrow(
+      "Cloudinary search pagination exceeded safety limit",
+    );
+  });
+
   it("includes the search term in the Cloudinary expression", async () => {
     mockFetch.mockResolvedValue({
       ok: true,
