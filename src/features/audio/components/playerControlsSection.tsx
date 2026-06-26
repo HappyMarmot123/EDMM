@@ -1,10 +1,12 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { PlayerControlsSectionProps } from "@/shared/types/dataType";
 import {
-  SkipBack,
-  Play,
   Pause,
+  Play,
+  Repeat2,
+  Shuffle,
+  SkipBack,
   SkipForward,
   Volume2,
   VolumeX,
@@ -60,6 +62,9 @@ export const PlayerVolumeControls: React.FC = () => {
 const PlayerControlsSection: React.FC<
   Omit<PlayerControlsSectionProps, "isMobile">
 > = ({ currentTrackInfo }) => {
+  const [isShuffleEnabled, setIsShuffleEnabled] = useState(false);
+  const [isRepeatEnabled, setIsRepeatEnabled] = useState(false);
+
   const {
     isPlaying,
     volume,
@@ -118,53 +123,95 @@ const PlayerControlsSection: React.FC<
   return (
     <section
       id="player-controls"
-      className="flex w-full items-center justify-center gap-2"
+      className="flex w-full flex-col items-center gap-2"
       aria-label={`${currentTrackInfo?.name ?? "Current track"} controls`}
     >
-      <PlayerControlButton
-        id="play-previous"
-        onClick={prevTrack}
-        aria-label="Previous track"
-        className="h-10 w-10 text-white/70 hover:text-white"
-        disabled={!hasTrack}
-      >
-        <SkipBack
-          className="m-auto block transition-colors duration-200 ease-out"
-          width={20}
-          fill="currentColor"
-          aria-hidden="true"
+      <div className="flex w-full items-center justify-center gap-2">
+        <PlayerControlButton
+          id="shuffle"
+          onClick={() => setIsShuffleEnabled((value) => !value)}
+          aria-label={
+            isShuffleEnabled ? "Disable shuffle playback" : "Enable shuffle playback"
+          }
+          className="h-9 w-9 text-white/60 hover:text-white"
+          disabled={!hasTrack}
+        >
+          <Shuffle
+            className="m-auto block transition-colors duration-200 ease-out"
+            width={17}
+            fill="currentColor"
+            aria-hidden="true"
+          />
+        </PlayerControlButton>
+
+        <PlayerControlButton
+          id="play-previous"
+          onClick={prevTrack}
+          aria-label="Previous track"
+          className="h-10 w-10 text-white/70 hover:text-white"
+          disabled={!hasTrack}
+        >
+          <SkipBack
+            className="m-auto block transition-colors duration-200 ease-out"
+            width={20}
+            fill="currentColor"
+            aria-hidden="true"
+          />
+        </PlayerControlButton>
+
+        <IconToggleButton
+          id="play-pause"
+          condition={isPlaying}
+          IconOnTrue={Pause}
+          IconOnFalse={Play}
+          onClick={togglePlayPause}
+          label={playPauseLabel}
+          className="h-11 w-11 bg-white text-black hover:bg-[#ffd6e1]"
+          disabled={!hasTrack}
+          iconProps={{
+            width: 22,
+            height: 22,
+            fill: "currentColor",
+            className: "text-black",
+          }}
         />
-      </PlayerControlButton>
-      <IconToggleButton
-        id="play-pause"
-        condition={isPlaying}
-        IconOnTrue={Pause}
-        IconOnFalse={Play}
-        onClick={togglePlayPause}
-        label={playPauseLabel}
-        className="h-11 w-11 bg-white text-black hover:bg-[#ffd6e1]"
-        disabled={!hasTrack}
-        iconProps={{
-          width: 22,
-          height: 22,
-          fill: "currentColor",
-          className: "text-black",
-        }}
-      />
-      <PlayerControlButton
-        id="play-next"
-        onClick={nextTrack}
-        aria-label="Next track"
-        className="h-10 w-10 text-white/70 hover:text-white"
-        disabled={!hasTrack}
-      >
-        <SkipForward
-          className="m-auto block transition-colors duration-200 ease-out"
-          width={20}
-          fill="currentColor"
-          aria-hidden="true"
-        />
-      </PlayerControlButton>
+
+        <PlayerControlButton
+          id="play-next"
+          onClick={nextTrack}
+          aria-label="Next track"
+          className="h-10 w-10 text-white/70 hover:text-white"
+          disabled={!hasTrack}
+        >
+          <SkipForward
+            className="m-auto block transition-colors duration-200 ease-out"
+            width={20}
+            fill="currentColor"
+            aria-hidden="true"
+          />
+        </PlayerControlButton>
+
+        <PlayerControlButton
+          id="repeat"
+          onClick={() => setIsRepeatEnabled((value) => !value)}
+          aria-label={
+            isRepeatEnabled ? "Disable repeat playback" : "Enable repeat playback"
+          }
+          className={`h-9 w-9 text-white/60 hover:text-white transition-colors ${isRepeatEnabled ? "text-[#ff98a2]" : ""}`}
+          disabled={!hasTrack}
+        >
+          <Repeat2
+            className="m-auto block transition-colors duration-200 ease-out"
+            width={17}
+            fill="currentColor"
+            aria-hidden="true"
+          />
+        </PlayerControlButton>
+      </div>
+
+      <div className="min-h-[14px] text-center text-[11px] font-black uppercase tracking-[0.12em] text-white/50">
+        {isShuffleEnabled ? "Shuffle" : "Linear"}
+      </div>
     </section>
   );
 };

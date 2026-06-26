@@ -63,20 +63,20 @@ const PlayerTrackDetails: React.FC<
     <div
       id="player-track"
       aria-label={`${currentTrackInfo?.name ?? "Current track"} progress`}
-      className="w-full"
+      className="w-full space-y-1.5"
     >
+      <div className="flex items-center justify-between px-1 text-[11px] font-black uppercase tracking-[0.12em] text-white/46">
+        <span className="min-w-[2.5rem] text-right text-white/54">
+          {formatTime(currentTime)}
+        </span>
+        <span aria-label="Track duration">{formatTime(duration)}</span>
+      </div>
+
       <section
         id="track-time"
         className="flex w-full items-center gap-2"
         aria-label="Track progress"
       >
-        <div
-          id="current-time"
-          className="w-10 text-right text-[11px] tabular-nums text-white/50"
-          aria-live="polite"
-        >
-          {formatTime(currentTime)}
-        </div>
         <section
           id="seek-bar-container"
           ref={seekBarContainerRef}
@@ -114,12 +114,6 @@ const PlayerTrackDetails: React.FC<
             style={{ width: `${currentProgress}%` }}
           ></div>
         </section>
-        <div
-          id="track-length"
-          className="w-10 text-[11px] tabular-nums text-white/50"
-        >
-          {formatTime(duration)}
-        </div>
       </section>
     </div>
   );
