@@ -15,13 +15,13 @@ const track: TrackInfo = {
   album: "Album One",
   name: "Track One",
   artworkId:
-    "https://audius-content-11.figment.io/content/QmVti2nYb2TvQV8FgjwMyMuRZxUfyJdkVSW4YPwpEWm7dT/480x480.jpg",
-  url: "/api/audius/stream/track-1",
+    "https://res.cloudinary.com/demo/image/upload/v1719000000/cloudinary-cover.jpg",
+  url: "/stream/track-1",
   producer: "Artist One",
 };
 
 describe("AlbumArtwork", () => {
-  it("renders dynamic Audius artwork with a native image on desktop", () => {
+  it("renders dynamic Cloudinary artwork with a native image on desktop", () => {
     render(
       <AlbumArtwork
         isPlaying={false}
@@ -37,7 +37,7 @@ describe("AlbumArtwork", () => {
     );
   });
 
-  it("renders dynamic Audius artwork with a native image on mobile", () => {
+  it("renders dynamic Cloudinary artwork with a native image on mobile", () => {
     render(
       <MAlbumArtwork
         isPlaying={false}

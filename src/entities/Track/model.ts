@@ -1,4 +1,4 @@
-export type TrackSource = "audius" | "cloudinary";
+export type TrackSource = "cloudinary";
 
 export interface Track {
   id: string;

@@ -36,7 +36,7 @@ const renderLibrary = () => {
 
 const track = (id: string, title: string): Track => ({
   id,
-  source: "audius",
+  source: "cloudinary",
   title,
   artistId: "artist-1",
   artistName: "Artist",

@@ -2,8 +2,8 @@
 
 describe("Track model", () => {
   const base: Track = {
-    id: "audius:1",
-    source: "audius",
+    id: "cloudinary:1",
+    source: "cloudinary",
     title: "T",
     artistId: "a1",
     artistName: "A",

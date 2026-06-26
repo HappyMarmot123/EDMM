@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element -- Player artwork receives dynamic Audius CDN hosts. */
+/* eslint-disable @next/next/no-img-element -- Player artwork receives dynamic CDN hosts. */
 "use client";
 
 import React from "react";

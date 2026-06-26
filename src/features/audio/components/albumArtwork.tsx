@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element -- Player artwork receives dynamic Audius CDN hosts. */
+/* eslint-disable @next/next/no-img-element -- Player artwork receives dynamic CDN hosts. */
 import React from "react";
 import clsx from "clsx";
 import { Music2 } from "lucide-react";

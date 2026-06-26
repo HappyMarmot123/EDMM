@@ -8,7 +8,6 @@ import {
   Disc3,
   ExternalLink,
   Library,
-  Mic2,
   Music2,
   Play,
   Radio,
@@ -17,7 +16,6 @@ import {
 import type { Track } from "@/entities/track/model";
 import { isPlayable } from "@/entities/track/model";
 import { AudioVisualizer } from "@/features/audio/components/audioVisualizer";
-import { useLyrics } from "@/features/lyrics/hooks/useLyrics";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
 
@@ -34,7 +32,7 @@ const formatDuration = (durationMs: number) => {
   return `${minutes}:${seconds}`;
 };
 
-const SOURCE_LABEL = "Audius";
+const SOURCE_LABEL = "Cloudinary";
 
 function TrackDetailSkeleton() {
   return (
@@ -181,12 +179,6 @@ export function TrackDetailView({ trackId, onPlay }: TrackDetailViewProps) {
     };
   }, [trackId]);
 
-  const {
-    data: resolvedLyrics,
-    isLoading: isLyricsLoading,
-    isError: isLyricsError,
-  } = useLyrics(track?.artistName ?? "", track?.title ?? "");
-
   if (isTrackLoading) {
     return <TrackDetailSkeleton />;
   }
@@ -281,27 +273,6 @@ export function TrackDetailView({ trackId, onPlay }: TrackDetailViewProps) {
             trackTitle={track.title}
             artistName={track.artistName}
           />
-
-          <section
-            aria-labelledby="lyrics-title"
-            className="rounded-lg border border-white/10 bg-white/[0.045] p-4"
-          >
-            <div className="mb-3 flex items-center gap-2 text-[#ffb8c0]">
-              <Mic2 size={18} strokeWidth={2} aria-hidden="true" />
-              <h2 id="lyrics-title" className="text-xl font-black text-white">
-                Lyrics
-              </h2>
-            </div>
-            {isLyricsLoading ? (
-              <p className="text-sm text-white/62">Loading lyrics...</p>
-            ) : isLyricsError ? (
-              <p className="text-sm text-white/62">Failed to load lyrics.</p>
-            ) : (
-              <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-md bg-black/28 p-4 text-sm leading-6 text-white/72">
-                {resolvedLyrics ?? "No lyrics available."}
-              </pre>
-            )}
-          </section>
         </div>
       </section>
     </main>

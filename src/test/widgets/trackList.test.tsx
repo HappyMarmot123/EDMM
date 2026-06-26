@@ -10,7 +10,7 @@ const mockUseFavorites = useFavorites as jest.Mock;
 const tracks: Track[] = [
   {
     id: "track-1",
-    source: "audius",
+    source: "cloudinary",
     title: "Alpha",
     artistId: "artist-1",
     artistName: "Artist A",
@@ -22,7 +22,7 @@ const tracks: Track[] = [
   },
   {
     id: "track-2",
-    source: "audius",
+    source: "cloudinary",
     title: "Beta",
     artistId: "artist-2",
     artistName: "Artist B",

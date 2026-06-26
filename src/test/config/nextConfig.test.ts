@@ -1,27 +1,27 @@
 import nextConfig from "../../../next.config";
 
 describe("next image configuration", () => {
-  it("allows Audius artwork hosts returned by search results", () => {
+  it("allows Cloudinary artwork hosts", () => {
     const remotePatterns = nextConfig.images?.remotePatterns ?? [];
 
     expect(remotePatterns).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           protocol: "https",
-          hostname: "audius.zeogrid.com",
+          hostname: "res.cloudinary.com",
         }),
       ])
     );
   });
 
-  it("keeps known Audius content CDN families documented", () => {
+  it("keeps Wikimedia fallback host configured", () => {
     const remotePatterns = nextConfig.images?.remotePatterns ?? [];
 
     expect(remotePatterns).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           protocol: "https",
-          hostname: "audius-content-*.figment.io",
+          hostname: "upload.wikimedia.org",
         }),
       ])
     );

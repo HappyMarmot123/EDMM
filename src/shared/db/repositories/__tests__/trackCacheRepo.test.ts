@@ -14,7 +14,7 @@ afterEach(async () => {
 
 const makeTrack = (overrides: Partial<Track> = {}): Track => ({
   id: "track-1",
-  source: "audius",
+  source: "cloudinary",
   title: "Phase 1 Track",
   artistId: "artist-1",
   artistName: "Phase 1 Artist",

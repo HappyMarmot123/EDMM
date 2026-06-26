@@ -1,7 +1,7 @@
 "use client";
 
 import type { Track } from "@/entities/track/model";
-import { useTrending } from "@/features/discover/hooks/useTrending";
+import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import { TrackList } from "@/widgets/trackList";
 
 export interface HomeViewProps {
@@ -11,12 +11,12 @@ export interface HomeViewProps {
 const noop = () => {};
 
 export function HomeView({ onPlay = noop }: HomeViewProps) {
-  const { data, isLoading } = useTrending();
+  const { data, isLoading } = useCloudinaryTracks();
 
   return (
     <main className="bg-black min-h-screen px-4 py-8 text-white">
       <section className="mx-auto max-w-3xl space-y-6">
-        <h1 className="text-2xl font-bold">Trending Tracks</h1>
+        <h1 className="text-2xl font-bold">Cloudinary Catalog</h1>
         <TrackList tracks={data ?? []} onPlay={onPlay} isLoading={isLoading} />
       </section>
     </main>

@@ -12,7 +12,7 @@ jest.mock("@/shared/providers/audioPlayerProvider", () => ({
 
 const track: Track = {
   id: "track-1",
-  source: "audius",
+  source: "cloudinary",
   title: "Track One",
   artistId: "artist-1",
   artistName: "Artist One",

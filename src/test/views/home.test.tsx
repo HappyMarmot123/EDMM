@@ -3,13 +3,13 @@ import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Track } from "@/entities/track/model";
 import { useFavorites } from "@/features/library/hooks/useFavorites";
-import { useTrending } from "@/features/discover/hooks/useTrending";
+import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import { HomeView } from "@/views/home";
 
-jest.mock("@/features/discover/hooks/useTrending");
+jest.mock("@/features/cloudinary/hooks/useCloudinaryTracks");
 jest.mock("@/features/library/hooks/useFavorites");
 
-const mockUseTrending = useTrending as jest.Mock;
+const mockUseCloudinaryTracks = useCloudinaryTracks as jest.Mock;
 const mockUseFavorites = useFavorites as jest.Mock;
 const mockToggleFavorite = jest.fn();
 
@@ -26,7 +26,7 @@ const createWrapper = () => {
 const tracks: Track[] = [
   {
     id: "track-1",
-    source: "audius",
+    source: "cloudinary",
     title: "Trending Alpha",
     artistId: "artist-1",
     artistName: "Artist One",
@@ -50,7 +50,7 @@ describe("HomeView", () => {
   });
 
   it("renders trending tracks", () => {
-    mockUseTrending.mockReturnValue({
+    mockUseCloudinaryTracks.mockReturnValue({
       data: tracks,
       isLoading: false,
     });
@@ -63,7 +63,7 @@ describe("HomeView", () => {
   });
 
   it("renders loading state", () => {
-    mockUseTrending.mockReturnValue({
+    mockUseCloudinaryTracks.mockReturnValue({
       data: undefined,
       isLoading: true,
     });
