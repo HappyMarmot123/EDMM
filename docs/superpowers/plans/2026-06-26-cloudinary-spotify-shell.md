@@ -312,7 +312,7 @@ git commit -m "feat(cloudinary): normalize audio resources"
 Create tests for:
 
 - `fetchCloudinaryTracks("")` calls Cloudinary Search with folder-scoped `resource_type:video`.
-- `fetchCloudinaryTracks("lemonade")` includes the search term in expression.
+- `fetchCloudinaryTracks("lemonade")` includes safe prefix-token search clauses in expression.
 - missing env throws `Cloudinary configuration is missing`.
 - route returns JSON tracks.
 - hook calls `/api/cloudinary/tracks?q=...` and caches tracks.
@@ -348,6 +348,10 @@ import {
 } from "./cloudinaryAdapter";
 
 const CACHE_TTL_MS = 60_000;
+const MAX_CACHE_ENTRIES = 100;
+const MAX_SEARCH_TOKENS = 8;
+const SEARCH_TOKEN_REGEX = /[\p{L}\p{N}_-]+/gu;
+const SEARCH_FIELDS = ["public_id", "filename", "tags", "context"] as const;
 
 type CacheEntry = {
   expiresAt: number;
@@ -355,6 +359,19 @@ type CacheEntry = {
 };
 
 const responseCache = new Map<string, CacheEntry>();
+
+const assertServerEnvironment = () => {
+  const hasNodeProcess =
+    typeof process !== "undefined" && Boolean(process.versions?.node);
+
+  if (
+    typeof window !== "undefined" &&
+    typeof window.document !== "undefined" &&
+    !hasNodeProcess
+  ) {
+    throw new Error("Cloudinary client can only be used on the server");
+  }
+};
 
 const requiredEnv = () => {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
@@ -369,15 +386,34 @@ const requiredEnv = () => {
   return { cloudName, apiKey, apiSecret, folder };
 };
 
-const escapeExpressionValue = (value: string) => value.replace(/"/g, '\\"');
+const escapeExpressionValue = (value: string) =>
+  value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+
+const searchTokens = (query: string) =>
+  (query.match(SEARCH_TOKEN_REGEX) ?? []).slice(0, MAX_SEARCH_TOKENS);
+
+const searchExpressionForToken = (token: string) =>
+  `(${SEARCH_FIELDS.map((field) => `${field}:${token}*`).join(" OR ")})`;
+
+const pruneCloudinaryTrackCache = (now: number) => {
+  for (const [key, entry] of responseCache) {
+    if (entry.expiresAt <= now) responseCache.delete(key);
+  }
+
+  while (responseCache.size > MAX_CACHE_ENTRIES) {
+    const oldestKey = responseCache.keys().next().value;
+    if (oldestKey === undefined) break;
+    responseCache.delete(oldestKey);
+  }
+};
 
 export function buildCloudinaryExpression(folder: string, query: string) {
-  const base = `resource_type:video AND folder="${escapeExpressionValue(folder)}"`;
-  const normalized = query.trim();
-  if (!normalized) return base;
+  const escapedFolder = escapeExpressionValue(folder);
+  const base = `resource_type:video AND (asset_folder="${escapedFolder}" OR folder="${escapedFolder}")`;
+  const tokens = searchTokens(query);
+  if (tokens.length === 0) return base;
 
-  const q = escapeExpressionValue(normalized);
-  return `${base} AND (public_id:*${q}* OR filename:*${q}* OR tags:${q} OR context:${q} OR metadata:${q})`;
+  return `${base} AND ${tokens.map(searchExpressionForToken).join(" AND ")}`;
 }
 
 export function clearCloudinaryTrackCacheForTests() {
@@ -385,9 +421,14 @@ export function clearCloudinaryTrackCacheForTests() {
 }
 
 export async function fetchCloudinaryTracks(query = ""): Promise<Track[]> {
+  assertServerEnvironment();
+
   const normalizedQuery = query.trim();
+  const now = Date.now();
+  pruneCloudinaryTrackCache(now);
+
   const cached = responseCache.get(normalizedQuery);
-  if (cached && cached.expiresAt > Date.now()) return cached.tracks;
+  if (cached && cached.expiresAt > now) return cached.tracks;
 
   const { cloudName, apiKey, apiSecret, folder } = requiredEnv();
   const url = new URL(`https://api.cloudinary.com/v1_1/${cloudName}/resources/search`);
@@ -395,7 +436,6 @@ export async function fetchCloudinaryTracks(query = ""): Promise<Track[]> {
   url.searchParams.set("max_results", "100");
   url.searchParams.append("with_field", "tags");
   url.searchParams.append("with_field", "context");
-  url.searchParams.append("with_field", "metadata");
 
   const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
   const response = await fetch(url, {
@@ -409,10 +449,13 @@ export async function fetchCloudinaryTracks(query = ""): Promise<Track[]> {
 
   const body = (await response.json()) as { resources?: CloudinaryResource[] };
   const tracks = (body.resources ?? []).map(adaptCloudinaryTrack);
+  const fetchedAt = Date.now();
+
   responseCache.set(normalizedQuery, {
-    expiresAt: Date.now() + CACHE_TTL_MS,
+    expiresAt: fetchedAt + CACHE_TTL_MS,
     tracks,
   });
+  pruneCloudinaryTrackCache(fetchedAt);
   return tracks;
 }
 ```

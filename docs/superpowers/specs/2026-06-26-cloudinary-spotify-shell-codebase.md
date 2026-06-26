@@ -77,9 +77,10 @@
 - `src/shared/api/cloudinary/cloudinaryClient.ts`
   - `fetchCloudinaryTracks(query?: string): Promise<Track[]>`
   - env validation
+  - server-only runtime guard
   - Basic auth header generation
-  - Admin Search URL/expression construction
-  - short in-memory cache
+  - Admin Search URL/expression construction with safe tokenized prefix search
+  - bounded short in-memory cache
 - `src/shared/api/cloudinary/__tests__/cloudinaryAdapter.test.ts`
   - raw mp3/video resource mapping tests
   - sparse metadata fallback tests
@@ -193,11 +194,11 @@ Deletion should happen after Cloudinary list, playback, detail, and favorites pa
 Recommended `useCloudinaryTracks` behavior:
 
 - Blank query fetches all Cloudinary tracks from the configured folder.
-- Nonblank query fetches Cloudinary search results scoped to the configured folder.
+- Nonblank query fetches Cloudinary search results scoped to the configured folder, using sanitized prefix tokens instead of raw query interpolation.
 - Each returned track is cached with `cacheTrack`.
 - Cache failures are logged but do not fail the UI.
 - TanStack `staleTime`: 2 to 5 minutes.
-- Server-side in-memory cache: 30 to 60 seconds, keyed by normalized query.
+- Server-side in-memory cache: 30 to 60 seconds, keyed by normalized query and bounded by entry count.
 
 ## Filename Fallback Rule
 

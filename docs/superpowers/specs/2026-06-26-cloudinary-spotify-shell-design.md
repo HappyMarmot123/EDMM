@@ -96,15 +96,15 @@ Cloudinary asset to `Track`:
 - `artworkUrl`: Cloudinary artwork metadata if present; otherwise empty string
 - `durationMs`: `duration * 1000`
 - `streamUrl`: `secure_url`
-- `metadata`: includes `publicId`, `assetId`, `format`, `resourceType`, `bytes`, `createdAt`, `tags`, raw context/metadata
+- `metadata`: includes `publicId`, `assetId`, `format`, `resourceType`, `bytes`, `createdAt`, `tags`, raw context, and raw metadata if Cloudinary returns it
 
 ### Search Semantics
 
 Cloudinary is the only music catalog. Search means:
 
 1. Ask Cloudinary Search API for matching assets when `q` is present.
-2. Search fields should include public ID, filename, tags, context, and metadata where available.
-3. If metadata is sparse, filename fallback remains valid.
+2. Search fields should include public ID, filename, tags, and context through sanitized prefix tokens. Raw user query text must not be interpolated into the Cloudinary expression.
+3. Structured metadata is mapped if returned, but is not requested by default because it can depend on Cloudinary account tier. If metadata is sparse, filename fallback remains valid.
 
 No Audius, Spotify, Deezer, MusicBrainz, lyrics.ovh, Wikipedia, or other music discovery APIs are part of this implementation.
 
