@@ -1,15 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { isPlayable, type Track } from "@/entities/Track/model";
+import { type Track } from "@/entities/Track/model";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import type { ResourceTypeFilter } from "@/shared/api/cloudinary/cloudinaryClient";
 import { useFavorites } from "@/features/library/hooks/useFavorites";
 import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
-import {
-  getCachedTrack,
-  getCachedTracks,
-} from "@/shared/db/repositories/trackCacheRepo";
+import { getCachedTracks } from "@/shared/db/repositories/trackCacheRepo";
 import MusicShellHeader, { type MusicView } from "./musicShellHeader";
 import MusicTrackList from "./musicTrackList";
 import TrackDetailAside from "./trackDetailAside";
@@ -17,10 +14,11 @@ import {
   dedupeIds,
   findTrackById,
   firstPlayableTrack,
-  buildRecentSeedKey,
-  resolveInitialSeedTrack,
-  resolveRecentSeedTrack,
 } from "./trackSeedUtils";
+import {
+  SelectionSource,
+  useMusicShellTrackSeed,
+} from "./useMusicShellTrackSeed";
 
 export interface MusicShellProps {
   onPlay?: (track: Track, queue?: Track[], playImmediately?: boolean) => void;
@@ -33,8 +31,6 @@ type CachedTrackState = {
   tracks: Track[];
   isLoading: boolean;
 };
-type SelectionSource = "initial" | "visible";
-
 const noop: NonNullable<MusicShellProps["onPlay"]> = () => {};
 
 const isMusicView = (view: MusicView | undefined): view is MusicView =>
@@ -103,9 +99,6 @@ export function MusicShell({
   const [isDetailOpen, setIsDetailOpen] = useState(true);
 
   const seededTrackIdRef = useRef<string | null>(null);
-  const resolvedInitialTrackRef = useRef<string | null>(null);
-  const resolvedRecentTrackRef = useRef<string | null>(null);
-
   useEffect(() => {
     setView(normalizedInitialView);
   }, [normalizedInitialView]);
@@ -113,7 +106,6 @@ export function MusicShell({
   useEffect(() => {
     setSelectedTrackId(normalizedInitialTrackId);
     setSelectionSource(normalizedInitialTrackId ? "initial" : null);
-    resolvedInitialTrackRef.current = null;
   }, [normalizedInitialTrackId]);
 
   const normalizedQuery = query.trim();
@@ -215,7 +207,6 @@ export function MusicShell({
 
     if (!fallbackTrack) {
       clearSelectedTrack();
-      resolvedInitialTrackRef.current = null;
       return;
     }
 
@@ -233,123 +224,17 @@ export function MusicShell({
     }
   }, [selectedTrackId, selectionSource, clearSeededTrack, clearSelectedTrack, visibleTrackIds]);
 
-  useEffect(() => {
-    if (selectionSource !== "initial" || !selectedTrackId) {
-      return;
-    }
-
-    if (resolvedInitialTrackRef.current === selectedTrackId) {
-      return;
-    }
-
-    resolvedInitialTrackRef.current = selectedTrackId;
-    let isActive = true;
-    if (selectedTrack) {
-      if (!isPlayable(selectedTrack)) {
-        fallbackToFirstPlayable();
-        return;
-      }
-
-      activateTrackInPlayer(selectedTrack, false, "initial");
-      return;
-    }
-
-    void (async () => {
-      try {
-        const cachedTrack = await getCachedTrack(selectedTrackId).catch(() => null);
-        if (!isActive) {
-          return;
-        }
-
-        const resolvedTrack = resolveInitialSeedTrack({
-          selectedTrackId,
-          selectedTrack,
-          visibleTracks,
-          cachedTrack: cachedTrack ?? null,
-        });
-
-        if (!resolvedTrack) {
-          fallbackToFirstPlayable();
-          return;
-        }
-
-        activateTrackInPlayer(
-          resolvedTrack,
-          false,
-          "initial",
-          queueForTrack(resolvedTrack),
-        );
-      } catch (error) {
-        console.warn("Failed to resolve initial track from cache:", error);
-      }
-    })();
-
-    return () => {
-      isActive = false;
-    };
-  }, [
-    activateTrackInPlayer,
-    selectedTrack,
+  useMusicShellTrackSeed({
+    selectionSource,
     selectedTrackId,
-    selectionSource,
-    fallbackToFirstPlayable,
+    selectedTrack,
     visibleTracks,
-  ]);
-
-  useEffect(() => {
-    if (selectionSource || seededTrackIdRef.current) {
-      return;
-    }
-
-    const latestRecentId = recentTrackIds[0] ?? null;
-    const firstVisibleTrackId = visibleTracks[0]?.id ?? null;
-    const seedTrackId = latestRecentId || firstVisibleTrackId;
-
-    if (!seedTrackId) {
-      return;
-    }
-
-    const dedupeKey = buildRecentSeedKey(latestRecentId, firstVisibleTrackId);
-    if (resolvedRecentTrackRef.current === dedupeKey) {
-      return;
-    }
-    resolvedRecentTrackRef.current = dedupeKey;
-
-    let isActive = true;
-
-    void (async () => {
-      let track: Track | null = null;
-
-      if (latestRecentId) {
-        const cachedTrack = await getCachedTrack(latestRecentId).catch(() => null);
-        track =
-          resolveRecentSeedTrack({
-            latestRecentId,
-            visibleTracks,
-            cachedTrack: cachedTrack ?? null,
-          }) ?? null;
-      } else {
-        track = firstPlayableTrack(visibleTracks);
-      }
-
-      if (!isActive || !track || !isPlayable(track)) {
-        return;
-      }
-
-      resolvedRecentTrackRef.current = dedupeKey;
-      activateTrackInPlayer(track, false, "initial", queueForTrack(track));
-    })();
-
-    return () => {
-      isActive = false;
-    };
-  }, [
-    activateTrackInPlayer,
-    queueForTrack,
     recentTrackIds,
-    selectionSource,
-    visibleTracks,
-  ]);
+    queueForTrack,
+    activateTrackInPlayer,
+    fallbackToFirstPlayable,
+    seededTrackRef: seededTrackIdRef,
+  });
 
   const isVisibleLoading =
     view === "all"

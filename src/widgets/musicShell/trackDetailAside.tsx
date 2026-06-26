@@ -5,6 +5,7 @@ import { Disc3, Music2, Play, Radio, X } from "lucide-react";
 import type { Track } from "@/entities/Track/model";
 import { AudioVisualizer } from "@/features/audio/components/audioVisualizer";
 import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
+import { pickArtworkUrl } from "@/shared/lib/trackArtwork";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 
 type TrackDetailAsideProps = {
@@ -82,7 +83,10 @@ export function TrackDetailAside({
       ? {
           ...fallbackTrack,
           ...cachedTrack,
-          artworkUrl: cachedTrack.artworkUrl || (fallbackTrack?.artworkUrl ?? ""),
+          artworkUrl: pickArtworkUrl(
+            cachedTrack.artworkUrl,
+            fallbackTrack?.artworkUrl,
+          ),
         }
       : fallbackTrack?.id === selectedTrackId
         ? fallbackTrack

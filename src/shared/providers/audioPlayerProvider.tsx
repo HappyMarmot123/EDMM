@@ -3,9 +3,10 @@
 import type { Track } from "@/entities/Track/model";
 import { isPlayable } from "@/entities/Track/model";
 import useAudioInstanceStore from "@/app/store/audioInstanceStore";
-import { cacheTrack, getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
+import { cacheTrack } from "@/shared/db/repositories/trackCacheRepo";
 import { addRecentPlay } from "@/shared/db/repositories/recentPlaysRepo";
 import { CLAMP_VOLUME } from "@/shared/lib/util";
+import { normalizeArtworkUrl, resolveArtworkUrlWithCache } from "@/shared/lib/trackArtwork";
 import { setupAudioEventListeners } from "@/shared/lib/audioEventManager";
 import {
   AudioPlayerLogicReturnType,
@@ -25,34 +26,17 @@ const AudioPlayerContext = createContext<
   AudioPlayerLogicReturnType | undefined
 >(undefined);
 
-const normalizeText = (value: string | undefined) =>
-  value?.trim().length ? value.trim() : "";
-
 const toTrackInfo = (track: Track, artworkId?: string): TrackInfo => ({
   assetId: track.id,
   album: track.albumName ?? track.source,
   name: track.title,
-  artworkId: normalizeText(artworkId ?? track.artworkUrl),
+  artworkId: normalizeArtworkUrl(artworkId ?? track.artworkUrl),
   url: isPlayable(track) ? track.streamUrl ?? "" : "",
   producer: track.artistName,
 });
 
-const resolveArtworkForTrack = async (track: Track): Promise<string> => {
-  const directArtworkId = normalizeText(track.artworkUrl);
-  if (directArtworkId) {
-    return directArtworkId;
-  }
-
-  try {
-    const cachedTrack = await getCachedTrack(track.id);
-    return normalizeText(cachedTrack?.artworkUrl);
-  } catch {
-    return "";
-  }
-};
-
 const toTrackInfoWithCache = async (track: Track): Promise<TrackInfo> => {
-  const artworkId = await resolveArtworkForTrack(track);
+  const artworkId = await resolveArtworkUrlWithCache(track);
   return toTrackInfo(track, artworkId);
 };
 
