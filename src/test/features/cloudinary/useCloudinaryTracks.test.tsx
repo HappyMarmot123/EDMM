@@ -54,14 +54,46 @@ it("calls the Cloudinary tracks route with encoded nonblank query", async () => 
   );
 });
 
-it("calls the Cloudinary tracks route with all resource type", async () => {
-  mockFetch.mockResolvedValue({
+it("fetches and merges video and image tracks when resourceType is all", async () => {
+  mockFetch.mockResolvedValueOnce({
     ok: true,
-    json: async () => [{ id: "cloudinary:asset-1" }],
+    json: async () => [
+      {
+        id: "video:asset-1",
+        source: "cloudinary",
+        title: "Track One",
+        artistId: "artist:Track One",
+        artistName: "Cloudinary Artist",
+        albumName: "Default album",
+        artworkUrl: "",
+        durationMs: 120000,
+        metadata: {},
+      },
+    ],
+  });
+
+  mockFetch.mockResolvedValueOnce({
+    ok: true,
+    json: async () => [
+      {
+        id: "cloudinary:image-1",
+        source: "cloudinary",
+        title: "Track One",
+        artistId: "artist:Track One",
+        artistName: "Cloudinary Artist",
+        albumName: "Default album",
+        artworkUrl: "https://example.com/track-one.jpg",
+        durationMs: 120000,
+        metadata: {},
+      },
+    ],
   });
 
   const { result } = renderHook(
-    () => useCloudinaryTracks("  lemonade  ", { resourceType: "all" }),
+    () =>
+      useCloudinaryTracks("  lemonade  ", {
+        resourceType: "all",
+      }),
     {
       wrapper: createWrapper(),
     },
@@ -69,9 +101,20 @@ it("calls the Cloudinary tracks route with all resource type", async () => {
 
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-  expect(mockFetch).toHaveBeenCalledWith(
-    "/api/cloudinary/tracks?resourceType=all&q=lemonade",
+  expect(mockFetch).toHaveBeenNthCalledWith(
+    1,
+    "/api/cloudinary/tracks/video?q=lemonade",
   );
+  expect(mockFetch).toHaveBeenNthCalledWith(
+    2,
+    "/api/cloudinary/tracks/image?q=lemonade",
+  );
+  expect(mockFetch).toHaveBeenCalledTimes(2);
+  expect(result.current.data).toHaveLength(1);
+  expect(result.current.data?.[0]).toMatchObject({
+    id: "video:asset-1",
+    artworkUrl: "https://example.com/track-one.jpg",
+  });
 });
 
 it("calls the dedicated image tracks route", async () => {
@@ -92,10 +135,22 @@ it("calls the dedicated image tracks route", async () => {
   expect(mockFetch).toHaveBeenCalledWith("/api/cloudinary/tracks/image?q=lemonade");
 });
 
-it("calls the Cloudinary tracks route with filterPlayable=false", async () => {
+it("calls video and image endpoints when resourceType=all with filterPlayable", async () => {
   mockFetch.mockResolvedValue({
     ok: true,
-    json: async () => [{ id: "cloudinary:asset-1" }],
+    json: async () => [
+      {
+        id: "cloudinary:video-1",
+        source: "cloudinary",
+        title: "Track One",
+        artistId: "artist:1",
+        artistName: "Cloudinary Artist",
+        albumName: "Default album",
+        artworkUrl: "",
+        durationMs: 120000,
+        metadata: {},
+      },
+    ],
   });
 
   const { result } = renderHook(
@@ -111,8 +166,13 @@ it("calls the Cloudinary tracks route with filterPlayable=false", async () => {
 
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-  expect(mockFetch).toHaveBeenCalledWith(
-    "/api/cloudinary/tracks?resourceType=all&q=lemonade&filterPlayable=false",
+  expect(mockFetch).toHaveBeenNthCalledWith(
+    1,
+    "/api/cloudinary/tracks/video?q=lemonade&filterPlayable=false",
+  );
+  expect(mockFetch).toHaveBeenNthCalledWith(
+    2,
+    "/api/cloudinary/tracks/image?q=lemonade",
   );
 });
 
