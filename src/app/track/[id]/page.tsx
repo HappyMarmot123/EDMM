@@ -1,6 +1,5 @@
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { decodeTrackId } from "./trackId";
-import TrackDetailPageClient from "./trackDetailPageClient";
 
 interface TrackPageProps {
   params: Promise<{
@@ -12,10 +11,10 @@ const Page = async ({ params }: TrackPageProps) => {
   const { id } = await params;
   const trackId = decodeTrackId(id);
   if (!trackId) {
-    notFound();
+    redirect("/search");
   }
 
-  return <TrackDetailPageClient trackId={trackId} />;
+  redirect(`/search?track=${encodeURIComponent(trackId)}`);
 };
 
 export default Page;

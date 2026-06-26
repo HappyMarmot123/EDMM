@@ -36,6 +36,18 @@ const wrapperTrack: Track = {
   streamUrl: "https://example.com/wrapper.mp3",
   metadata: {},
 };
+const favoriteTrack: Track = {
+  ...wrapperTrack,
+  id: "cloudinary:fav-1",
+  title: "Search Favorite Track",
+  streamUrl: "https://example.com/favorite.mp3",
+};
+const deepLinkedTrack: Track = {
+  ...wrapperTrack,
+  id: "cloudinary:asset-1",
+  title: "Cached Deep Link Track",
+  streamUrl: "https://example.com/deep-link.mp3",
+};
 
 describe("SearchView", () => {
   beforeEach(() => {
@@ -53,7 +65,9 @@ describe("SearchView", () => {
     });
     mockUseRecentPlays.mockReturnValue({ recentIds: [] });
     mockGetCachedTracks.mockResolvedValue([]);
-    mockGetCachedTrack.mockResolvedValue(wrapperTrack);
+    mockGetCachedTrack.mockImplementation(async (trackId: string) =>
+      [wrapperTrack, favoriteTrack, deepLinkedTrack].find((track) => track.id === trackId),
+    );
   });
 
   it("renders the unified music shell heading", () => {
@@ -71,5 +85,31 @@ describe("SearchView", () => {
     fireEvent.click(screen.getByRole("button", { name: "Play Wrapper Track" }));
 
     expect(onPlay).toHaveBeenCalledWith(wrapperTrack, [wrapperTrack]);
+  });
+
+  it("starts on the Favorites view from prop", async () => {
+    mockUseFavorites.mockReturnValue({
+      favoriteIds: new Set(["cloudinary:fav-1"]),
+      isFavorite: (id: string) => id === "cloudinary:fav-1",
+      toggle: jest.fn(),
+    });
+    mockGetCachedTracks.mockResolvedValue([favoriteTrack]);
+
+    render(<SearchView initialView="favorites" />);
+
+    expect(screen.getByRole("button", { name: "Favorites" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(await screen.findByText("Search Favorite Track")).toBeInTheDocument();
+  });
+
+  it("opens cached track details from initialTrackId", async () => {
+    render(<SearchView initialTrackId="cloudinary:asset-1" />);
+
+    expect(mockGetCachedTrack).toHaveBeenCalledWith("cloudinary:asset-1");
+    expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
+      "Cached Deep Link Track",
+    );
   });
 });
