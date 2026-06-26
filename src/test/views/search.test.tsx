@@ -1,137 +1,75 @@
-import type { PropsWithChildren } from "react";
-import { act } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Track } from "@/entities/track/model";
+import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
+import { useFavorites } from "@/features/library/hooks/useFavorites";
+import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
+import {
+  getCachedTrack,
+  getCachedTracks,
+} from "@/shared/db/repositories/trackCacheRepo";
 import { SearchView } from "@/views/search";
-import { useTrackSearch } from "@/features/search/hooks/useTrackSearch";
 
-jest.mock("@/features/search/hooks/useTrackSearch");
+jest.mock("@/features/cloudinary/hooks/useCloudinaryTracks");
+jest.mock("@/features/library/hooks/useFavorites");
+jest.mock("@/features/library/hooks/useRecentPlays");
+jest.mock("@/shared/db/repositories/trackCacheRepo");
 
-const mockUseTrackSearch = useTrackSearch as jest.Mock;
+const mockUseCloudinaryTracks = useCloudinaryTracks as jest.Mock;
+const mockUseFavorites = useFavorites as jest.Mock;
+const mockUseRecentPlays = useRecentPlays as jest.Mock;
+const mockGetCachedTracks = getCachedTracks as jest.MockedFunction<
+  typeof getCachedTracks
+>;
+const mockGetCachedTrack = getCachedTrack as jest.MockedFunction<
+  typeof getCachedTrack
+>;
 
-const createWrapper = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-
-  return function Wrapper({ children }: PropsWithChildren) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-  };
+const wrapperTrack: Track = {
+  id: "cloudinary:search-wrapper",
+  source: "cloudinary",
+  title: "Wrapper Track",
+  artistId: "cloudinary:artist",
+  artistName: "EDMM",
+  albumName: "Shell",
+  artworkUrl: "",
+  durationMs: 180000,
+  streamUrl: "https://example.com/wrapper.mp3",
+  metadata: {},
 };
 
-const tracks: Track[] = [
-  {
-    id: "track-1",
-    source: "audius",
-    title: "Search Track One",
-    artistId: "artist-1",
-    artistName: "Artist One",
-    albumName: "Album One",
-    artworkUrl: "https://example.com/search-one.jpg",
-    durationMs: 213000,
-    streamUrl: "https://example.com/search-one.mp3",
-    metadata: {},
-  },
-];
-
 describe("SearchView", () => {
-  const mockOnPlay = jest.fn();
-
   beforeEach(() => {
-    jest.useFakeTimers();
     jest.clearAllMocks();
-    mockUseTrackSearch.mockImplementation((query: string) => ({
-      data: query.trim() ? tracks : undefined,
+    mockUseCloudinaryTracks.mockReturnValue({
+      data: [wrapperTrack],
       isLoading: false,
       isError: false,
       refetch: jest.fn(),
-    }));
+    });
+    mockUseFavorites.mockReturnValue({
+      favoriteIds: new Set<string>(),
+      isFavorite: () => false,
+      toggle: jest.fn(),
+    });
+    mockUseRecentPlays.mockReturnValue({ recentIds: [] });
+    mockGetCachedTracks.mockResolvedValue([]);
+    mockGetCachedTrack.mockResolvedValue(wrapperTrack);
   });
 
-  it("renders the full search surface before a query is entered", () => {
-    render(<SearchView onPlay={mockOnPlay} />, { wrapper: createWrapper() });
+  it("renders the unified music shell heading", () => {
+    render(<SearchView />);
 
-    expect(screen.getByRole("heading", { name: "Search" })).toBeInTheDocument();
     expect(
-      screen.getByRole("searchbox", {
-        name: /search tracks, artists, or moods/i,
-      })
+      screen.getByRole("heading", { name: "EDMM catalog" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Browse by vibe")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /melodic techno/i })).toBeInTheDocument();
-    expect(screen.queryByTestId("search-result-title-track-1")).not.toBeInTheDocument();
   });
 
-  it("renders query result after typing into search input", () => {
-    render(<SearchView onPlay={mockOnPlay} />, { wrapper: createWrapper() });
+  it("passes play events through the shell", () => {
+    const onPlay = jest.fn();
 
-    const queryInput = screen.getByRole("searchbox", {
-      name: /search tracks, artists, or moods/i,
-    });
-    const searchValue = "  search terms  ";
-    const normalizedSearchValue = "search terms";
-    fireEvent.change(queryInput, { target: { value: searchValue } });
+    render(<SearchView onPlay={onPlay} />);
+    fireEvent.click(screen.getByRole("button", { name: "Play Wrapper Track" }));
 
-    act(() => {
-      jest.advanceTimersByTime(250);
-    });
-
-    expect(mockUseTrackSearch).toHaveBeenLastCalledWith(normalizedSearchValue);
-    expect(screen.getByTestId("search-result-title-track-1")).toBeInTheDocument();
-  });
-
-  it("starts a search from a browse card", () => {
-    render(<SearchView onPlay={mockOnPlay} />, { wrapper: createWrapper() });
-
-    fireEvent.click(screen.getByRole("button", { name: /melodic techno/i }));
-
-    expect(mockUseTrackSearch).toHaveBeenLastCalledWith("melodic techno");
-    expect(screen.getByDisplayValue("melodic techno")).toBeInTheDocument();
-  });
-
-  it("renders loading, empty, and error states", () => {
-    mockUseTrackSearch.mockImplementation((query: string) => ({
-      data: query.trim() ? [] : undefined,
-      isLoading: query === "loading",
-      isError: query === "broken",
-      refetch: jest.fn(),
-    }));
-
-    const { rerender } = render(<SearchView onPlay={mockOnPlay} />, {
-      wrapper: createWrapper(),
-    });
-
-    const queryInput = screen.getByRole("searchbox", {
-      name: /search tracks, artists, or moods/i,
-    });
-    fireEvent.change(queryInput, { target: { value: "loading" } });
-
-    act(() => {
-      jest.advanceTimersByTime(250);
-    });
-
-    expect(screen.getByRole("status")).toHaveTextContent("Searching Audius");
-
-    fireEvent.change(queryInput, { target: { value: "no results" } });
-
-    act(() => {
-      jest.advanceTimersByTime(250);
-    });
-
-    expect(screen.getByText(/No tracks found for "no results"/)).toBeInTheDocument();
-
-    fireEvent.change(queryInput, { target: { value: "broken" } });
-
-    act(() => {
-      jest.advanceTimersByTime(250);
-    });
-    rerender(<SearchView onPlay={mockOnPlay} />);
-
-    expect(screen.getByText("Search failed")).toBeInTheDocument();
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
+    expect(onPlay).toHaveBeenCalledWith(wrapperTrack, [wrapperTrack]);
   });
 });
