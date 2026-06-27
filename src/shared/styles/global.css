@@ -829,9 +829,17 @@ h1 {
   grid-template-columns: minmax(0, 1fr) 360px;
 }
 
+.music-shell-grid--collapsed {
+  grid-template-columns: minmax(0, 1fr) 56px;
+}
+
 @media (max-width: 1000px) {
   .music-shell-grid {
     grid-template-columns: minmax(0, 1fr) 300px;
+  }
+
+  .music-shell-grid--collapsed {
+    grid-template-columns: minmax(0, 1fr) 56px;
   }
 }
 

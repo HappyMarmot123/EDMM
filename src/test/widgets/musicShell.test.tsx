@@ -340,4 +340,19 @@ describe("MusicShell", () => {
     });
   });
 
+  it("toggles the track detail aside using the Overflow Wrap button", async () => {
+    render(<MusicShell />);
+
+    expect(await screen.findByRole("heading", { name: "Track detail" })).toBeInTheDocument();
+    const closeButton = screen.getByRole("button", { name: "Close track detail" });
+    fireEvent.click(closeButton);
+
+    expect(screen.getByRole("button", { name: "Open track detail" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Track detail" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open track detail" }));
+    expect(await screen.findByRole("heading", { name: "Track detail" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Close track detail" })).toBeInTheDocument();
+  });
+
 });
