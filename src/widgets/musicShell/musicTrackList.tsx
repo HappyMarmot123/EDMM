@@ -6,9 +6,10 @@ import {
   type KeyboardEvent,
   type MouseEvent,
   useCallback,
+  useEffect,
   useRef,
 } from "react";
-import { type StateSnapshot, Virtuoso } from "react-virtuoso";
+import { type StateSnapshot, type VirtuosoHandle, Virtuoso } from "react-virtuoso";
 import type { Track } from "@/entities/Track/model";
 import { isPlayable } from "@/entities/Track/model";
 
@@ -21,6 +22,9 @@ type MusicTrackListProps = {
   onSelect: (track: Track) => void;
   onPlay: (track: Track) => void;
   onRetry?: () => void;
+  scrollToTrackId?: string | null;
+  scrollToTrackRequest?: number;
+  onTrackZoneScrollHandled?: () => void;
 };
 
 const formatDuration = (durationMs: number) => {
@@ -32,8 +36,11 @@ const formatDuration = (durationMs: number) => {
 };
 
 const getTrackKey = (_: number, track: Track) => track.id;
+
 const trackScrollerComponents = {
-  Scroller: (props: ComponentPropsWithoutRef<"div"> & { stateChanged?: unknown }) => {
+  Scroller: (
+    props: ComponentPropsWithoutRef<"div"> & { stateChanged?: unknown },
+  ) => {
     const { stateChanged: _stateChanged, className, ...htmlProps } = props;
     const mergedClassName = `scrollbar-hide ${className ?? ""}`.trim();
 
@@ -50,13 +57,57 @@ export function MusicTrackList({
   onSelect,
   onPlay,
   onRetry,
+  scrollToTrackId,
+  scrollToTrackRequest,
+  onTrackZoneScrollHandled,
 }: MusicTrackListProps) {
   const persistedStateRef = useRef<StateSnapshot | null>(null);
+  const virtuosoRef = useRef<VirtuosoHandle | null>(null);
+  const scrollerRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!scrollToTrackId || scrollToTrackRequest === undefined) {
+      return;
+    }
+
+    const targetIndex = tracks.findIndex((track) => track.id === scrollToTrackId);
+
+    if (!virtuosoRef.current || targetIndex < 0) {
+      onTrackZoneScrollHandled?.();
+      return;
+    }
+
+    virtuosoRef.current.scrollToIndex({
+      index: targetIndex,
+      align: "center",
+      behavior: "smooth",
+    });
+
+    const rafId = requestAnimationFrame(() => {
+      const escapedTrackId = scrollToTrackId.replace(/"/g, '\\"');
+      const selectedRow = scrollerRef.current?.querySelector<HTMLElement>(
+        `[data-track-row-id="${escapedTrackId}"]`,
+      );
+
+      if (selectedRow) {
+        selectedRow.focus({ preventScroll: true });
+      }
+
+      onTrackZoneScrollHandled?.();
+    });
+
+    return () => {
+      cancelAnimationFrame(rafId);
+    };
+  }, [onTrackZoneScrollHandled, scrollToTrackId, scrollToTrackRequest, tracks]);
 
   const handleSelect = useCallback(
     (event: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>, track: Track) => {
       event.preventDefault();
-      if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+      if (
+        typeof document !== "undefined" &&
+        document.activeElement instanceof HTMLElement
+      ) {
         document.activeElement.blur();
       }
       onSelect(track);
@@ -66,7 +117,11 @@ export function MusicTrackList({
 
   if (isLoading) {
     return (
-      <div role="status" aria-live="polite" className="space-y-2 text-sm text-white/62">
+      <div
+        role="status"
+        aria-live="polite"
+        className="space-y-2 text-sm text-white/62"
+      >
         <span>Loading tracks...</span>
         {[0, 1, 2, 3].map((item) => (
           <div
@@ -113,6 +168,10 @@ export function MusicTrackList({
       role="list"
     >
       <Virtuoso
+        ref={virtuosoRef}
+        scrollerRef={(ref) => {
+          scrollerRef.current = ref;
+        }}
         data={tracks}
         overscan={6}
         computeItemKey={getTrackKey}
@@ -135,7 +194,12 @@ export function MusicTrackList({
           };
 
           return (
-            <div className="px-1.5 py-1" key={track.id}>
+            <div
+              className="px-1.5 py-1"
+              key={track.id}
+              data-track-row-id={track.id}
+              tabIndex={-1}
+            >
               <li
                 role="listitem"
                 className={[

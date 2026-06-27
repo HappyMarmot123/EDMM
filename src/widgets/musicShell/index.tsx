@@ -89,8 +89,17 @@ export function MusicShell({
   const [selectionSource, setSelectionSource] = useState<SelectionSource | null>(
     normalizedInitialTrackId ? "initial" : null,
   );
+  const [
+    playerZoneScrollRequest,
+    setPlayerZoneScrollRequest,
+  ] = useState<{ trackId: string; requestId: number } | null>(null);
   const [isTrackDetailOpen, setIsTrackDetailOpen] = useState(true);
   const currentTrackId = useAudioPlayer().currentTrack?.assetId ?? null;
+
+  const handleTrackZoneScrollHandled = useCallback(
+    () => setPlayerZoneScrollRequest(null),
+    [],
+  );
 
   const seededTrackIdRef = useRef<string | null>(null);
   useEffect(() => {
@@ -108,6 +117,11 @@ export function MusicShell({
 
       setSelectedTrackId(trackId);
       setSelectionSource("visible");
+      setPlayerZoneScrollRequest((current) => ({
+        trackId,
+        requestId:
+          current?.trackId === trackId ? current.requestId + 1 : 1,
+      }));
     };
 
     window.addEventListener(
@@ -303,6 +317,9 @@ export function MusicShell({
               emptyMessage={emptyMessage}
               onSelect={handleSelect}
               onPlay={handlePlay}
+              scrollToTrackId={playerZoneScrollRequest?.trackId ?? null}
+              scrollToTrackRequest={playerZoneScrollRequest?.requestId}
+              onTrackZoneScrollHandled={handleTrackZoneScrollHandled}
               onRetry={view === "all" ? () => void refetch?.() : undefined}
             />
           </section>
@@ -315,7 +332,7 @@ export function MusicShell({
             aria-label={
               isTrackDetailOpen ? "Close track detail" : "Open track detail"
             }
-            className="music-shell-aside__toggle rounded-full border border-white/15 bg-[#0b0609] px-2.5 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#ffb8c0] transition-colors hover:border-[#ff98a2]/55 hover:bg-white/5"
+            className="music-shell-aside__toggle rounded-full border border-white/15 bg-[#ff98a2] px-2.5 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#0b0609]"
           >
             {isTrackDetailOpen ? (
               <ChevronRight size={16} strokeWidth={2.2} aria-hidden="true" />
