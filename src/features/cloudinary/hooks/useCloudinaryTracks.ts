@@ -65,6 +65,10 @@ const resolveTrackList = async (query: string, resourceType: ResourceTypeFilter,
   if (!response.ok) throw new Error("cloudinary tracks fetch failed");
 
   const tracks = (await response.json()) as Track[];
+  return tracks;
+};
+
+const cacheTracks = async (tracks: Track[]) => {
   const cacheResults = await Promise.allSettled(
     tracks.map((track) => cacheTrack(track)),
   );
@@ -73,8 +77,6 @@ const resolveTrackList = async (query: string, resourceType: ResourceTypeFilter,
       console.warn("Failed to cache Cloudinary track:", result.reason);
     }
   });
-
-  return tracks;
 };
 
 const normalizeForMatching = (value: string) =>
@@ -208,11 +210,15 @@ async function getCloudinaryTracks(
       resolveTrackList(query, "video", options?.filterPlayable),
       resolveTrackList(query, "image"),
     ]);
+    const mergedVideos = mergeImageTracksIntoVideos(videoTracks, imageTracks);
+    await cacheTracks([...mergedVideos, ...imageTracks]);
 
-    return mergeImageTracksIntoVideos(videoTracks, imageTracks);
+    return mergedVideos;
   }
 
-  return resolveTrackList(query, resourceType, options?.filterPlayable);
+  const tracks = await resolveTrackList(query, resourceType, options?.filterPlayable);
+  await cacheTracks(tracks);
+  return tracks;
 }
 
 export function useCloudinaryTracks(query = "", options?: CloudinaryTrackQueryOptions) {
