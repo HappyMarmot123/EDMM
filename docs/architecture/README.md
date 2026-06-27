@@ -4,7 +4,7 @@
 - 주요 동작 진입점은 `/search`입니다.
 - `/library` 라우트는 제거되었고, 즐겨찾기 화면은 `/search?view=favorites` 쿼리로 접근합니다.
 - 플레이어 관련 동작은 `MusicShell`과 `AudioPlayerProvider` 조합이 담당합니다.
-- `/track/[id]`는 `/search?track=<id>`로 라우팅되는 기존 설계를 유지합니다.
+- `/track/[id]`로 유입되는 트랙 요청은 내부에서 `/search?track=<id>`로 정규화해 처리하는 현재 설계를 유지합니다.
 - 현재 작업 기준으로 초기 결합 지점은 정리되었고, 초기 시드/디테일/재생 동기화는 책임별 분리된 훅/도우미로 관리됩니다.
 
 ## 2) 전체 구조(시스템 + 데이터)
@@ -131,7 +131,7 @@ sequenceDiagram
   - `recentPlaysRepo`: `addRecentPlay`
 
 - 라우팅/쿼리
-  - `/track/[id]` 정규화 라우팅 로직, `/search` 쿼리(view/track) 바인딩
+  - `/track/[id]` 정규화 라우팅 분기(`decode`) + `/search` 쿼리(view/track) 바인딩
 
 - UI 효과
   - `MusicShell`: 상세 열림 상태, 선택 트랙 id, 시드 소스 제어
@@ -230,7 +230,7 @@ sequenceDiagram
    - 목록 행 클릭 시 상세 표시 후 재생 전환
    - 썸네일(상세/플레이어) 동기화
    - hydration mismatch 경고 없음
-  - 라우팅/쿼리(`/track/[id]`, `/search` view/track) 정상 동작
+   - 라우팅/쿼리(`/track/[id]`, `/search` view/track) 정상 동작
 
 ## 14) 작업별 실패 포인트 / 롤백 포인트
 
