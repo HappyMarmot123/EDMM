@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Disc3, Music2, Play, Radio, X } from "lucide-react";
+import { Disc3, Music2, Play, Radio } from "lucide-react";
 import type { Track } from "@/entities/Track/model";
 import { AudioVisualizer } from "@/features/audio/components/audioVisualizer";
 import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
@@ -13,7 +13,6 @@ type TrackDetailAsideProps = {
   fallbackTrack?: Track | null;
   queue: Track[];
   onPlay?: (track: Track, queue?: Track[]) => void;
-  onClose?: () => void;
 };
 
 const formatDuration = (durationMs: number) => {
@@ -40,7 +39,6 @@ export function TrackDetailAside({
   fallbackTrack = null,
   queue,
   onPlay,
-  onClose,
 }: TrackDetailAsideProps) {
   const [cachedTrack, setCachedTrack] = useState<Track | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -101,16 +99,6 @@ export function TrackDetailAside({
     >
       <div className="mb-4 flex items-center justify-between gap-2">
         <h2 className="text-sm font-black text-white/72">Track detail</h2>
-        {onClose ? (
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close track detail"
-            className="grid h-8 w-8 place-items-center rounded-full border border-white/15 text-white/62 transition-colors hover:border-[#ff98a2]/35 hover:text-[#ffb8c0]"
-          >
-            <X size={15} strokeWidth={2.2} aria-hidden="true" />
-          </button>
-        ) : null}
       </div>
 
       {!selectedTrackId ? (

@@ -97,7 +97,6 @@ export function MusicShell({
   const [selectionSource, setSelectionSource] = useState<SelectionSource | null>(
     normalizedInitialTrackId ? "initial" : null,
   );
-  const [isDetailOpen, setIsDetailOpen] = useState(true);
   const currentTrackId = useAudioPlayer().currentTrack?.assetId ?? null;
 
   const seededTrackIdRef = useRef<string | null>(null);
@@ -192,7 +191,6 @@ export function MusicShell({
       onPlay(track, queue, playImmediately);
       setSelectedTrackId(track.id);
       setSelectionSource(source);
-      setIsDetailOpen(true);
     },
     [onPlay, queueForTrack],
   );
@@ -200,7 +198,6 @@ export function MusicShell({
   const handleSelect = (track: Track) => {
     setSelectedTrackId(track.id);
     setSelectionSource("visible");
-    setIsDetailOpen(true);
   };
 
   const handlePlay = (track: Track) => {
@@ -247,7 +244,7 @@ export function MusicShell({
 
   return (
     <main className="min-h-screen bg-[#050306] px-4 pb-32 pt-5 text-white sm:px-6 lg:px-8">
-      <section className="mx-auto grid w-full gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <section className="music-shell-grid mx-auto grid w-full gap-5">
         <section className="min-w-0 space-y-5">
           <MusicShellHeader
             query={query}
@@ -286,25 +283,13 @@ export function MusicShell({
           </footer>
         </section>
 
-        <aside aria-label="Track detail aside" className="xl:pb-0">
-          {isDetailOpen ? (
+          <aside aria-label="Track detail aside" className="min-w-0 pb-0">
             <TrackDetailAside
               selectedTrackId={detailSelectedTrackId}
               fallbackTrack={selectedTrack}
               queue={visibleTracks}
-              onPlay={handlePlay}
-              onClose={() => setIsDetailOpen(false)}
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsDetailOpen(true)}
-              className="w-full rounded-lg border border-white/10 bg-[#0b0609] px-4 py-3 text-sm font-black text-[#ffb8c0] transition-colors hover:border-[#ff98a2]/50 hover:bg-white/[0.05]"
-              aria-label="Open track detail"
-            >
-              Open track detail
-            </button>
-          )}
+            onPlay={handlePlay}
+          />
         </aside>
       </section>
     </main>

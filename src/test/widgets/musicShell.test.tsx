@@ -340,16 +340,4 @@ describe("MusicShell", () => {
     });
   });
 
-  it("closes and reopens the track detail aside", () => {
-    render(<MusicShell />);
-
-    const closeButton = screen.getByRole("button", { name: "Close track detail" });
-    fireEvent.click(closeButton);
-
-    const openButton = screen.getByRole("button", { name: "Open track detail" });
-    expect(openButton).toBeInTheDocument();
-
-    fireEvent.click(openButton);
-    expect(screen.getByRole("button", { name: "Close track detail" })).toBeInTheDocument();
-  });
 });
