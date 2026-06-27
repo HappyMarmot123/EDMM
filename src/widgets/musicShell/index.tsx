@@ -178,6 +178,17 @@ export function MusicShell({
     [visibleTracks],
   );
 
+  useEffect(() => {
+    if (!currentTrackId || selectionSource === "initial") {
+      return;
+    }
+
+    if (!visibleTrackIds.has(currentTrackId)) {
+      setSelectedTrackId(null);
+      setSelectionSource(null);
+    }
+  }, [currentTrackId, selectionSource, visibleTrackIds]);
+
   const selectedTrack = useMemo(() => {
     if (!selectedTrackId) return null;
 
@@ -189,8 +200,8 @@ export function MusicShell({
 
   const queueForTrack = useCallback(
     (track: Track) =>
-      visibleTrackIds.has(track.id) ? visibleTracks : [track],
-    [visibleTrackIds, visibleTracks],
+      visibleTracks.length > 0 ? visibleTracks : [track],
+    [visibleTracks],
   );
 
   const buildTrackSeedFingerprint = useCallback((track: Track) => {

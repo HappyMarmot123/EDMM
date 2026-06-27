@@ -59,7 +59,10 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
   const [isMuted, setIsMuted] = useState(false);
   const [isShuffleEnabled, setIsShuffleEnabled] = useState(false);
   const [playbackQueue, setPlaybackQueue] = useState<TrackInfo[]>([]);
-  const [activeTrackIndex, setActiveTrackIndex] = useState(-1);
+  const activeQueue = useMemo(
+    () => (playbackQueue.length > 0 ? playbackQueue : queue),
+    [playbackQueue, queue],
+  );
 
   const buildShuffleQueue = useCallback((nextQueue: TrackInfo[], currentTrackId?: string) => {
     if (nextQueue.length <= 1) {
@@ -232,7 +235,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
   }, []);
 
   const setTrack = useCallback(
-    (track: TrackInfo, playImmediately = false, trackIndex = -1) => {
+    (track: TrackInfo, playImmediately = false) => {
       const mergedTrack = mergeTrackInfo(currentTrackRef.current, track);
 
       cacheArtwork(mergedTrack);
@@ -240,18 +243,8 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       setCurrentTime(0);
       setIsBuffering(playImmediately && Boolean(mergedTrack.url));
       setIsPlaying(playImmediately && Boolean(mergedTrack.url));
-
-      if (trackIndex >= 0 && trackIndex < playbackQueue.length) {
-        setActiveTrackIndex(trackIndex);
-        return;
-      }
-
-      const fallbackIndex = playbackQueue.findIndex(
-        (queueTrack) => queueTrack.assetId === mergedTrack.assetId,
-      );
-      setActiveTrackIndex(fallbackIndex >= 0 ? fallbackIndex : -1);
     },
-    [cacheArtwork, mergeTrackInfo, playbackQueue],
+    [cacheArtwork, mergeTrackInfo],
   );
 
   const toggleShuffle = useCallback(() => {
@@ -261,24 +254,14 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
 
     if (!queue.length) {
       setPlaybackQueue([]);
-      setActiveTrackIndex(-1);
       return;
     }
 
     if (nextShuffleState) {
       const nextPlaybackQueue = buildShuffleQueue(queue, currentTrackId);
-      const nextIndex = currentTrackId
-        ? nextPlaybackQueue.findIndex((track) => track.assetId === currentTrackId)
-        : -1;
-
       setPlaybackQueue(nextPlaybackQueue);
-      setActiveTrackIndex(nextIndex >= 0 ? nextIndex : -1);
     } else {
-      const nextIndex = currentTrackId
-        ? queue.findIndex((track) => track.assetId === currentTrackId)
-        : -1;
       setPlaybackQueue(queue);
-      setActiveTrackIndex(nextIndex >= 0 ? nextIndex : -1);
     }
   }, [buildShuffleQueue, isShuffleEnabled, queue]);
 
@@ -346,15 +329,8 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       const nextPlaybackQueue = isShuffleEnabled
         ? buildShuffleQueue(queueInfo, primaryTrackInfo.assetId)
         : queueInfo;
-      const nextTrackIndex = nextPlaybackQueue.findIndex(
-        (queuedTrack) => queuedTrack.assetId === primaryTrackInfo.assetId,
-      );
-      const normalizedTrackIndex =
-        nextTrackIndex >= 0 ? nextTrackIndex : 0;
-
       setQueue(queueInfo);
       setPlaybackQueue(nextPlaybackQueue);
-      setActiveTrackIndex(normalizedTrackIndex);
 
       const isSameTrack = currentTrackRef.current?.assetId === primaryTrackInfo.assetId;
 
@@ -371,7 +347,6 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
             audio.load();
           }
           setCurrentTrack(syncTrackMeta);
-          setActiveTrackIndex(normalizedTrackIndex);
           setIsBuffering(false);
           setIsPlaying((playing) => !playing);
           if (!primaryTrackInfo.artworkId) {
@@ -387,7 +362,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
         }
         return;
       }
-      setTrack(primaryTrackInfo, shouldAutoPlay, normalizedTrackIndex);
+      setTrack(primaryTrackInfo, shouldAutoPlay);
       if (!primaryTrackInfo.artworkId) {
         void recoverArtworkForCurrentTrack(primaryTrackInfo.assetId);
       }
@@ -447,56 +422,70 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
         (track) => track.assetId === assetId,
       );
       const selected = selectedInPlaybackQueue ?? queue.find((track) => track.assetId === assetId);
-      const selectedIndex = playbackQueue.findIndex(
-        (track) => track.assetId === assetId,
-      );
       if (!selected || selected.assetId === currentTrack?.assetId) return;
-      setTrack(selected, isPlaying, selectedIndex);
+      setTrack(selected, isPlaying);
     },
     [currentTrack?.assetId, isPlaying, playbackQueue, queue, setTrack]
   );
 
-  const nextTrack = useCallback(() => {
-    if (!currentTrack || playbackQueue.length === 0) return;
+  useEffect(() => {
+    if (playbackQueue.length > 0) {
+      return;
+    }
 
-    const currentIndex =
-      activeTrackIndex >= 0
-        ? activeTrackIndex
-        : playbackQueue.findIndex((track) => track.assetId === currentTrack.assetId);
+    if (!currentTrack || queue.length === 0) {
+      return;
+    }
+
+    const currentTrackIndex = queue.findIndex(
+      (track) => track.assetId === currentTrack.assetId,
+    );
+    if (currentTrackIndex < 0) {
+      return;
+    }
+
+    setPlaybackQueue(queue);
+  }, [currentTrack?.assetId, playbackQueue.length, queue]);
+
+  const nextTrack = useCallback(() => {
+    if (!currentTrack || activeQueue.length < 2) return;
+
+    const currentTrackId = currentTrackRef.current?.assetId ?? currentTrack.assetId;
+    const currentIndex = activeQueue.findIndex(
+      (track) => track.assetId === currentTrackId,
+    );
     if (currentIndex < 0) {
       return;
     }
 
     const nextIndex = currentIndex + 1;
-    if (nextIndex >= playbackQueue.length) return;
-    setTrack(playbackQueue[nextIndex], isPlaying, nextIndex);
+    if (nextIndex >= activeQueue.length) return;
+    setTrack(activeQueue[nextIndex], isPlaying);
   }, [
-    currentTrack,
     isPlaying,
-    activeTrackIndex,
-    playbackQueue,
+    currentTrack,
+    activeQueue,
     setTrack,
   ]);
 
   const prevTrack = useCallback(() => {
-    if (!currentTrack || playbackQueue.length === 0) return;
+    if (!currentTrack || activeQueue.length < 2) return;
 
-    const currentIndex =
-      activeTrackIndex >= 0
-        ? activeTrackIndex
-        : playbackQueue.findIndex((track) => track.assetId === currentTrack.assetId);
+    const currentTrackId = currentTrackRef.current?.assetId ?? currentTrack.assetId;
+    const currentIndex = activeQueue.findIndex(
+      (track) => track.assetId === currentTrackId,
+    );
     if (currentIndex < 0) {
       return;
     }
 
     const prevIndex = currentIndex - 1;
     if (prevIndex < 0) return;
-    setTrack(playbackQueue[prevIndex], isPlaying, prevIndex);
+    setTrack(activeQueue[prevIndex], isPlaying);
   }, [
-    currentTrack,
     isPlaying,
-    activeTrackIndex,
-    playbackQueue,
+    currentTrack,
+    activeQueue,
     setTrack,
   ]);
 

@@ -76,6 +76,7 @@ const PlayerControlsSection: React.FC<
 
   const playPauseLabel = isPlaying ? "Pause" : "Play";
   const hasPlayableTrack = Boolean(currentTrackInfo?.url);
+  const hasPlayableQueue = Boolean(currentTrackInfo?.assetId);
   const handleFullscreenClick = () => {};
 
   useEffect(() => {
@@ -157,7 +158,7 @@ const PlayerControlsSection: React.FC<
             onClick={prevTrack}
             aria-label="Previous track"
             className="h-10 w-10 text-white/70 hover:text-white"
-            disabled={!hasPlayableTrack}
+            disabled={!hasPlayableQueue}
           >
             <SkipBack
               className="m-auto block transition-colors duration-200 ease-out"
@@ -189,7 +190,7 @@ const PlayerControlsSection: React.FC<
             onClick={nextTrack}
             aria-label="Next track"
             className="h-10 w-10 text-white/70 hover:text-white"
-            disabled={!hasPlayableTrack}
+            disabled={!hasPlayableQueue}
           >
             <SkipForward
               className="m-auto block transition-colors duration-200 ease-out"
