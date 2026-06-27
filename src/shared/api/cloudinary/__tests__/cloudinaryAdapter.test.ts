@@ -19,7 +19,8 @@ describe("adaptCloudinaryTrack", () => {
       id: "cloudinary:asset-1",
       source: "cloudinary",
       title: "aespa LEMONADE MV",
-      artistName: "Cloudinary",
+      artistId: "",
+      artistName: "",
       albumName: "media-pipeline",
       artworkUrl: "",
       durationMs: 191280,
@@ -86,6 +87,17 @@ describe("adaptCloudinaryTrack", () => {
     expect(track.artistName).toBe("Context Artist");
     expect(track.albumName).toBe("Context Album");
     expect(track.artworkUrl).toBe("https://example.com/context-art.jpg");
+  });
+
+  it("uses context alt as artist when artist is missing", () => {
+    const track = adaptCloudinaryTrack({
+      ...raw,
+      context: {
+        alt: "Screamarts & Blocksberg",
+      },
+    });
+
+    expect(track.artistName).toBe("Screamarts & Blocksberg");
   });
 
   it("uses metadata.context fields when available", () => {

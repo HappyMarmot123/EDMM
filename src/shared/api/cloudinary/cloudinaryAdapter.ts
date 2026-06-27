@@ -28,7 +28,7 @@ const basename = (publicId: string) => {
 
 const folderName = (publicId: string) => {
   const segments = publicId.split("/").filter(Boolean);
-  return segments.length > 1 ? segments[segments.length - 2] : "Cloudinary";
+  return segments.length > 1 ? segments[segments.length - 2] : "";
 };
 
 const readString = (
@@ -76,13 +76,21 @@ export function adaptCloudinaryTrack(resource: CloudinaryResource): Track {
   const artistName =
     readStringFromRecords(
       [custom, context, contextCustom, metadataContext, metadata],
-      ["artist"],
+      ["artist", "dj", "creator", "author", "alt"],
     ) ??
-    "Cloudinary";
+    "";
+  const artistId = artistName ? `cloudinary:${artistName}` : "";
   const albumName =
     readStringFromRecords(
       [custom, context, contextCustom, metadataContext, metadata],
-      ["album"],
+      [
+        "album",
+        "album_name",
+        "albumName",
+        "project",
+        "collection",
+        "release",
+      ],
     ) ??
     folderName(resource.public_id);
   const artworkFromSource =
@@ -115,7 +123,7 @@ export function adaptCloudinaryTrack(resource: CloudinaryResource): Track {
     id: `cloudinary:${assetId}`,
     source: "cloudinary",
     title,
-    artistId: `cloudinary:${artistName}`,
+    artistId,
     artistName,
     albumName,
     artworkUrl,
