@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Disc3, Music2, Play, Radio } from "lucide-react";
 import type { Track } from "@/entities/Track/model";
 import { AudioVisualizer } from "@/features/audio/components/audioVisualizer";
@@ -42,7 +42,7 @@ export function TrackDetailAside({
 }: TrackDetailAsideProps) {
   const [cachedTrack, setCachedTrack] = useState<Track | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { currentTrack, isPlaying, audioAnalyser } = useAudioPlayer();
+  const { currentTrack, isPlaying, audioAnalyser, duration } = useAudioPlayer();
 
   useEffect(() => {
     let isActive = true;
@@ -76,19 +76,63 @@ export function TrackDetailAside({
     };
   }, [selectedTrackId]);
 
-  const track =
-    cachedTrack?.id === selectedTrackId
-      ? {
-          ...fallbackTrack,
-          ...cachedTrack,
-          artworkUrl: pickArtworkUrl(
-            cachedTrack.artworkUrl,
-            fallbackTrack?.artworkUrl,
-          ),
-        }
-      : fallbackTrack?.id === selectedTrackId
-        ? fallbackTrack
-        : null;
+  const liveTrackFallback = useMemo(() => {
+    if (!currentTrack || currentTrack.assetId !== selectedTrackId) {
+      return null;
+    }
+
+    const fallbackDurationMs =
+      duration > 0
+        ? Math.round(duration * 1000)
+        : (fallbackTrack?.durationMs ?? 0);
+
+    return {
+      id: currentTrack.assetId,
+      source: "cloudinary",
+      title: currentTrack.name,
+      artistId: "",
+      artistName: currentTrack.producer,
+      albumName: currentTrack.album,
+      artworkUrl: pickArtworkUrl(
+        currentTrack.artworkId,
+        fallbackTrack?.artworkUrl,
+      ),
+      durationMs: fallbackDurationMs,
+      streamUrl: currentTrack.url,
+      metadata: {},
+    };
+  }, [currentTrack, duration, fallbackTrack?.artworkUrl, selectedTrackId]);
+
+  const track = useMemo(() => {
+    if (!selectedTrackId) return null;
+
+    if (cachedTrack?.id === selectedTrackId) {
+      const cachedArtworkUrl = pickArtworkUrl(
+        cachedTrack.artworkUrl,
+        liveTrackFallback?.artworkUrl,
+        fallbackTrack?.artworkUrl,
+      );
+
+      return {
+        ...fallbackTrack,
+        ...cachedTrack,
+        artworkUrl: cachedArtworkUrl,
+        durationMs: cachedTrack.durationMs || liveTrackFallback?.durationMs || 0,
+      };
+    }
+
+    if (fallbackTrack?.id === selectedTrackId) {
+      return {
+        ...fallbackTrack,
+        artworkUrl: pickArtworkUrl(
+          fallbackTrack.artworkUrl,
+          liveTrackFallback?.artworkUrl,
+        ),
+      };
+    }
+
+    return liveTrackFallback;
+  }, [cachedTrack, fallbackTrack, selectedTrackId, liveTrackFallback]);
   const isCurrentTrack = track && currentTrack?.assetId === track.id;
   const isVisualizerActive = Boolean(isCurrentTrack && isPlaying);
 

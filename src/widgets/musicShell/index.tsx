@@ -98,6 +98,32 @@ export function MusicShell({
   }, [normalizedInitialView]);
 
   useEffect(() => {
+    const handleTrackZoneSelect = (event: Event) => {
+      const trackId = (
+        event as CustomEvent<{ trackId?: string }>
+      ).detail?.trackId?.trim();
+      if (!trackId) {
+        return;
+      }
+
+      setSelectedTrackId(trackId);
+      setSelectionSource("visible");
+    };
+
+    window.addEventListener(
+      "edmm:player-track-zone-select",
+      handleTrackZoneSelect,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "edmm:player-track-zone-select",
+        handleTrackZoneSelect,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
     if (normalizedInitialTrackId) {
       setSelectedTrackId(normalizedInitialTrackId);
       setSelectionSource("initial");

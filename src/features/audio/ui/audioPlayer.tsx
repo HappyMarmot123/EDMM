@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useRef } from "react";
 import PlayerTrackDetails, {
   PlayerTrackSummary,
@@ -11,10 +12,38 @@ import AlbumArtwork from "@/features/audio/components/albumArtwork";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 
 export default function AudioPlayer() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { currentTrack, isPlaying, isBuffering, currentTime, duration, seek } =
     useAudioPlayer();
   const seekBarContainerRef = useRef<HTMLDivElement>(null);
   const currentProgress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const currentTrackId = currentTrack?.assetId;
+
+  const handleTrackZoneClick = () => {
+    if (!currentTrackId) {
+      return;
+    }
+
+    const isSearchRoute = pathname === "/search";
+    const nextSearchParams = isSearchRoute
+      ? new URLSearchParams(searchParams?.toString())
+      : new URLSearchParams();
+
+    nextSearchParams.set("track", currentTrackId);
+    const queryString = nextSearchParams.toString();
+    const nextPath = `/search${queryString ? `?${queryString}` : ""}`;
+
+    router.replace(nextPath, { scroll: false });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("edmm:player-track-zone-select", {
+          detail: { trackId: currentTrackId },
+        }),
+      );
+    }
+  };
 
   return (
     <aside
@@ -29,8 +58,16 @@ export default function AudioPlayer() {
       >
         <section
           data-testid="player-track-zone"
-          className="flex min-w-0 items-center gap-3"
+          className="flex min-w-0 cursor-pointer items-center gap-3"
           aria-label="Current track"
+          onClick={handleTrackZoneClick}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            event.preventDefault();
+            handleTrackZoneClick();
+          }}
         >
           <AlbumArtwork
             isPlaying={isPlaying}
