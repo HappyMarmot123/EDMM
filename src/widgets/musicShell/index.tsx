@@ -284,32 +284,30 @@ export function MusicShell({
           </footer>
         </section>
 
-        <aside
-          aria-label="Track detail aside"
-          className={`min-w-0 pb-0 ${
-            isTrackDetailOpen
-              ? "music-shell-aside music-shell-aside--open"
-              : "music-shell-aside music-shell-aside--closed"
-          }`}
-        >
+        <section className="music-shell-aside-shell">
           <button
             type="button"
             onClick={() => setIsTrackDetailOpen((value) => !value)}
             aria-label={
               isTrackDetailOpen ? "Close track detail" : "Open track detail"
             }
-            className="music-shell-aside__toggle mb-2 w-full rounded-lg border border-white/15 bg-[#0b0609] px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#ffb8c0] transition-colors hover:border-[#ff98a2]/55 hover:bg-white/5"
+            className="music-shell-aside__toggle rounded-full border border-white/15 bg-[#0b0609] px-2.5 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#ffb8c0] transition-colors hover:border-[#ff98a2]/55 hover:bg-white/5"
           >
-            <span>Overflow Wrap</span>
-            <span className="ml-auto inline-flex">
-              {isTrackDetailOpen ? (
-                <ChevronRight size={15} strokeWidth={2.2} aria-hidden="true" />
-              ) : (
-                <ChevronLeft size={15} strokeWidth={2.2} aria-hidden="true" />
-              )}
-            </span>
+            {isTrackDetailOpen ? (
+              <ChevronRight size={16} strokeWidth={2.2} aria-hidden="true" />
+            ) : (
+              <ChevronLeft size={16} strokeWidth={2.2} aria-hidden="true" />
+            )}
           </button>
 
+          <aside
+            aria-label="Track detail aside"
+            className={`min-w-0 pb-0 ${
+              isTrackDetailOpen
+                ? "music-shell-aside music-shell-aside--open"
+                : "music-shell-aside music-shell-aside--closed"
+            }`}
+          >
           <div className="music-shell-aside__content">
             <TrackDetailAside
               selectedTrackId={detailSelectedTrackId}
@@ -318,7 +316,8 @@ export function MusicShell({
               onPlay={handlePlay}
             />
           </div>
-        </aside>
+          </aside>
+        </section>
       </section>
     </main>
   );

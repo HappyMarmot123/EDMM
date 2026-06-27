@@ -844,6 +844,10 @@ h1 {
 }
 
 @media (max-width: 767px) {
+  .music-shell-aside-shell {
+    position: relative;
+  }
+
   .music-shell-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -859,8 +863,13 @@ h1 {
   }
 
   .music-shell-aside__toggle {
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 8px;
+    right: 4px;
+    z-index: 30;
   }
 
   .music-shell-aside--open {
@@ -869,6 +878,7 @@ h1 {
 
   .music-shell-aside--closed {
     width: 56px;
+    min-height: 56px;
   }
 }
 
