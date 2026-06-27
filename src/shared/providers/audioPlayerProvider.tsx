@@ -3,7 +3,7 @@
 import type { Track } from "@/entities/Track/model";
 import { isPlayable } from "@/entities/Track/model";
 import useAudioInstanceStore from "@/app/store/audioInstanceStore";
-import { cacheTrack } from "@/shared/db/repositories/trackCacheRepo";
+import { cacheTrack, getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
 import { addRecentPlay } from "@/shared/db/repositories/recentPlaysRepo";
 import { CLAMP_VOLUME } from "@/shared/lib/util";
 import { normalizeArtworkUrl, resolveArtworkUrlWithCache } from "@/shared/lib/trackArtwork";
@@ -35,11 +35,6 @@ const toTrackInfo = (track: Track, artworkId?: string): TrackInfo => ({
   producer: track.artistName,
 });
 
-const toTrackInfoWithCache = async (track: Track): Promise<TrackInfo> => {
-  const artworkId = await resolveArtworkUrlWithCache(track);
-  return toTrackInfo(track, artworkId);
-};
-
 function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
   const audio = useAudioInstanceStore((state) => state.audioInstance);
   const audioContext = useAudioInstanceStore((state) => state.audioContext);
@@ -47,6 +42,11 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
   const cleanAudioInstance = useAudioInstanceStore(
     (state) => state.cleanAudioInstance
   );
+  const currentTrackRef = useRef<TrackInfo | null>(null);
+  const trackArtworkCacheRef = useRef(new Map<string, string>());
+  const playTrackRequestRef = useRef(0);
+  const artworkRecoveryAttemptRef = useRef(new Map<string, number>());
+  const artworkRecoveryRunningRef = useRef(new Set<string>());
 
   const isSeekingRef = useRef(false);
   const [currentTrack, setCurrentTrack] = useState<TrackInfo | null>(null);
@@ -63,6 +63,132 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
     setIsMuted(nextVolume === 0);
   }, []);
 
+  const mergeTrackInfo = useCallback(
+    (existing: TrackInfo | null, next: TrackInfo): TrackInfo => {
+      if (!existing || existing.assetId !== next.assetId) {
+        return next;
+      }
+
+      return {
+        ...existing,
+        album: next.album || existing.album,
+        name: next.name || existing.name,
+        producer: next.producer || existing.producer,
+        url: next.url || existing.url,
+        artworkId: next.artworkId || existing.artworkId,
+      };
+    },
+    [],
+  );
+
+  const cacheArtwork = useCallback((trackInfo: TrackInfo) => {
+    if (trackInfo.artworkId) {
+      trackArtworkCacheRef.current.set(trackInfo.assetId, trackInfo.artworkId);
+    }
+  }, []);
+
+  const toTrackInfoWithCache = useCallback(
+    async (track: Track, fallbackArtworkId = ""): Promise<TrackInfo> => {
+      const directArtwork = normalizeArtworkUrl(track.artworkUrl);
+      if (directArtwork) {
+        cacheArtwork({
+          ...toTrackInfo(track),
+          artworkId: directArtwork,
+        });
+        return toTrackInfo(track, directArtwork);
+      }
+
+      const normalizedFallback = normalizeArtworkUrl(fallbackArtworkId);
+      if (normalizedFallback) {
+        return toTrackInfo(track, normalizedFallback);
+      }
+
+      const rememberedArtwork = normalizeArtworkUrl(
+        trackArtworkCacheRef.current.get(track.id),
+      );
+      if (rememberedArtwork) {
+        return toTrackInfo(track, rememberedArtwork);
+      }
+
+      const resolvedArtwork = normalizeArtworkUrl(
+        await resolveArtworkUrlWithCache(track),
+      );
+      if (resolvedArtwork) {
+        cacheArtwork({
+          ...toTrackInfo(track),
+          artworkId: resolvedArtwork,
+        });
+      }
+
+      return toTrackInfo(track, resolvedArtwork);
+    },
+    [cacheArtwork],
+  );
+
+  const recoverArtworkForCurrentTrack = useCallback(async (assetId: string) => {
+    if (!assetId) return;
+
+    const normalizedId = assetId;
+    if (artworkRecoveryRunningRef.current.has(normalizedId)) return;
+
+    const previousAttempts = artworkRecoveryAttemptRef.current.get(normalizedId) ?? 0;
+    if (previousAttempts >= 4) return;
+
+    artworkRecoveryRunningRef.current.add(normalizedId);
+    try {
+      for (let attempt = previousAttempts; attempt < 4; attempt++) {
+        if (currentTrackRef.current?.assetId !== normalizedId) {
+          break;
+        }
+
+        const cachedTrack = await getCachedTrack(normalizedId).catch(() => undefined);
+        const resolvedArtwork = normalizeArtworkUrl(cachedTrack?.artworkUrl);
+
+        if (resolvedArtwork) {
+          setCurrentTrack((previousTrack) => {
+            if (!previousTrack || previousTrack.assetId !== normalizedId) {
+              return previousTrack;
+            }
+
+            if (previousTrack.artworkId) {
+              return previousTrack;
+            }
+
+            const patchedTrack = { ...previousTrack, artworkId: resolvedArtwork };
+            cacheArtwork(patchedTrack);
+            return patchedTrack;
+          });
+
+          setQueue((previousQueue) => {
+            if (previousQueue.every((item) => item.assetId !== normalizedId)) {
+              return previousQueue;
+            }
+
+            return previousQueue.map((item) =>
+              item.assetId === normalizedId ? { ...item, artworkId: resolvedArtwork } : item,
+            );
+          });
+          trackArtworkCacheRef.current.set(normalizedId, resolvedArtwork);
+          artworkRecoveryAttemptRef.current.delete(normalizedId);
+          return;
+        }
+
+        if (attempt < 3) {
+          artworkRecoveryAttemptRef.current.set(normalizedId, attempt + 1);
+          await new Promise<void>((resolve) =>
+            setTimeout(() => {
+              resolve();
+            }, 250 * (attempt + 1)),
+          );
+        } else {
+          artworkRecoveryAttemptRef.current.set(normalizedId, attempt + 1);
+        }
+      }
+    } finally {
+      artworkRecoveryRunningRef.current.delete(normalizedId);
+    }
+  }, [cacheArtwork]);
+
   const setLiveVolume = useCallback(
     (nextVolume: number) => {
       if (audio) {
@@ -77,31 +203,116 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
   }, []);
 
   const setTrack = useCallback((track: TrackInfo, playImmediately = false) => {
-    setCurrentTrack(track);
+    const mergedTrack = mergeTrackInfo(currentTrackRef.current, track);
+
+    cacheArtwork(mergedTrack);
+    setCurrentTrack(mergedTrack);
     setCurrentTime(0);
-    setIsBuffering(playImmediately && Boolean(track.url));
-    setIsPlaying(playImmediately && Boolean(track.url));
-  }, []);
+    setIsBuffering(playImmediately && Boolean(mergedTrack.url));
+    setIsPlaying(playImmediately && Boolean(mergedTrack.url));
+  }, [cacheArtwork, mergeTrackInfo]);
 
   const playTrack = useCallback(
     async (track: Track, nextQueue?: Track[], playImmediately = true) => {
-      const resolvedTrackInfo = await toTrackInfoWithCache(track);
+      const requestId = ++playTrackRequestRef.current;
+      const fallbackArtwork = normalizeArtworkUrl(
+        currentTrackRef.current?.assetId === track.id
+          ? currentTrackRef.current.artworkId
+          : trackArtworkCacheRef.current.get(track.id),
+      );
+      const resolvedTrackInfo = await toTrackInfoWithCache(track, fallbackArtwork);
+      const resolvedForCurrentTrack = mergeTrackInfo(
+        currentTrackRef.current,
+        resolvedTrackInfo,
+      );
+      artworkRecoveryAttemptRef.current.delete(resolvedForCurrentTrack.assetId);
+      artworkRecoveryRunningRef.current.delete(resolvedForCurrentTrack.assetId);
+
+      if (requestId !== playTrackRequestRef.current) {
+        const currentTrackForRequest = currentTrackRef.current;
+        if (
+          currentTrackForRequest?.assetId === resolvedForCurrentTrack.assetId &&
+          currentTrackForRequest.artworkId !== resolvedForCurrentTrack.artworkId
+        ) {
+          setCurrentTrack((previousTrack) =>
+            previousTrack
+              ? mergeTrackInfo(previousTrack, resolvedForCurrentTrack)
+              : resolvedForCurrentTrack,
+          );
+          cacheArtwork(resolvedForCurrentTrack);
+        }
+        if (currentTrackForRequest?.assetId === resolvedForCurrentTrack.assetId && !currentTrackForRequest.artworkId) {
+          void recoverArtworkForCurrentTrack(resolvedForCurrentTrack.assetId);
+        }
+
+        return;
+      }
+
       const tracksForQueue = nextQueue?.length ? nextQueue : [track];
       const queueInfo = await Promise.all(
-        tracksForQueue.map(async (queuedTrack) =>
-          queuedTrack.id === track.id
-            ? resolvedTrackInfo
-            : toTrackInfo(queuedTrack),
-        ),
+        tracksForQueue.map(async (queuedTrack) => {
+          const queuedTrackInfo = toTrackInfo(queuedTrack);
+          if (queuedTrack.id !== track.id) {
+            return queuedTrackInfo;
+          }
+
+          return mergeTrackInfo(queuedTrackInfo, resolvedTrackInfo);
+        }),
       );
+      if (requestId !== playTrackRequestRef.current) {
+        return;
+      }
+
+      const primaryTrackInfo =
+        queueInfo.find(
+          (queuedTrack) =>
+            queuedTrack.assetId === resolvedForCurrentTrack.assetId,
+        ) ?? resolvedForCurrentTrack;
+
+      cacheArtwork(primaryTrackInfo);
+
       const shouldAutoPlay = playImmediately && isPlayable(track);
 
       setQueue(queueInfo);
-      setTrack(resolvedTrackInfo, shouldAutoPlay);
 
-      if (shouldAutoPlay && audio && resolvedTrackInfo.url) {
-        if (audio.src !== resolvedTrackInfo.url) {
-          audio.src = resolvedTrackInfo.url;
+      const isSameTrack = currentTrackRef.current?.assetId === primaryTrackInfo.assetId;
+
+      if (isSameTrack) {
+        const syncTrackMeta = (previousTrack: TrackInfo | null) =>
+          previousTrack
+            ? mergeTrackInfo(previousTrack, primaryTrackInfo)
+            : primaryTrackInfo;
+
+        if (shouldAutoPlay) {
+          if (audio && audio.currentSrc !== primaryTrackInfo.url) {
+            audio.src = primaryTrackInfo.url;
+            setCurrentTime(0);
+            audio.load();
+          }
+          setCurrentTrack(syncTrackMeta);
+          setIsBuffering(false);
+          setIsPlaying((playing) => !playing);
+          if (!primaryTrackInfo.artworkId) {
+            void recoverArtworkForCurrentTrack(primaryTrackInfo.assetId);
+          }
+          return;
+        }
+
+        setCurrentTrack(syncTrackMeta);
+        setIsBuffering(false);
+        if (!primaryTrackInfo.artworkId) {
+          void recoverArtworkForCurrentTrack(primaryTrackInfo.assetId);
+        }
+        return;
+      }
+      setTrack(primaryTrackInfo, shouldAutoPlay);
+      if (!primaryTrackInfo.artworkId) {
+        void recoverArtworkForCurrentTrack(primaryTrackInfo.assetId);
+      }
+
+      if (shouldAutoPlay && audio && primaryTrackInfo.url) {
+        if (audio.src !== primaryTrackInfo.url) {
+          audio.src = primaryTrackInfo.url;
           setCurrentTime(0);
         }
         if (audioContext?.state === "suspended") {
@@ -113,7 +324,10 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
         }
       }
 
-      cacheTrack(track).catch((error) => {
+      cacheTrack({
+        ...track,
+        artworkUrl: primaryTrackInfo.artworkId || track.artworkUrl,
+      }).catch((error) => {
         console.warn("Failed to cache track:", error);
       });
       if (shouldAutoPlay) {
@@ -122,8 +336,26 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
         });
       }
     },
-    [audio, audioContext, setTrack]
+    [
+      audio,
+      audioContext,
+      cacheArtwork,
+      mergeTrackInfo,
+      recoverArtworkForCurrentTrack,
+      setTrack,
+      toTrackInfoWithCache,
+    ]
   );
+
+  useEffect(() => {
+    currentTrackRef.current = currentTrack;
+    if (currentTrack?.artworkId) {
+      cacheArtwork(currentTrack);
+    }
+    if (currentTrack && !currentTrack.artworkId) {
+      void recoverArtworkForCurrentTrack(currentTrack.assetId);
+    }
+  }, [cacheArtwork, currentTrack, recoverArtworkForCurrentTrack]);
 
   const handleSelectTrack = useCallback(
     (assetId: string) => {
@@ -181,8 +413,8 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       if (audio.src !== trackUrl) {
         audio.src = trackUrl;
         setCurrentTime(0);
+        audio.load();
       }
-      audio.load();
     } else {
       setIsBuffering(false);
       audio.pause();
