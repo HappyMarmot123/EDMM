@@ -243,13 +243,9 @@ export function MusicShell({
         ? `No tracks found for "${normalizedQuery}".`
         : "No tracks in this view."
       : "No tracks in this view.";
-  const shellGridClassName = isTrackDetailOpen
-    ? "music-shell-grid"
-    : "music-shell-grid music-shell-grid--collapsed";
-
   return (
-    <main className="min-h-screen bg-[#050306] px-4 pb-32 pt-5 text-white sm:px-6 lg:px-8">
-      <section className={`${shellGridClassName} mx-auto grid w-full gap-5`}>
+    <main className="relative min-h-screen bg-[#050306] px-4 pb-32 pt-5 text-white sm:px-6 lg:px-8">
+      <section className="music-shell-grid mx-auto grid w-full gap-5">
         <section className="min-w-0 space-y-5">
           <MusicShellHeader
             query={query}
@@ -288,24 +284,33 @@ export function MusicShell({
           </footer>
         </section>
 
-        <aside aria-label="Track detail aside" className="min-w-0 pb-0">
+        <aside
+          aria-label="Track detail aside"
+          className={`min-w-0 pb-0 ${
+            isTrackDetailOpen
+              ? "music-shell-aside music-shell-aside--open"
+              : "music-shell-aside music-shell-aside--closed"
+          }`}
+        >
           <button
             type="button"
             onClick={() => setIsTrackDetailOpen((value) => !value)}
             aria-label={
               isTrackDetailOpen ? "Close track detail" : "Open track detail"
             }
-            className="mb-2 flex w-full items-center justify-between rounded-lg border border-white/15 bg-[#0b0609] px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#ffb8c0] transition-colors hover:border-[#ff98a2]/55 hover:bg-white/5"
+            className="music-shell-aside__toggle mb-2 w-full rounded-lg border border-white/15 bg-[#0b0609] px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#ffb8c0] transition-colors hover:border-[#ff98a2]/55 hover:bg-white/5"
           >
-            <span className={isTrackDetailOpen ? "" : "sr-only"}>Overflow Wrap</span>
-            {isTrackDetailOpen ? (
-              <ChevronRight size={15} strokeWidth={2.2} aria-hidden="true" />
-            ) : (
-              <ChevronLeft size={15} strokeWidth={2.2} aria-hidden="true" />
-            )}
+            <span>Overflow Wrap</span>
+            <span className="ml-auto inline-flex">
+              {isTrackDetailOpen ? (
+                <ChevronRight size={15} strokeWidth={2.2} aria-hidden="true" />
+              ) : (
+                <ChevronLeft size={15} strokeWidth={2.2} aria-hidden="true" />
+              )}
+            </span>
           </button>
 
-          <div className={isTrackDetailOpen ? "" : "hidden"}>
+          <div className="music-shell-aside__content">
             <TrackDetailAside
               selectedTrackId={detailSelectedTrackId}
               fallbackTrack={selectedTrack}

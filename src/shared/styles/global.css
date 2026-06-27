@@ -829,17 +829,57 @@ h1 {
   grid-template-columns: minmax(0, 1fr) 360px;
 }
 
-.music-shell-grid--collapsed {
-  grid-template-columns: minmax(0, 1fr) 56px;
-}
-
 @media (max-width: 1000px) {
   .music-shell-grid {
     grid-template-columns: minmax(0, 1fr) 300px;
   }
+}
 
-  .music-shell-grid--collapsed {
-    grid-template-columns: minmax(0, 1fr) 56px;
+.music-shell-aside__toggle {
+  display: none;
+}
+
+.music-shell-aside--closed .music-shell-aside__content {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .music-shell-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .music-shell-aside {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 25;
+    transition:
+      width 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .music-shell-aside__toggle {
+    display: flex;
+    align-items: center;
+  }
+
+  .music-shell-aside--open {
+    width: min(300px, 84vw);
+  }
+
+  .music-shell-aside--closed {
+    width: 56px;
+  }
+}
+
+@media (min-width: 768px) {
+  .music-shell-aside {
+    position: static;
+    width: auto;
+  }
+
+  .music-shell-aside--closed .music-shell-aside__content {
+    display: block;
   }
 }
 
