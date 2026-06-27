@@ -5,8 +5,10 @@ import {
   type ComponentPropsWithoutRef,
   type KeyboardEvent,
   type MouseEvent,
+  useCallback,
+  useRef,
 } from "react";
-import { Virtuoso } from "react-virtuoso";
+import { type StateSnapshot, Virtuoso } from "react-virtuoso";
 import type { Track } from "@/entities/Track/model";
 import { isPlayable } from "@/entities/Track/model";
 
@@ -29,6 +31,16 @@ const formatDuration = (durationMs: number) => {
   return `${minutes}:${seconds}`;
 };
 
+const getTrackKey = (_: number, track: Track) => track.id;
+const trackScrollerComponents = {
+  Scroller: (props: ComponentPropsWithoutRef<"div"> & { stateChanged?: unknown }) => {
+    const { stateChanged: _stateChanged, className, ...htmlProps } = props;
+    const mergedClassName = `scrollbar-hide ${className ?? ""}`.trim();
+
+    return <div {...htmlProps} className={mergedClassName} />;
+  },
+};
+
 export function MusicTrackList({
   tracks,
   selectedTrackId,
@@ -39,6 +51,19 @@ export function MusicTrackList({
   onPlay,
   onRetry,
 }: MusicTrackListProps) {
+  const persistedStateRef = useRef<StateSnapshot | null>(null);
+
+  const handleSelect = useCallback(
+    (event: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>, track: Track) => {
+      event.preventDefault();
+      if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      onSelect(track);
+    },
+    [onSelect],
+  );
+
   if (isLoading) {
     return (
       <div role="status" aria-live="polite" className="space-y-2 text-sm text-white/62">
@@ -90,31 +115,19 @@ export function MusicTrackList({
       <Virtuoso
         data={tracks}
         overscan={6}
-        computeItemKey={(index, track) => track.id}
+        computeItemKey={getTrackKey}
         style={{ height: "100%", width: "100%" }}
-        components={{
-          Scroller: (props: ComponentPropsWithoutRef<"div">) => {
-            const mergedClassName = `scrollbar-hide ${props.className ?? ""}`.trim();
-            return <div {...props} className={mergedClassName} />;
-          },
+        components={trackScrollerComponents}
+        fixedItemHeight={84}
+        stateChanged={(state: any) => {
+          if (state) {
+            persistedStateRef.current = state;
+          }
         }}
+        restoreStateFrom={persistedStateRef.current ?? undefined}
         itemContent={(index, track) => {
           const isSelected = selectedTrackId === track.id;
           const isTrackPlayable = isPlayable(track);
-          const selectLabel = `Select ${track.title}`;
-
-          const handleSelect = () => {
-            onSelect(track);
-          };
-
-          const handleSelectKeyDown = (event: KeyboardEvent<HTMLElement>) => {
-            if (event.key !== "Enter" && event.key !== " ") {
-              return;
-            }
-
-            event.preventDefault();
-            onSelect(track);
-          };
 
           const handlePlay = (event: MouseEvent<HTMLButtonElement>) => {
             event.stopPropagation();
@@ -133,12 +146,15 @@ export function MusicTrackList({
                 ].join(" ")}
               >
                 <div
-                  tabIndex={0}
-                  role="button"
-                  aria-label={selectLabel}
-                  onClick={handleSelect}
-                  onKeyDown={handleSelectKeyDown}
-                  className="grid min-w-0 grid-cols-[30px_48px_minmax(0,1fr)] items-center gap-3 rounded p-1.5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb8c0]"
+                  onPointerDown={(event) => event.preventDefault()}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={(event) => handleSelect(event, track)}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter" && event.key !== " ") return;
+
+                    handleSelect(event, track);
+                  }}
+                  className="grid min-w-0 cursor-pointer grid-cols-[30px_48px_minmax(0,1fr)] items-center gap-3 rounded p-1.5 text-left"
                 >
                   <span className="text-sm font-black text-white/38">{index + 1}</span>
                   <span
@@ -177,7 +193,7 @@ export function MusicTrackList({
                     onClick={handlePlay}
                     onKeyDown={(event) => event.stopPropagation()}
                     disabled={!isTrackPlayable}
-                    className="grid h-10 w-10 place-items-center rounded-full bg-[#ff98a2] text-black transition-transform hover:scale-[1.05] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb8c0] disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/45"
+                    className="grid h-10 w-10 place-items-center rounded-full bg-[#ff98a2] text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb8c0] disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/45"
                   >
                     <Play size={18} fill="currentColor" strokeWidth={2.1} />
                   </button>

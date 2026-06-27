@@ -1,4 +1,4 @@
-import { type RefObject, useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { Track } from "@/entities/Track/model";
 import { isPlayable } from "@/entities/Track/model";
 import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
@@ -24,13 +24,15 @@ type MusicShellSeedHookParams = {
     queueOverride?: Track[],
   ) => void;
   fallbackToFirstPlayable: () => void;
-  seededTrackRef: RefObject<string | null>;
 };
 
 const loadCachedTrack = async (trackId: string): Promise<Track | null> => {
   const track = await getCachedTrack(trackId);
   return track ?? null;
 };
+
+const normalizeArtworkForFingerprint = (track: Track | null) =>
+  track?.artworkUrl?.trim() ?? "";
 
 export const useMusicShellTrackSeed = ({
   selectionSource,
@@ -41,7 +43,6 @@ export const useMusicShellTrackSeed = ({
   queueForTrack,
   activateTrackInPlayer,
   fallbackToFirstPlayable,
-  seededTrackRef,
 }: MusicShellSeedHookParams) => {
   const loadTrackById = useCallback(async (trackId: string) => {
     try {
@@ -59,11 +60,15 @@ export const useMusicShellTrackSeed = ({
       return;
     }
 
-    if (resolvedInitialTrackRef.current === selectedTrackId) {
+    const selectedTrackFingerprint = selectedTrack
+      ? `${selectedTrack.id}|${normalizeArtworkForFingerprint(selectedTrack)}`
+      : selectedTrackId;
+
+    if (resolvedInitialTrackRef.current === selectedTrackFingerprint) {
       return;
     }
 
-    resolvedInitialTrackRef.current = selectedTrackId;
+    resolvedInitialTrackRef.current = selectedTrackFingerprint;
     let isActive = true;
 
     void (async () => {
@@ -101,19 +106,23 @@ export const useMusicShellTrackSeed = ({
   ]);
 
   useEffect(() => {
-    if (selectionSource || seededTrackRef.current) {
+    if (selectionSource) {
       return;
     }
 
     const latestRecentId = recentTrackIds[0] ?? null;
     const firstVisibleTrackId = visibleTracks[0]?.id ?? null;
+    const firstVisibleTrack = visibleTracks[0] ?? null;
     const seedTrackId = latestRecentId || firstVisibleTrackId;
 
     if (!seedTrackId) {
       return;
     }
 
-    const dedupeKey = buildRecentSeedKey(latestRecentId, firstVisibleTrackId);
+    const visibleTrackFingerprint = firstVisibleTrack
+      ? `${firstVisibleTrack.id}|${normalizeArtworkForFingerprint(firstVisibleTrack)}`
+      : "none";
+    const dedupeKey = `${buildRecentSeedKey(latestRecentId, firstVisibleTrackId)}:${visibleTrackFingerprint}`;
     if (resolvedRecentTrackRef.current === dedupeKey) {
       return;
     }
@@ -148,7 +157,6 @@ export const useMusicShellTrackSeed = ({
     activateTrackInPlayer,
     queueForTrack,
     recentTrackIds,
-    seededTrackRef,
     selectionSource,
     visibleTracks,
     loadTrackById,

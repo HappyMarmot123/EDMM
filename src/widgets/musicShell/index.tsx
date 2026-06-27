@@ -7,6 +7,7 @@ import { useFavorites } from "@/features/library/hooks/useFavorites";
 import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
 import { getCachedTracks } from "@/shared/db/repositories/trackCacheRepo";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
+import { normalizeArtworkUrl } from "@/shared/lib/trackArtwork";
 import MusicShellHeader, { type MusicView } from "./musicShellHeader";
 import MusicTrackList from "./musicTrackList";
 import TrackDetailAside from "./trackDetailAside";
@@ -166,6 +167,10 @@ export function MusicShell({
     [visibleTrackIds, visibleTracks],
   );
 
+  const buildTrackSeedFingerprint = useCallback((track: Track) => {
+    return `${track.id}|${normalizeArtworkUrl(track.artworkUrl)}`;
+  }, []);
+
   const activateTrackInPlayer = useCallback(
     (
       track: Track,
@@ -173,18 +178,19 @@ export function MusicShell({
       source: SelectionSource = "visible",
       queueOverride?: Track[],
     ) => {
-      if (!playImmediately && seededTrackIdRef.current === track.id) {
+      const seedFingerprint = buildTrackSeedFingerprint(track);
+      if (!playImmediately && seededTrackIdRef.current === seedFingerprint) {
         return;
       }
 
       const queue = queueOverride ?? queueForTrack(track);
 
-      seededTrackIdRef.current = track.id;
+      seededTrackIdRef.current = seedFingerprint;
       onPlay(track, queue, playImmediately);
       setSelectedTrackId(track.id);
       setSelectionSource(source);
     },
-    [onPlay, queueForTrack],
+    [buildTrackSeedFingerprint, onPlay, queueForTrack],
   );
 
   const handleSelect = (track: Track) => {
@@ -217,7 +223,6 @@ export function MusicShell({
     queueForTrack,
     activateTrackInPlayer,
     fallbackToFirstPlayable,
-    seededTrackRef: seededTrackIdRef,
   });
 
   const isVisibleLoading =
