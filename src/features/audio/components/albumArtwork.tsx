@@ -11,9 +11,11 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
 }) => {
   const artworkSrc = currentTrackInfo?.artworkId?.trim() ?? "";
   const [hasArtworkError, setHasArtworkError] = React.useState(false);
+  const [errorRetryCount, setErrorRetryCount] = React.useState(0);
 
   React.useEffect(() => {
     setHasArtworkError(false);
+    setErrorRetryCount(0);
   }, [artworkSrc]);
 
   const shouldRenderArtwork = Boolean(artworkSrc) && !hasArtworkError;
@@ -49,7 +51,7 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
         </span>
       ) : shouldRenderArtwork ? (
         <img
-          key={artworkSrc}
+          key={`${artworkSrc}-${errorRetryCount}`}
           src={artworkSrc}
           alt={currentTrackInfo.album}
           className="absolute inset-0 z-[1] block h-full w-full object-cover opacity-100 select-none"
@@ -57,7 +59,16 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
           width={92}
           height={92}
           loading="lazy"
-          onError={() => setHasArtworkError(true)}
+          onError={() =>
+            setErrorRetryCount((retryCount) => {
+              if (retryCount >= 1) {
+                setHasArtworkError(true);
+                return retryCount;
+              }
+
+              return retryCount + 1;
+            })
+          }
         />
       ) : (
         <span className="absolute inset-0 flex items-center justify-center bg-white/10 text-[#fd6d94]">
