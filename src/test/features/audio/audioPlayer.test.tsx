@@ -82,7 +82,7 @@ describe("AudioPlayer", () => {
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
   });
 
-  it("renders desktop player content in Spotify-like track, control, and volume zones", () => {
+  it("renders player content in the fixed (non-responsive) layout", () => {
     render(<AudioPlayer />);
 
     const player = screen.getByLabelText("Audio Player");
@@ -96,9 +96,7 @@ describe("AudioPlayer", () => {
     });
 
     expect(playerGrid).toHaveClass(
-      "grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]",
-      "lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.75fr)]",
-      "xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1fr)]"
+      "grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(164px,0.75fr)]"
     );
     expect(playerGrid?.className).not.toMatch(/minmax\(\d+px,/);
     expect(trackZone).toContainElement(
@@ -111,7 +109,7 @@ describe("AudioPlayer", () => {
     );
     expect(seekSlider).toHaveAttribute("aria-valuenow", "12");
     expect(seekSlider).toHaveAttribute("aria-valuemax", "180");
-    expect(volumeZone).toHaveClass("lg:flex");
+    expect(volumeZone).toHaveClass("flex");
     expect(volumeSlider).toHaveValue("0.7");
   });
 

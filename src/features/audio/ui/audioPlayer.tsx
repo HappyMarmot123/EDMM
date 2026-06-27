@@ -25,7 +25,7 @@ export default function AudioPlayer() {
     >
       <div
         id="player"
-        className="mx-auto grid min-h-[96px] w-full max-w-[1440px] grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] items-center gap-3 px-4 pt-3 sm:px-6 md:gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.75fr)] lg:px-8 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1fr)]"
+        className="mx-auto grid min-h-[96px] w-full max-w-[1440px] items-center gap-4 px-6 pt-3 grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(164px,0.75fr)]"
       >
         <section
           data-testid="player-track-zone"
@@ -57,7 +57,7 @@ export default function AudioPlayer() {
         </section>
         <section
           data-testid="player-volume-zone"
-          className="hidden min-w-0 justify-end lg:flex"
+          className="min-w-0 flex-shrink-0 justify-end flex"
           aria-label="Volume zone"
         >
           <PlayerVolumeControls />

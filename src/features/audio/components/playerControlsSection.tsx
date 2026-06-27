@@ -4,12 +4,12 @@ import { PlayerControlsSectionProps } from "@/shared/types/dataType";
 import {
   Pause,
   Play,
-  Repeat2,
   Shuffle,
   SkipBack,
   SkipForward,
   Volume2,
   VolumeX,
+  Maximize2,
 } from "lucide-react";
 import { useVolumeControl } from "@/shared/hooks/useVolumeControl";
 import { PlayerControlButton } from "@/shared/components/playerControlBtn";
@@ -24,7 +24,7 @@ export const PlayerVolumeControls: React.FC = () => {
 
   return (
     <section
-      className="hidden min-w-0 items-center justify-end gap-2 md:flex"
+      className="min-w-0 items-center justify-end gap-2 flex"
       aria-label="Volume controls"
     >
       <IconToggleButton
@@ -52,7 +52,7 @@ export const PlayerVolumeControls: React.FC = () => {
         onChange={handleVolumeChange}
         onMouseUp={handleVolumeChangeEnd}
         onTouchEnd={handleVolumeChangeEnd}
-        className="h-1.5 w-full max-w-[112px] cursor-pointer appearance-none rounded-full bg-white/15 accent-[#fd6d94] [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-[#fd6d94] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#fd6d94]"
+        className="h-1.5 w-[112px] min-w-[112px] max-w-[112px] cursor-pointer appearance-none rounded-full bg-white/15 accent-[#fd6d94] [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-[#fd6d94] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#fd6d94]"
         aria-label="Volume"
       />
     </section>
@@ -63,7 +63,6 @@ const PlayerControlsSection: React.FC<
   Omit<PlayerControlsSectionProps, "isMobile">
 > = ({ currentTrackInfo }) => {
   const [isShuffleEnabled, setIsShuffleEnabled] = useState(false);
-  const [isRepeatEnabled, setIsRepeatEnabled] = useState(false);
 
   const {
     isPlaying,
@@ -77,6 +76,7 @@ const PlayerControlsSection: React.FC<
 
   const playPauseLabel = isPlaying ? "Pause" : "Play";
   const hasPlayableTrack = Boolean(currentTrackInfo?.url);
+  const handleFullscreenClick = () => {};
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -130,91 +130,90 @@ const PlayerControlsSection: React.FC<
       className="flex w-full flex-col items-center gap-2"
       aria-label={`${currentTrackInfo?.name ?? "Current track"} controls`}
     >
-      <div className="flex w-full items-center justify-center gap-2">
-        <PlayerControlButton
-          id="shuffle"
-          onClick={() => setIsShuffleEnabled((value) => !value)}
-          aria-label={
-            isShuffleEnabled ? "Disable shuffle playback" : "Enable shuffle playback"
-          }
-          className="h-9 w-9 text-white/60 hover:text-white"
-          disabled={!hasPlayableTrack}
-        >
-          <Shuffle
-            className="m-auto block transition-colors duration-200 ease-out"
-            width={17}
-            fill="currentColor"
-            aria-hidden="true"
+      <div className="flex w-full justify-center gap-2">
+        <div className="flex items-center gap-2">
+          <PlayerControlButton
+            id="shuffle"
+            onClick={() => setIsShuffleEnabled((value) => !value)}
+            aria-label={
+              isShuffleEnabled ? "Disable shuffle playback" : "Enable shuffle playback"
+            }
+            title={isShuffleEnabled ? "Shuffle on" : "Shuffle off"}
+            className={`h-9 w-9 hover:text-white ${
+              isShuffleEnabled ? "text-[#fd6d94]" : "text-white/60"
+            }`}
+            disabled={!hasPlayableTrack}
+          >
+            <Shuffle
+              className="m-auto block transition-colors duration-200 ease-out"
+              width={17}
+              fill="currentColor"
+              aria-hidden="true"
+            />
+          </PlayerControlButton>
+
+          <PlayerControlButton
+            id="play-previous"
+            onClick={prevTrack}
+            aria-label="Previous track"
+            className="h-10 w-10 text-white/70 hover:text-white"
+            disabled={!hasPlayableTrack}
+          >
+            <SkipBack
+              className="m-auto block transition-colors duration-200 ease-out"
+              width={20}
+              fill="currentColor"
+              aria-hidden="true"
+            />
+          </PlayerControlButton>
+
+          <IconToggleButton
+            id="play-pause"
+            condition={isPlaying}
+            IconOnTrue={Pause}
+            IconOnFalse={Play}
+            onClick={togglePlayPause}
+            label={playPauseLabel}
+            className="bg-white text-black hover:bg-[#ffd6e1]"
+            disabled={!hasPlayableTrack}
+            iconProps={{
+              width: 22,
+              height: 22,
+              fill: "currentColor",
+              className: "text-black",
+            }}
           />
-        </PlayerControlButton>
 
-        <PlayerControlButton
-          id="play-previous"
-          onClick={prevTrack}
-          aria-label="Previous track"
-          className="h-10 w-10 text-white/70 hover:text-white"
-          disabled={!hasPlayableTrack}
-        >
-          <SkipBack
-            className="m-auto block transition-colors duration-200 ease-out"
-            width={20}
-            fill="currentColor"
-            aria-hidden="true"
-          />
-        </PlayerControlButton>
-
-        <IconToggleButton
-          id="play-pause"
-          condition={isPlaying}
-          IconOnTrue={Pause}
-          IconOnFalse={Play}
-          onClick={togglePlayPause}
-          label={playPauseLabel}
-          className="bg-white text-black hover:bg-[#ffd6e1]"
-          disabled={!hasPlayableTrack}
-          iconProps={{
-            width: 22,
-            height: 22,
-            fill: "currentColor",
-            className: "text-black",
-          }}
-        />
-
-        <PlayerControlButton
-          id="play-next"
-          onClick={nextTrack}
-          aria-label="Next track"
-          className="h-10 w-10 text-white/70 hover:text-white"
-          disabled={!hasPlayableTrack}
-        >
-          <SkipForward
-            className="m-auto block transition-colors duration-200 ease-out"
-            width={20}
-            fill="currentColor"
-            aria-hidden="true"
-          />
-        </PlayerControlButton>
-
-        <PlayerControlButton
-          id="repeat"
-          onClick={() => setIsRepeatEnabled((value) => !value)}
-          aria-label={
-            isRepeatEnabled ? "Disable repeat playback" : "Enable repeat playback"
-          }
-          className={`h-9 w-9 text-white/60 hover:text-white transition-colors ${isRepeatEnabled ? "text-[#ff98a2]" : ""}`}
-          disabled={!hasPlayableTrack}
-        >
-          <Repeat2
-            className="m-auto block transition-colors duration-200 ease-out"
-            width={17}
-            fill="currentColor"
-            aria-hidden="true"
-          />
-        </PlayerControlButton>
-      </div>
-
-      <div className="min-h-[14px] text-center text-[11px] font-black uppercase tracking-[0.12em] text-white/50">
-        {isShuffleEnabled ? "Shuffle" : "Linear"}
+          <PlayerControlButton
+            id="play-next"
+            onClick={nextTrack}
+            aria-label="Next track"
+            className="h-10 w-10 text-white/70 hover:text-white"
+            disabled={!hasPlayableTrack}
+          >
+            <SkipForward
+              className="m-auto block transition-colors duration-200 ease-out"
+              width={20}
+              fill="currentColor"
+              aria-hidden="true"
+            />
+          </PlayerControlButton>
+          <PlayerControlButton
+            id="fullscreen-toggle"
+            onClick={handleFullscreenClick}
+            aria-label="Toggle fullscreen view"
+            title="Fullscreen view"
+            className="ml-auto h-9 w-9 text-white/60 hover:text-white"
+          >
+            <Maximize2
+              className="m-auto block transition-colors duration-200 ease-out"
+              width={18}
+              height={18}
+              fill="currentColor"
+              aria-hidden="true"
+            />
+          </PlayerControlButton>
+        </div>
       </div>
     </section>
   );
