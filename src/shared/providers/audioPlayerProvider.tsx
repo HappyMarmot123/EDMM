@@ -57,6 +57,35 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
   const [isBuffering, setIsBuffering] = useState(false);
   const [volume, setVolumeState] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
+  const [isShuffleEnabled, setIsShuffleEnabled] = useState(false);
+  const [playbackQueue, setPlaybackQueue] = useState<TrackInfo[]>([]);
+  const [activeTrackIndex, setActiveTrackIndex] = useState(-1);
+
+  const buildShuffleQueue = useCallback((nextQueue: TrackInfo[], currentTrackId?: string) => {
+    if (nextQueue.length <= 1) {
+      return nextQueue;
+    }
+
+    const queueCopy = [...nextQueue];
+    let currentTrackItem: TrackInfo | undefined;
+
+    if (currentTrackId) {
+      const index = queueCopy.findIndex((track) => track.assetId === currentTrackId);
+      if (index >= 0) {
+        [currentTrackItem] = queueCopy.splice(index, 1);
+      }
+    }
+
+    for (let index = queueCopy.length - 1; index > 0; index--) {
+      const swapIndex = Math.floor(Math.random() * (index + 1));
+      [queueCopy[index], queueCopy[swapIndex]] = [
+        queueCopy[swapIndex],
+        queueCopy[index],
+      ];
+    }
+
+    return currentTrackItem ? [currentTrackItem, ...queueCopy] : queueCopy;
+  }, []);
 
   const setVolume = useCallback((nextVolume: number) => {
     setVolumeState(CLAMP_VOLUME(nextVolume));
@@ -202,15 +231,56 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
     setIsMuted((muted) => !muted);
   }, []);
 
-  const setTrack = useCallback((track: TrackInfo, playImmediately = false) => {
-    const mergedTrack = mergeTrackInfo(currentTrackRef.current, track);
+  const setTrack = useCallback(
+    (track: TrackInfo, playImmediately = false, trackIndex = -1) => {
+      const mergedTrack = mergeTrackInfo(currentTrackRef.current, track);
 
-    cacheArtwork(mergedTrack);
-    setCurrentTrack(mergedTrack);
-    setCurrentTime(0);
-    setIsBuffering(playImmediately && Boolean(mergedTrack.url));
-    setIsPlaying(playImmediately && Boolean(mergedTrack.url));
-  }, [cacheArtwork, mergeTrackInfo]);
+      cacheArtwork(mergedTrack);
+      setCurrentTrack(mergedTrack);
+      setCurrentTime(0);
+      setIsBuffering(playImmediately && Boolean(mergedTrack.url));
+      setIsPlaying(playImmediately && Boolean(mergedTrack.url));
+
+      if (trackIndex >= 0 && trackIndex < playbackQueue.length) {
+        setActiveTrackIndex(trackIndex);
+        return;
+      }
+
+      const fallbackIndex = playbackQueue.findIndex(
+        (queueTrack) => queueTrack.assetId === mergedTrack.assetId,
+      );
+      setActiveTrackIndex(fallbackIndex >= 0 ? fallbackIndex : -1);
+    },
+    [cacheArtwork, mergeTrackInfo, playbackQueue],
+  );
+
+  const toggleShuffle = useCallback(() => {
+    const nextShuffleState = !isShuffleEnabled;
+    setIsShuffleEnabled(nextShuffleState);
+    const currentTrackId = currentTrackRef.current?.assetId;
+
+    if (!queue.length) {
+      setPlaybackQueue([]);
+      setActiveTrackIndex(-1);
+      return;
+    }
+
+    if (nextShuffleState) {
+      const nextPlaybackQueue = buildShuffleQueue(queue, currentTrackId);
+      const nextIndex = currentTrackId
+        ? nextPlaybackQueue.findIndex((track) => track.assetId === currentTrackId)
+        : -1;
+
+      setPlaybackQueue(nextPlaybackQueue);
+      setActiveTrackIndex(nextIndex >= 0 ? nextIndex : -1);
+    } else {
+      const nextIndex = currentTrackId
+        ? queue.findIndex((track) => track.assetId === currentTrackId)
+        : -1;
+      setPlaybackQueue(queue);
+      setActiveTrackIndex(nextIndex >= 0 ? nextIndex : -1);
+    }
+  }, [buildShuffleQueue, isShuffleEnabled, queue]);
 
   const playTrack = useCallback(
     async (track: Track, nextQueue?: Track[], playImmediately = true) => {
@@ -273,7 +343,18 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
 
       const shouldAutoPlay = playImmediately && isPlayable(track);
 
+      const nextPlaybackQueue = isShuffleEnabled
+        ? buildShuffleQueue(queueInfo, primaryTrackInfo.assetId)
+        : queueInfo;
+      const nextTrackIndex = nextPlaybackQueue.findIndex(
+        (queuedTrack) => queuedTrack.assetId === primaryTrackInfo.assetId,
+      );
+      const normalizedTrackIndex =
+        nextTrackIndex >= 0 ? nextTrackIndex : 0;
+
       setQueue(queueInfo);
+      setPlaybackQueue(nextPlaybackQueue);
+      setActiveTrackIndex(normalizedTrackIndex);
 
       const isSameTrack = currentTrackRef.current?.assetId === primaryTrackInfo.assetId;
 
@@ -290,6 +371,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
             audio.load();
           }
           setCurrentTrack(syncTrackMeta);
+          setActiveTrackIndex(normalizedTrackIndex);
           setIsBuffering(false);
           setIsPlaying((playing) => !playing);
           if (!primaryTrackInfo.artworkId) {
@@ -305,7 +387,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
         }
         return;
       }
-      setTrack(primaryTrackInfo, shouldAutoPlay);
+      setTrack(primaryTrackInfo, shouldAutoPlay, normalizedTrackIndex);
       if (!primaryTrackInfo.artworkId) {
         void recoverArtworkForCurrentTrack(primaryTrackInfo.assetId);
       }
@@ -340,6 +422,8 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       audio,
       audioContext,
       cacheArtwork,
+      buildShuffleQueue,
+      isShuffleEnabled,
       mergeTrackInfo,
       recoverArtworkForCurrentTrack,
       setTrack,
@@ -359,30 +443,62 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
 
   const handleSelectTrack = useCallback(
     (assetId: string) => {
-      const selected = queue.find((track) => track.assetId === assetId);
+      const selectedInPlaybackQueue = playbackQueue.find(
+        (track) => track.assetId === assetId,
+      );
+      const selected = selectedInPlaybackQueue ?? queue.find((track) => track.assetId === assetId);
+      const selectedIndex = playbackQueue.findIndex(
+        (track) => track.assetId === assetId,
+      );
       if (!selected || selected.assetId === currentTrack?.assetId) return;
-      setTrack(selected, isPlaying);
+      setTrack(selected, isPlaying, selectedIndex);
     },
-    [currentTrack?.assetId, isPlaying, queue, setTrack]
+    [currentTrack?.assetId, isPlaying, playbackQueue, queue, setTrack]
   );
 
   const nextTrack = useCallback(() => {
-    if (!currentTrack || queue.length === 0) return;
-    const currentIndex = queue.findIndex(
-      (track) => track.assetId === currentTrack.assetId
-    );
-    const nextIndex = (currentIndex + 1) % queue.length;
-    setTrack(queue[nextIndex], isPlaying);
-  }, [currentTrack, isPlaying, queue, setTrack]);
+    if (!currentTrack || playbackQueue.length === 0) return;
+
+    const currentIndex =
+      activeTrackIndex >= 0
+        ? activeTrackIndex
+        : playbackQueue.findIndex((track) => track.assetId === currentTrack.assetId);
+    if (currentIndex < 0) {
+      return;
+    }
+
+    const nextIndex = currentIndex + 1;
+    if (nextIndex >= playbackQueue.length) return;
+    setTrack(playbackQueue[nextIndex], isPlaying, nextIndex);
+  }, [
+    currentTrack,
+    isPlaying,
+    activeTrackIndex,
+    playbackQueue,
+    setTrack,
+  ]);
 
   const prevTrack = useCallback(() => {
-    if (!currentTrack || queue.length === 0) return;
-    const currentIndex = queue.findIndex(
-      (track) => track.assetId === currentTrack.assetId
-    );
-    const prevIndex = (currentIndex - 1 + queue.length) % queue.length;
-    setTrack(queue[prevIndex], isPlaying);
-  }, [currentTrack, isPlaying, queue, setTrack]);
+    if (!currentTrack || playbackQueue.length === 0) return;
+
+    const currentIndex =
+      activeTrackIndex >= 0
+        ? activeTrackIndex
+        : playbackQueue.findIndex((track) => track.assetId === currentTrack.assetId);
+    if (currentIndex < 0) {
+      return;
+    }
+
+    const prevIndex = currentIndex - 1;
+    if (prevIndex < 0) return;
+    setTrack(playbackQueue[prevIndex], isPlaying, prevIndex);
+  }, [
+    currentTrack,
+    isPlaying,
+    activeTrackIndex,
+    playbackQueue,
+    setTrack,
+  ]);
 
   const togglePlayPause = useCallback(async () => {
     if (!currentTrack?.url) return;
@@ -479,6 +595,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       isBuffering,
       volume,
       isMuted,
+      isShuffleEnabled,
       audioInstance: audio,
       audioContext,
       audioAnalyser,
@@ -487,6 +604,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       playTrack,
       handleSelectTrack,
       togglePlayPause,
+      toggleShuffle,
       setIsPlaying,
       setCurrentTime,
       setDuration,
@@ -511,6 +629,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       isBuffering,
       isMuted,
       isPlaying,
+      isShuffleEnabled,
       nextTrack,
       playTrack,
       prevTrack,
@@ -520,6 +639,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       setVolume,
       toggleMute,
       togglePlayPause,
+      toggleShuffle,
       volume,
     ]
   );

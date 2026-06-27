@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { PlayerControlsSectionProps } from "@/shared/types/dataType";
 import {
@@ -62,11 +62,11 @@ export const PlayerVolumeControls: React.FC = () => {
 const PlayerControlsSection: React.FC<
   Omit<PlayerControlsSectionProps, "isMobile">
 > = ({ currentTrackInfo }) => {
-  const [isShuffleEnabled, setIsShuffleEnabled] = useState(false);
-
   const {
     isPlaying,
     volume,
+    isShuffleEnabled,
+    toggleShuffle,
     togglePlayPause,
     nextTrack,
     prevTrack,
@@ -134,12 +134,12 @@ const PlayerControlsSection: React.FC<
         <div className="flex items-center gap-2">
           <PlayerControlButton
             id="shuffle"
-            onClick={() => setIsShuffleEnabled((value) => !value)}
+            onClick={toggleShuffle}
             aria-label={
               isShuffleEnabled ? "Disable shuffle playback" : "Enable shuffle playback"
             }
             title={isShuffleEnabled ? "Shuffle on" : "Shuffle off"}
-            className={`h-9 w-9 hover:text-white ${
+            className={`h-9 w-9 ${
               isShuffleEnabled ? "text-[#fd6d94]" : "text-white/60"
             }`}
             disabled={!hasPlayableTrack}

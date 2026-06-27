@@ -47,12 +47,14 @@ export interface AudioPlayerState {
   isBuffering: boolean;
   volume: number;
   isMuted: boolean;
+  isShuffleEnabled: boolean;
   setTrack: (track: TrackInfo, playImmediately?: boolean) => void;
   playTrack: (
     track: Track,
     queue?: Track[],
     playImmediately?: boolean,
   ) => void;
+  toggleShuffle: () => void;
   togglePlayPause: () => void | Promise<void>;
   setIsPlaying: (playing: boolean) => void;
   setCurrentTime: (time: number) => void;
