@@ -27,7 +27,6 @@ describe("AlbumArtwork", () => {
         isPlaying={false}
         isBuffering={false}
         currentTrackInfo={track}
-        onClick={jest.fn()}
       />
     );
 
@@ -43,7 +42,6 @@ describe("AlbumArtwork", () => {
         isPlaying={false}
         isBuffering={false}
         currentTrackInfo={track}
-        onClick={jest.fn()}
       />
     );
 

@@ -6,19 +6,9 @@
   --color-primary-shadow-1: #ff98a2;
   --color-primary-shadow-2: #ff98a280;
   --color-audio-player-button: #c2c2c9;
-  --animate-rotate-album: rotateAlbumArt 3s linear infinite;
   --scrollbar-pink-start: #ffe5e8;
   --scrollbar-pink-end: #ffeff2;
   --scrollbar-pink-end-hover: #ffe0e3;
-
-  @keyframes rotateAlbumArt {
-    0% {
-      transform: rotateZ(0);
-    }
-    100% {
-      transform: rotateZ(360deg);
-    }
-  }
 }
 
 :root {
@@ -832,6 +822,17 @@ h1 {
 
 #seek-time::before {
   content: attr(data-seek-time);
+}
+
+.music-shell-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+}
+
+@media (max-width: 1000px) {
+  .music-shell-grid {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
 }
 
 .glow-button {

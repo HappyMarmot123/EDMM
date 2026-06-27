@@ -46,21 +46,13 @@ let mockAudioPlayerState: MockAudioPlayerState = {
   setLiveVolume: jest.fn(),
   toggleMute: jest.fn(),
 };
-const mockRouterPush = jest.fn();
 
 jest.mock("@/shared/providers/audioPlayerProvider", () => ({
   useAudioPlayer: () => mockAudioPlayerState,
 }));
 
-jest.mock("next/navigation", () => ({
-  useRouter: () => ({
-    push: mockRouterPush,
-  }),
-}));
-
 describe("AudioPlayer", () => {
   beforeEach(() => {
-    mockRouterPush.mockClear();
     mockAudioPlayerState = {
       currentTrack: track,
       isPlaying: false,
@@ -145,16 +137,6 @@ describe("AudioPlayer", () => {
 
     expect(mockAudioPlayerState.setLiveVolume).toHaveBeenCalledWith(0.2);
     expect(mockAudioPlayerState.setVolume).toHaveBeenCalledWith(0.2);
-  });
-
-  it("navigates to the current track detail when album artwork is clicked", () => {
-    render(<AudioPlayer />);
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Open details for Track One" })
-    );
-
-    expect(mockRouterPush).toHaveBeenCalledWith("/track/track-1");
   });
 
   it("does not rotate persistent desktop artwork while playback is active", () => {

@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, type MouseEvent } from "react";
-import { useRouter } from "next/navigation";
 import MPlayerTrackDetails from "@/features/audio/components/mobile/m_playerTrackDetails";
 import MPlayerControlsSection from "@/features/audio/components/mobile/m_playerControlsSection";
 import MAlbumArtwork from "@/features/audio/components/mobile/m_albumArtwork";
@@ -11,7 +10,6 @@ import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 export default function MobileAudioPlayer() {
   const { currentTrack, isPlaying, isBuffering, currentTime, duration, seek } =
     useAudioPlayer();
-  const router = useRouter();
   const seekBarContainerRef = useRef<HTMLDivElement>(null);
 
   const currentProgress = duration > 0 ? (currentTime / duration) * 100 : 0;
@@ -24,11 +22,6 @@ export default function MobileAudioPlayer() {
     const seekFraction = clickPosition / rect.width;
     seek(seekFraction * duration);
   };
-  const openTrackDetail = () => {
-    if (!currentTrack) return;
-    router.push(`/track/${encodeURIComponent(currentTrack.assetId)}`);
-  };
-
   return (
     <div
       id="player-container-mobile"
@@ -64,7 +57,6 @@ export default function MobileAudioPlayer() {
             isPlaying={isPlaying}
             isBuffering={isBuffering}
             currentTrackInfo={currentTrack}
-            onClick={openTrackDetail}
           />
           <MPlayerTrackDetails
             isPlaying={isPlaying}

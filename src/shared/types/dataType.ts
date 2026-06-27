@@ -36,7 +36,6 @@ export interface PlayerControlsSectionProps {
 
 export type ExtendedAlbumArtworkProps = AlbumArtworkProps & {
   currentTrackInfo: TrackInfo | null;
-  onClick: () => void;
   isMobile?: boolean;
 };
 

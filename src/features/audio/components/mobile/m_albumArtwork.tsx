@@ -7,10 +7,8 @@ import { Music2 } from "lucide-react";
 import { ExtendedAlbumArtworkProps } from "@/shared/types/dataType";
 
 const MAlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
-  isPlaying,
   isBuffering,
   currentTrackInfo,
-  onClick,
 }) => {
   const artworkSrc = currentTrackInfo?.artworkId?.trim() ?? "";
   const [hasArtworkError, setHasArtworkError] = React.useState(false);
@@ -21,31 +19,25 @@ const MAlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
 
   const shouldRenderArtwork = Boolean(artworkSrc) && !hasArtworkError;
 
-  const mobileAlbumArtClassName = (playing: boolean, buffering: boolean) => {
+  const mobileAlbumArtClassName = (buffering: boolean) => {
     const baseClasses =
-      "relative z-[1] overflow-hidden rounded-md cursor-pointer shadow-[0_10px_24px_rgba(0,0,0,0.32)] ring-1 ring-white/10 select-none disabled:pointer-events-none disabled:cursor-default disabled:opacity-50";
+      "relative z-[1] overflow-hidden rounded-md shadow-[0_10px_24px_rgba(0,0,0,0.32)] ring-1 ring-white/10 select-none";
     const mobileClasses = "w-[54px] h-[54px]";
-    const animationClasses =
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fd6d94] focus-visible:ring-offset-2 focus-visible:ring-offset-black";
 
     let stateClasses = "";
     if (buffering) {
-      stateClasses =
-        "[&>img]:opacity-25 [&_#buffer-box]:opacity-100";
-    } else if (playing) {
-      stateClasses = "active";
+      stateClasses = "[&>img]:opacity-25";
     }
 
-    return clsx(baseClasses, mobileClasses, stateClasses, animationClasses);
+    return clsx(baseClasses, mobileClasses, stateClasses);
   };
 
-  const finalClassName = mobileAlbumArtClassName(isPlaying, isBuffering);
+  const finalClassName = mobileAlbumArtClassName(isBuffering);
 
   return (
     <button
       type="button"
       id="album-art"
-      onClick={onClick}
       className={finalClassName}
       aria-label={
         currentTrackInfo
@@ -63,10 +55,7 @@ const MAlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
           key={artworkSrc}
           src={artworkSrc}
           alt={currentTrackInfo.album}
-          className={clsx(
-            "absolute inset-0 z-[1] block h-full w-full object-cover opacity-100 select-none",
-            isPlaying && "animate-rotate-album active"
-          )}
+          className="absolute inset-0 z-[1] block h-full w-full object-cover opacity-100 select-none"
           draggable={false}
           width={54}
           height={54}

@@ -8,7 +8,6 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
   isPlaying,
   isBuffering,
   currentTrackInfo,
-  onClick,
 }) => {
   const artworkSrc = currentTrackInfo?.artworkId?.trim() ?? "";
   const [hasArtworkError, setHasArtworkError] = React.useState(false);
@@ -23,16 +22,9 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
     return clsx(
       "relative h-16 w-16 flex-none overflow-hidden rounded-md bg-white/10",
       "shadow-[0_12px_28px_rgba(0,0,0,0.35)] ring-1 ring-white/10",
-      "cursor-pointer transition-transform duration-200 ease-out hover:scale-[1.03]",
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#fd6d94] focus-visible:ring-offset-2 focus-visible:ring-offset-black",
-      "disabled:pointer-events-none disabled:cursor-default disabled:opacity-50",
       playing && "shadow-[0_0_0_1px_rgba(253,109,148,0.35),0_18px_34px_rgba(253,109,148,0.18)]",
       buffering && [
-        "buffering",
         "[&>img]:opacity-25",
-        "[&>img.active]:opacity-80",
-        "[&>img.active]:blur-sm",
-        "[&_#buffer-box]:opacity-100",
       ]
     );
   };
@@ -43,7 +35,6 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
     <button
       type="button"
       id="album-art"
-      onClick={onClick}
       className={finalClassName}
       aria-label={
         currentTrackInfo

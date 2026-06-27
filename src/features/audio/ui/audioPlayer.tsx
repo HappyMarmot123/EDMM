@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef } from "react";
-import { useRouter } from "next/navigation";
 import PlayerTrackDetails, {
   PlayerTrackSummary,
 } from "@/features/audio/components/playerTrackDetails";
@@ -14,14 +13,8 @@ import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 export default function AudioPlayer() {
   const { currentTrack, isPlaying, isBuffering, currentTime, duration, seek } =
     useAudioPlayer();
-  const router = useRouter();
   const seekBarContainerRef = useRef<HTMLDivElement>(null);
-
   const currentProgress = duration > 0 ? (currentTime / duration) * 100 : 0;
-  const openTrackDetail = () => {
-    if (!currentTrack) return;
-    router.push(`/track/${encodeURIComponent(currentTrack.assetId)}`);
-  };
 
   return (
     <aside
@@ -43,7 +36,6 @@ export default function AudioPlayer() {
             isPlaying={isPlaying}
             isBuffering={isBuffering}
             currentTrackInfo={currentTrack}
-            onClick={openTrackDetail}
           />
           <PlayerTrackSummary currentTrackInfo={currentTrack} />
         </section>

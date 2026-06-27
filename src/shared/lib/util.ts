@@ -1,6 +1,5 @@
 import { SetStateAction } from "react";
 import { Dispatch, MouseEvent, RefObject } from "react";
-import clsx from "clsx";
 
 export function formatTime(seconds: number): string {
   if (isNaN(seconds) || seconds < 0) {
@@ -114,26 +113,6 @@ export const handleMouseOut = (
   if (seekBarContainerRef.current) {
     seekBarContainerRef.current.style.setProperty("--seek-hover-width", "0px");
   }
-};
-
-export const albumArtClassName = (isPlaying: boolean, isBuffering: boolean) => {
-  return clsx(
-    "absolute w-[92px] h-[92px] top-[-22px] ml-[32px]",
-    "bg-gray-300",
-    "rounded-full overflow-hidden hover:scale-105 shadow-[0_0_0_10px_#fff]",
-    "cursor-pointer transform rotate-0 transition-all duration-300 ease-[ease]",
-    isPlaying && [
-      "active top-[-32px]",
-      "shadow-[0_0_0_4px_#fff7f7,_0_30px_50px_-15px_#afb7c1]",
-    ],
-    isBuffering && [
-      "buffering",
-      "[&>img]:opacity-25",
-      "[&>img.active]:opacity-80",
-      "[&>img.active]:blur-sm",
-      "[&_#buffer-box]:opacity-100",
-    ]
-  );
 };
 
 export const CLAMP_VOLUME = (volume: number) =>
