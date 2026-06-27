@@ -1,20 +1,17 @@
 "use client";
 
 import { Clock3, Heart, Library, Search } from "lucide-react";
-import type { ResourceTypeFilter } from "@/shared/api/cloudinary/cloudinaryClient";
 
 export type MusicView = "all" | "favorites" | "recent";
 
 type MusicShellHeaderProps = {
   query: string;
   view: MusicView;
-  resourceType: ResourceTypeFilter;
   resultCount: number;
   favoriteCount: number;
   recentCount: number;
   onQueryChange: (query: string) => void;
   onViewChange: (view: MusicView) => void;
-  onResourceTypeChange: (resourceType: ResourceTypeFilter) => void;
 };
 
 const VIEW_OPTIONS: Array<{
@@ -27,26 +24,14 @@ const VIEW_OPTIONS: Array<{
   { value: "recent", label: "Recent", Icon: Clock3 },
 ];
 
-const RESOURCE_TYPE_OPTIONS: Array<{
-  value: ResourceTypeFilter;
-  label: string;
-  Icon: typeof Library;
-}> = [
-  { value: "video", label: "Videos", Icon: Library },
-  { value: "image", label: "Images", Icon: Library },
-  { value: "all", label: "All media", Icon: Library },
-];
-
 export function MusicShellHeader({
   query,
   view,
-  resourceType,
   resultCount,
   favoriteCount,
   recentCount,
   onQueryChange,
   onViewChange,
-  onResourceTypeChange,
 }: MusicShellHeaderProps) {
   const counts: Record<MusicView, number> = {
     all: resultCount,
@@ -117,30 +102,6 @@ export function MusicShellHeader({
               >
                 {counts[value]}
               </span>
-            </button>
-          );
-        })}
-      </nav>
-
-      <nav className="flex flex-wrap gap-2" aria-label="Resource type">
-        {RESOURCE_TYPE_OPTIONS.map(({ value, label, Icon }) => {
-          const isActive = resourceType === value;
-
-          return (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={isActive}
-              onClick={() => onResourceTypeChange(value)}
-              className={[
-                "inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-sm font-black transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb8c0]",
-                isActive
-                  ? "border-[#ff98a2] bg-[#ff98a2] text-black"
-                  : "border-white/10 bg-white/[0.045] text-white/72 hover:border-[#ff98a2]/45 hover:text-white",
-              ].join(" ")}
-            >
-              <Icon size={17} strokeWidth={2.2} aria-hidden="true" />
-              <span>{label}</span>
             </button>
           );
         })}

@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type Track } from "@/entities/Track/model";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
-import type { ResourceTypeFilter } from "@/shared/api/cloudinary/cloudinaryClient";
 import { useFavorites } from "@/features/library/hooks/useFavorites";
 import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
 import { getCachedTracks } from "@/shared/db/repositories/trackCacheRepo";
@@ -26,7 +25,6 @@ export interface MusicShellProps {
   onPlay?: (track: Track, queue?: Track[], playImmediately?: boolean) => void;
   initialView?: MusicView;
   initialTrackId?: string | null;
-  initialResourceType?: ResourceTypeFilter;
 }
 
 type CachedTrackState = {
@@ -37,10 +35,6 @@ const noop: NonNullable<MusicShellProps["onPlay"]> = () => {};
 
 const isMusicView = (view: MusicView | undefined): view is MusicView =>
   view === "all" || view === "favorites" || view === "recent";
-const isResourceType = (
-  value: ResourceTypeFilter | undefined,
-): value is ResourceTypeFilter =>
-  value === "video" || value === "image" || value === "all";
 
 function useCachedTrackList(ids: string[]): CachedTrackState {
   const [state, setState] = useState<CachedTrackState>({
@@ -81,12 +75,8 @@ export function MusicShell({
   onPlay = noop,
   initialView,
   initialTrackId = null,
-  initialResourceType,
 }: MusicShellProps) {
   const normalizedInitialView = isMusicView(initialView) ? initialView : "all";
-  const [resourceType, setResourceType] = useState<ResourceTypeFilter>(
-    isResourceType(initialResourceType) ? initialResourceType : "all",
-  );
   const normalizedInitialTrackId =
     initialTrackId?.trim().length ? initialTrackId : null;
 
@@ -133,7 +123,7 @@ export function MusicShell({
     refetch,
   } = useCloudinaryTracks(
     normalizedQuery,
-    resourceType === "video" ? undefined : { resourceType },
+    { resourceType: "all" },
   );
   const catalogTracks = useMemo(() => cloudinaryData ?? [], [cloudinaryData]);
 
@@ -250,13 +240,11 @@ export function MusicShell({
           <MusicShellHeader
             query={query}
             view={view}
-            resourceType={resourceType}
             resultCount={catalogTracks.length}
             favoriteCount={favoriteTrackIds.length}
             recentCount={recentTrackIds.length}
             onQueryChange={setQuery}
             onViewChange={setView}
-            onResourceTypeChange={setResourceType}
           />
 
           <main
