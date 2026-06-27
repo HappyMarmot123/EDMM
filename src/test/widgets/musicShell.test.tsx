@@ -12,6 +12,24 @@ import {
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import MusicShell from "@/widgets/musicShell";
 
+jest.mock("react-virtuoso", () => ({
+  Virtuoso: ({
+    data,
+    itemContent,
+  }: {
+    data: Track[];
+    itemContent: (index: number, item: Track) => JSX.Element;
+  }) => {
+    return (
+      <div>
+        {data.map((item, index) => (
+          <div key={item.id}>{itemContent(index, item)}</div>
+        ))}
+      </div>
+    );
+  },
+}));
+
 jest.mock("@/features/cloudinary/hooks/useCloudinaryTracks");
 jest.mock("@/features/library/hooks/useFavorites");
 jest.mock("@/features/library/hooks/useRecentPlays");
@@ -97,7 +115,7 @@ describe("MusicShell", () => {
     render(<MusicShell />);
 
     expect(
-      screen.getByRole("heading", { name: "EDMM catalog" }),
+      screen.getByRole("heading", { name: "EDMM" }),
     ).toBeInTheDocument();
     expect(mockUseCloudinaryTracks).toHaveBeenLastCalledWith("", { resourceType: "all" });
     expect(screen.getByRole("button", { name: "Select Cloud Track One" })).toBeInTheDocument();

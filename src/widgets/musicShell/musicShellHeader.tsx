@@ -40,20 +40,20 @@ export function MusicShellHeader({
   };
 
   return (
-    <header className="space-y-5 border-b border-white/10 pb-5">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0">
+    <header className="space-y-5">
+      <div className="flex min-w-0 items-end justify-between gap-12">
+        <div className="min-w-0 shrink-0">
           <p className="text-xs font-black uppercase tracking-normal text-[#ff98a2]">
-            Rose archive
+            Lucas archive
           </p>
-          <h1 className="mt-2 text-3xl font-black tracking-normal text-white sm:text-4xl">
-            EDMM catalog
+          <h1 className="mt-2 truncate text-3xl font-black tracking-normal text-white sm:text-4xl">
+            EDMM
           </h1>
         </div>
 
         <form
           role="search"
-          className="flex min-h-12 w-full items-center gap-3 rounded-md border border-white/12 bg-white/[0.065] px-3 shadow-[0_0_32px_rgba(255,105,135,0.10)] focus-within:border-[#ff98a2]/70 lg:max-w-md"
+          className="max-w-md min-h-12 flex min-w-0 flex-1 items-center gap-3 rounded-md border border-white/12 bg-white/[0.065] px-3 shadow-[0_0_32px_rgba(255,105,135,0.10)] focus-within:border-[#ff98a2]/70"
           onSubmit={(event) => event.preventDefault()}
         >
           <Search
@@ -93,15 +93,17 @@ export function MusicShellHeader({
             >
               <Icon size={17} strokeWidth={2.2} aria-hidden="true" />
               <span>{label}</span>
-              <span
-                aria-hidden="true"
-                className={[
-                  "rounded-full px-2 py-0.5 text-xs",
-                  isActive ? "bg-black/18 text-black" : "bg-white/10 text-white/58",
-                ].join(" ")}
-              >
-                {counts[value]}
-              </span>
+              {value === "all" ? (
+                <span
+                  aria-hidden="true"
+                  className={[
+                    "rounded-full px-2 py-0.5 text-xs",
+                    isActive ? "bg-black/18 text-black" : "bg-white/10 text-white/58",
+                  ].join(" ")}
+                >
+                  {counts[value]}
+                </span>
+              ) : null}
             </button>
           );
         })}

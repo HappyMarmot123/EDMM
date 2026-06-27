@@ -234,9 +234,11 @@ export function MusicShell({
         : "No tracks in this view."
       : "No tracks in this view.";
   return (
-    <main className="relative min-h-screen bg-[#050306] px-4 pb-32 pt-5 text-white sm:px-6 lg:px-8">
-      <section className="music-shell-grid mx-auto grid w-full gap-5">
-        <section className="min-w-0 space-y-5">
+    <main
+      className="relative flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[#050306] px-4 pb-[calc(78px+max(env(safe-area-inset-bottom),10px))] pt-5 text-white sm:px-6 sm:pb-[calc(96px+max(env(safe-area-inset-bottom),12px))] lg:px-8"
+    >
+      <section className="music-shell-grid mx-auto grid min-h-0 w-full flex-1 gap-5">
+        <main className="min-w-0 flex min-h-0 flex-1 flex-col gap-5">
           <MusicShellHeader
             query={query}
             view={view}
@@ -247,9 +249,9 @@ export function MusicShell({
             onViewChange={setView}
           />
 
-          <main
-            aria-label="Music catalog"
-            className="min-h-0 flex-1 rounded-lg border border-white/10 bg-black/24 p-3 sm:p-4"
+          <section
+            aria-label="Track list section"
+            className="min-h-0 flex-1 overflow-hidden rounded-lg border border-white/10 bg-black/24 p-3 sm:p-4"
           >
             <MusicTrackList
               tracks={visibleTracks}
@@ -261,16 +263,8 @@ export function MusicShell({
               onPlay={handlePlay}
               onRetry={view === "all" ? () => void refetch?.() : undefined}
             />
-          </main>
-
-          <footer className="rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-xs text-white/58">
-            <p className="font-semibold text-white/72">Now playing context</p>
-            <p className="mt-1">
-              Cloudinary catalog is the single runtime source. Favorites and recent
-              play views are assembled from local cache.
-            </p>
-          </footer>
-        </section>
+          </section>
+        </main>
 
         <section className="music-shell-aside-shell">
           <button
@@ -290,20 +284,20 @@ export function MusicShell({
 
           <aside
             aria-label="Track detail aside"
-            className={`min-w-0 pb-0 ${
+            className={`min-w-0 h-full pb-0 ${
               isTrackDetailOpen
                 ? "music-shell-aside music-shell-aside--open"
                 : "music-shell-aside music-shell-aside--closed"
             }`}
           >
-          <div className="music-shell-aside__content">
-            <TrackDetailAside
-              selectedTrackId={detailSelectedTrackId}
-              fallbackTrack={selectedTrack}
-              queue={visibleTracks}
-              onPlay={handlePlay}
-            />
-          </div>
+            <div className="music-shell-aside__content">
+              <TrackDetailAside
+                selectedTrackId={detailSelectedTrackId}
+                fallbackTrack={selectedTrack}
+                queue={visibleTracks}
+                onPlay={handlePlay}
+              />
+            </div>
           </aside>
         </section>
       </section>

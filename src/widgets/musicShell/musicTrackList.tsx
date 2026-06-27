@@ -1,7 +1,12 @@
 "use client";
 
 import { Disc3, Play } from "lucide-react";
-import { type KeyboardEvent, type MouseEvent } from "react";
+import {
+  type ComponentPropsWithoutRef,
+  type KeyboardEvent,
+  type MouseEvent,
+} from "react";
+import { Virtuoso } from "react-virtuoso";
 import type { Track } from "@/entities/Track/model";
 import { isPlayable } from "@/entities/Track/model";
 
@@ -77,96 +82,112 @@ export function MusicTrackList({
   }
 
   return (
-    <ul className="space-y-1.5" aria-label="Track list">
-      {tracks.map((track, index) => {
-        const isSelected = selectedTrackId === track.id;
-        const isTrackPlayable = isPlayable(track);
-        const selectLabel = `Select ${track.title}`;
+    <div
+      className="music-track-list h-full min-h-0 overflow-hidden"
+      aria-label="Track list"
+      role="list"
+    >
+      <Virtuoso
+        data={tracks}
+        overscan={6}
+        computeItemKey={(index, track) => track.id}
+        style={{ height: "100%", width: "100%" }}
+        components={{
+          Scroller: (props: ComponentPropsWithoutRef<"div">) => {
+            const mergedClassName = `scrollbar-hide ${props.className ?? ""}`.trim();
+            return <div {...props} className={mergedClassName} />;
+          },
+        }}
+        itemContent={(index, track) => {
+          const isSelected = selectedTrackId === track.id;
+          const isTrackPlayable = isPlayable(track);
+          const selectLabel = `Select ${track.title}`;
 
-        const handleSelect = () => {
-          onSelect(track);
-        };
+          const handleSelect = () => {
+            onSelect(track);
+          };
 
-        const handleSelectKeyDown = (
-          event: KeyboardEvent<HTMLElement>,
-        ) => {
-          if (event.key !== "Enter" && event.key !== " ") {
-            return;
-          }
+          const handleSelectKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+            if (event.key !== "Enter" && event.key !== " ") {
+              return;
+            }
 
-          event.preventDefault();
-          onSelect(track);
-        };
+            event.preventDefault();
+            onSelect(track);
+          };
 
-        const handlePlay = (event: MouseEvent<HTMLButtonElement>) => {
-          event.stopPropagation();
-          onPlay(track);
-        };
+          const handlePlay = (event: MouseEvent<HTMLButtonElement>) => {
+            event.stopPropagation();
+            onPlay(track);
+          };
 
-        return (
-          <li
-            key={track.id}
-            className={[
-              "grid min-h-[68px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md border p-2 transition-colors",
-              isSelected
-                ? "border-[#ff98a2]/70 bg-[#ff98a2]/13"
-                : "border-transparent bg-white/[0.035] hover:border-white/10 hover:bg-white/[0.06]",
-            ].join(" ")}
-          >
-            <div
-              tabIndex={0}
-              role="button"
-              aria-label={selectLabel}
-              onClick={handleSelect}
-              onKeyDown={handleSelectKeyDown}
-              className="grid min-w-0 grid-cols-[30px_48px_minmax(0,1fr)] items-center gap-3 rounded p-1.5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb8c0]"
-            >
-              <span className="text-sm font-black text-white/38">{index + 1}</span>
-              <span
-                aria-hidden="true"
-                className="grid aspect-square place-items-center overflow-hidden rounded-md border border-white/10 bg-[#16080f] bg-cover bg-center text-[#ffb8c0]"
-                style={
-                  track.artworkUrl
-                    ? { backgroundImage: `url(${track.artworkUrl})` }
-                    : undefined
-                }
+          return (
+            <div className="px-1.5 py-1" key={track.id}>
+              <li
+                role="listitem"
+                className={[
+                  "grid min-h-[68px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md border p-2 transition-colors",
+                  isSelected
+                    ? "border-[#ff98a2]/70 bg-[#ff98a2]/13"
+                    : "border-transparent bg-white/[0.035] hover:border-white/10 hover:bg-white/[0.06]",
+                ].join(" ")}
               >
-                {track.artworkUrl ? (
-                  <span className="h-full w-full bg-black/10" />
-                ) : (
-                  <Disc3 size={21} strokeWidth={1.8} />
-                )}
-              </span>
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-black text-white">
-                  {track.title}
-                </span>
-                <span className="block truncate text-xs font-semibold text-white/54">
-                  {track.artistName}
-                  {track.albumName ? ` / ${track.albumName}` : ""}
-                </span>
-              </span>
-            </div>
+                <div
+                  tabIndex={0}
+                  role="button"
+                  aria-label={selectLabel}
+                  onClick={handleSelect}
+                  onKeyDown={handleSelectKeyDown}
+                  className="grid min-w-0 grid-cols-[30px_48px_minmax(0,1fr)] items-center gap-3 rounded p-1.5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb8c0]"
+                >
+                  <span className="text-sm font-black text-white/38">{index + 1}</span>
+                  <span
+                    aria-hidden="true"
+                    className="grid aspect-square place-items-center overflow-hidden rounded-md border border-white/10 bg-[#16080f] bg-cover bg-center text-[#ffb8c0]"
+                    style={
+                      track.artworkUrl
+                        ? { backgroundImage: `url(${track.artworkUrl})` }
+                        : undefined
+                    }
+                  >
+                    {track.artworkUrl ? (
+                      <span className="h-full w-full bg-black/10" />
+                    ) : (
+                      <Disc3 size={21} strokeWidth={1.8} />
+                    )}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-black text-white">
+                      {track.title}
+                    </span>
+                    <span className="block truncate text-xs font-semibold text-white/54">
+                      {track.artistName}
+                      {track.albumName ? ` / ${track.albumName}` : ""}
+                    </span>
+                  </span>
+                </div>
 
-            <div className="flex items-center gap-2 pr-1">
-              <span className="hidden min-w-10 text-right text-xs font-bold text-white/42 sm:inline">
-                {formatDuration(track.durationMs)}
-              </span>
-              <button
-                type="button"
-                aria-label={`Play ${track.title}`}
-                onClick={handlePlay}
-                onKeyDown={(event) => event.stopPropagation()}
-                disabled={!isTrackPlayable}
-                className="grid h-10 w-10 place-items-center rounded-full bg-[#ff98a2] text-black transition-transform hover:scale-[1.05] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff98a2] disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/45"
-              >
-                <Play size={18} fill="currentColor" strokeWidth={2.1} />
-              </button>
+                <div className="flex items-center gap-2 pr-1">
+                  <span className="hidden min-w-10 text-right text-sm font-bold text-white/42 sm:inline">
+                    {formatDuration(track.durationMs)}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={`Play ${track.title}`}
+                    onClick={handlePlay}
+                    onKeyDown={(event) => event.stopPropagation()}
+                    disabled={!isTrackPlayable}
+                    className="grid h-10 w-10 place-items-center rounded-full bg-[#ff98a2] text-black transition-transform hover:scale-[1.05] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb8c0] disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/45"
+                  >
+                    <Play size={18} fill="currentColor" strokeWidth={2.1} />
+                  </button>
+                </div>
+              </li>
             </div>
-          </li>
-        );
-      })}
-    </ul>
+          );
+        }}
+      />
+    </div>
   );
 }
 

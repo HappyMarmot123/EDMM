@@ -827,9 +827,10 @@ h1 {
 .music-shell-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
+  min-height: 0;
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 1024px) {
   .music-shell-grid {
     grid-template-columns: minmax(0, 1fr) 300px;
   }
@@ -839,27 +840,64 @@ h1 {
   display: none;
 }
 
-.music-shell-aside--closed .music-shell-aside__content {
-  display: none;
+.music-shell-aside-shell {
+  min-height: 0;
+  align-self: stretch;
+}
+
+.music-shell-aside,
+.music-shell-aside__content {
+  min-height: 0;
+}
+
+.music-shell-aside,
+.music-shell-aside__content {
+  display: flex;
+  flex-direction: column;
 }
 
 @media (max-width: 767px) {
-  .music-shell-aside-shell {
+  .music-shell-grid {
     position: relative;
+  }
+
+  .music-shell-aside-shell {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(300px, 84vw);
+    z-index: 25;
+    pointer-events: none;
+    margin: 0;
+  }
+
+  .music-shell-aside,
+  .music-shell-aside__toggle,
+  .music-shell-aside__content {
+    pointer-events: auto;
   }
 
   .music-shell-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .music-shell-aside-shell,
+  .music-shell-aside {
+    height: 100%;
+  }
+
   .music-shell-aside {
     position: absolute;
     top: 0;
+    bottom: 0;
     right: 0;
     z-index: 25;
-    transition:
-      width 0.2s ease,
-      transform 0.2s ease;
+    width: 100%;
+    transform: translateX(100%);
+    will-change: transform;
+    contain: paint;
+    transition: transform 240ms cubic-bezier(0.2, 0, 0, 1);
   }
 
   .music-shell-aside__toggle {
@@ -873,12 +911,30 @@ h1 {
   }
 
   .music-shell-aside--open {
-    width: min(300px, 84vw);
+    transform: translateX(0);
   }
 
   .music-shell-aside--closed {
-    width: 56px;
-    min-height: 56px;
+    transform: translateX(100%);
+  }
+
+  .music-shell-aside__content {
+    transform: translateX(12px);
+    opacity: 0;
+    transition:
+      transform 220ms cubic-bezier(0.2, 0, 0, 1),
+      opacity 160ms ease;
+    pointer-events: none;
+  }
+
+  .music-shell-aside--open .music-shell-aside__content {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .music-shell-aside--closed .music-shell-aside__content {
+    pointer-events: none;
   }
 }
 
@@ -907,6 +963,15 @@ h1 {
 }
 
 @layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Chrome, Edge, and Safari */
   .custom-scrollbar::-webkit-scrollbar {
     /* width: 8px;
