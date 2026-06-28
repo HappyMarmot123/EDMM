@@ -10,6 +10,7 @@ import {
   Volume2,
   VolumeX,
   Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { useVolumeControl } from "@/shared/hooks/useVolumeControl";
 import { PlayerControlButton } from "@/shared/components/playerControlBtn";
@@ -61,7 +62,12 @@ export const PlayerVolumeControls: React.FC = () => {
 
 const PlayerControlsSection: React.FC<
   Omit<PlayerControlsSectionProps, "isMobile">
-> = ({ currentTrackInfo, onFullscreenOpen, canOpenFullscreen = false }) => {
+> = ({
+  currentTrackInfo,
+  onFullscreenOpen,
+  canOpenFullscreen = false,
+  isFullscreenOpen = false,
+}) => {
   const {
     isPlaying,
     volume,
@@ -78,6 +84,11 @@ const PlayerControlsSection: React.FC<
   const hasPlayableTrack = Boolean(currentTrackInfo?.url);
   const hasPlayableQueue = Boolean(currentTrackInfo?.assetId);
   const handleFullscreenClick = () => onFullscreenOpen?.();
+  const FullscreenIcon = isFullscreenOpen ? Minimize2 : Maximize2;
+  const fullscreenLabel = isFullscreenOpen
+    ? "Exit fullscreen view"
+    : "Toggle fullscreen view";
+  const fullscreenTitle = isFullscreenOpen ? "Exit fullscreen" : "Fullscreen view";
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -213,11 +224,11 @@ const PlayerControlsSection: React.FC<
             <PlayerControlButton
               id="fullscreen-toggle"
               onClick={handleFullscreenClick}
-              aria-label="Toggle fullscreen view"
-              title="Fullscreen view"
+              aria-label={fullscreenLabel}
+              title={fullscreenTitle}
               className="ml-auto grid h-9 w-9 text-white/60 hover:text-white"
             >
-              <Maximize2
+              <FullscreenIcon
                 className="m-auto block transition-colors duration-200 ease-out"
                 width={18}
                 height={18}

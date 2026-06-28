@@ -62,9 +62,9 @@ export default function AudioPlayer() {
   const currentProgress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const currentTrackId = currentTrack?.assetId;
 
-  const openFullscreen = useCallback(() => {
+  const toggleFullscreen = useCallback(() => {
     if (canUseFullscreen) {
-      setIsFullscreenOpen(true);
+      setIsFullscreenOpen((isOpen) => !isOpen);
     }
   }, [canUseFullscreen]);
   const closeFullscreen = useCallback(() => setIsFullscreenOpen(false), []);
@@ -147,8 +147,9 @@ export default function AudioPlayer() {
           >
             <PlayerControlsSection
               currentTrackInfo={currentTrack}
-              onFullscreenOpen={openFullscreen}
+              onFullscreenOpen={toggleFullscreen}
               canOpenFullscreen={canUseFullscreen}
+              isFullscreenOpen={isFullscreenOpen}
             />
             <PlayerTrackDetails
               isPlaying={isPlaying}
