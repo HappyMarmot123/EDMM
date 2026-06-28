@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://edmm.vercel.app"),
   title: "EDMM",
   description: "음악 스트리밍 서비스",
-  keywords: ["음악", "스트리밍", "노래", "EDMM", "music"],
+  keywords: ["음악", "스트리밍", "트랙", "EDMM", "music"],
   openGraph: {
     title: "EDMM",
     description: "음악 스트리밍 서비스",
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
 
 const RootLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <html lang="en" suppressHydrationWarning={true}>
+    <html lang="ko" suppressHydrationWarning={true}>
       <body suppressHydrationWarning={true}>
         <Script
           id="hydration-extension-attribute-guard"
