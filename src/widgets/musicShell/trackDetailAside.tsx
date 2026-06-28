@@ -201,7 +201,7 @@ export function TrackDetailAside({
                   <Disc3 size={70} strokeWidth={1.4} />
                 </span>
               ) : null}
-              <span className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black to-transparent" />
+              <span className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black via-black/60 to-transparent" />
               <AudioVisualizer
                 analyser={audioAnalyser}
                 isActive={isVisualizerActive}
@@ -250,7 +250,6 @@ export function TrackDetailAside({
 
             <dl className="grid gap-2">
               <DetailLine label="Duration" value={formatDuration(track.durationMs)} />
-              <DetailLine label="Album" value={track.albumName || "Unknown"} />
               <DetailLine label="Source" value={track.source} />
               <DetailLine
                 label="GitHub"

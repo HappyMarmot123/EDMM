@@ -4,7 +4,6 @@
 import { useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import {
   ChevronDown,
-  Cast,
   Music2,
   Pause,
   Play,
@@ -211,15 +210,6 @@ export default function MobileFullscreenPlayer({
             disabled={!hasPlayableTrack}
           >
             <SkipForward className="m-auto block" size={30} fill="currentColor" aria-hidden="true" />
-          </PlayerControlButton>
-          <PlayerControlButton
-            id="mobile-fullscreen-device"
-            onClick={(event) => event.preventDefault()}
-            aria-label="Device connection deprecated"
-            title="Device connection deprecated"
-            className="h-11 w-11 text-white/58 hover:text-white"
-          >
-            <Cast className="m-auto block" size={22} strokeWidth={2.2} aria-hidden="true" />
           </PlayerControlButton>
         </section>
       </div>

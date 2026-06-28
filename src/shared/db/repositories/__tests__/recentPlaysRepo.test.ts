@@ -22,7 +22,7 @@ describe("recentPlaysRepo", () => {
     expect((await getRecentPlays()).map((play) => play.trackId)).toEqual(["a", "b"]);
   });
 
-  it("keeps only the latest 50 recent plays", async () => {
+  it("keeps only the latest 10 recent plays", async () => {
     let now = 0;
     jest.spyOn(Date, "now").mockImplementation(() => now);
 
@@ -33,9 +33,9 @@ describe("recentPlaysRepo", () => {
 
     const recentPlays = await getRecentPlays();
 
-    expect(recentPlays).toHaveLength(50);
+    expect(recentPlays).toHaveLength(10);
     expect(recentPlays.map((play) => play.trackId)).toEqual(
-      Array.from({ length: 50 }, (_, index) => `track-${54 - index}`)
+      Array.from({ length: 10 }, (_, index) => `track-${54 - index}`)
     );
   });
 });

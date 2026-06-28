@@ -72,6 +72,20 @@ describe("adaptCloudinaryTrack", () => {
     expect(track.artworkUrl).toBe("https://example.com/metadata-art.jpg");
   });
 
+  it("prefers context caption as the canonical track title", () => {
+    const track = adaptCloudinaryTrack({
+      ...raw,
+      context: {
+        alt: "Disco Lines",
+        caption: "Push It",
+        title: "Disco-Lines-Maesic-feat-Mason-Princess-Superstar-Push-It",
+      },
+    });
+
+    expect(track.title).toBe("Push It");
+    expect(track.metadata.caption).toBe("Push It");
+  });
+
   it("uses flat context fields for title and artwork", () => {
     const track = adaptCloudinaryTrack({
       ...raw,

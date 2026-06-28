@@ -1,6 +1,6 @@
 import { db, type RecentPlayRow } from "@/shared/db/edmmDB";
 
-const RECENT_PLAYS_LIMIT = 50;
+const RECENT_PLAYS_LIMIT = 10;
 
 export async function addRecentPlay(trackId: string): Promise<void> {
   await db.transaction("rw", db.recentPlays, async () => {

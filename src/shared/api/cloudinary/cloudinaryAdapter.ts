@@ -69,9 +69,9 @@ export function adaptCloudinaryTrack(resource: CloudinaryResource): Track {
 
   const title =
     readStringFromRecords(
-      [custom, context, contextCustom, metadataContext, metadata],
-      ["title", "caption"],
-    ) ??
+    [custom, context, contextCustom, metadataContext, metadata],
+    ["caption"],
+  ) ??
     basename(resource.public_id);
   const artistName =
     readStringFromRecords(

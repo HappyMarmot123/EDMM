@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { PlayerControlsSectionProps } from "@/shared/types/dataType";
 import {
@@ -70,14 +70,11 @@ const PlayerControlsSection: React.FC<
 }) => {
   const {
     isPlaying,
-    volume,
     isShuffleEnabled,
     toggleShuffle,
     togglePlayPause,
     nextTrack,
     prevTrack,
-    setVolume,
-    setLiveVolume,
   } = useAudioPlayer();
 
   const playPauseLabel = isPlaying ? "Pause" : "Play";
@@ -89,62 +86,6 @@ const PlayerControlsSection: React.FC<
     ? "Exit fullscreen view"
     : "Toggle fullscreen view";
   const fullscreenTitle = isFullscreenOpen ? "Exit fullscreen" : "Fullscreen view";
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.target instanceof HTMLInputElement ||
-        event.target instanceof HTMLTextAreaElement
-      ) {
-        return;
-      }
-
-      if (event.target instanceof HTMLElement) {
-        const interactiveTarget = event.target.closest(
-          "button, a, input, textarea, select, [role='button'], [role='slider']",
-        );
-
-        if (interactiveTarget) {
-          return;
-        }
-      }
-
-      switch (event.code) {
-        case "Space":
-          if (!hasPlayableTrack) {
-            return;
-          }
-
-          event.preventDefault();
-          togglePlayPause();
-          break;
-        case "ArrowUp":
-          event.preventDefault();
-          {
-            const newVolume = Math.min(volume + 0.05, 1);
-            setVolume(newVolume);
-            setLiveVolume(newVolume);
-          }
-          break;
-        case "ArrowDown":
-          event.preventDefault();
-          {
-            const newVolume = Math.max(volume - 0.05, 0);
-            setVolume(newVolume);
-            setLiveVolume(newVolume);
-          }
-          break;
-        default:
-          break;
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [togglePlayPause, volume, setVolume, setLiveVolume]);
 
   return (
     <section
