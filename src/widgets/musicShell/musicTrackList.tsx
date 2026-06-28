@@ -1,6 +1,6 @@
 "use client";
 
-import { Disc3, Play } from "lucide-react";
+import { Disc3, Pause, Play } from "lucide-react";
 import {
   type ComponentPropsWithoutRef,
   type KeyboardEvent,
@@ -16,6 +16,8 @@ import { isPlayable } from "@/entities/Track/model";
 type MusicTrackListProps = {
   tracks: Track[];
   selectedTrackId?: string | null;
+  currentTrackId?: string | null;
+  isCurrentTrackPlaying?: boolean;
   isLoading?: boolean;
   isError?: boolean;
   emptyMessage?: string;
@@ -51,6 +53,8 @@ const trackScrollerComponents = {
 export function MusicTrackList({
   tracks,
   selectedTrackId,
+  currentTrackId,
+  isCurrentTrackPlaying = false,
   isLoading = false,
   isError = false,
   emptyMessage = "No tracks in this view.",
@@ -193,7 +197,9 @@ export function MusicTrackList({
         fixedItemHeight={84}
         itemContent={(index, track) => {
           const isSelected = selectedTrackId === track.id;
+          const isCurrentTrack = track.id === currentTrackId;
           const isTrackPlayable = isPlayable(track);
+          const isCurrentTrackActive = isCurrentTrack && isCurrentTrackPlaying;
 
           const handlePlay = (event: MouseEvent<HTMLButtonElement>) => {
             event.stopPropagation();
@@ -260,13 +266,19 @@ export function MusicTrackList({
                   </span>
                   <button
                     type="button"
-                    aria-label={`Play ${track.title}`}
+                    aria-label={`${
+                      isCurrentTrackActive ? "Pause" : "Play"
+                    } ${track.title}`}
                     onClick={handlePlay}
                     onKeyDown={(event) => event.stopPropagation()}
                     disabled={!isTrackPlayable}
                     className="grid h-10 w-10 place-items-center rounded-full bg-[#ff98a2] text-black"
                   >
-                    <Play size={18} fill="currentColor" strokeWidth={2.1} />
+                    {isCurrentTrackActive ? (
+                      <Pause size={18} fill="currentColor" strokeWidth={2.1} />
+                    ) : (
+                      <Play size={18} fill="currentColor" strokeWidth={2.1} />
+                    )}
                   </button>
                 </div>
               </li>

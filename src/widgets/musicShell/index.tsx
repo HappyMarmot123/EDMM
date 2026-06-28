@@ -94,7 +94,9 @@ export function MusicShell({
     setPlayerZoneScrollRequest,
   ] = useState<{ trackId: string; requestId: number } | null>(null);
   const [isTrackDetailOpen, setIsTrackDetailOpen] = useState(true);
-  const currentTrackId = useAudioPlayer().currentTrack?.assetId ?? null;
+  const { currentTrack, isPlaying } = useAudioPlayer();
+  const currentTrackId = currentTrack?.assetId ?? null;
+  const isCurrentTrackPlaying = Boolean(currentTrackId && isPlaying);
 
   const handleTrackZoneScrollHandled = useCallback(
     () => setPlayerZoneScrollRequest(null),
@@ -314,6 +316,8 @@ export function MusicShell({
             <MusicTrackList
               tracks={visibleTracks}
               selectedTrackId={visibleSelectedTrackId}
+              currentTrackId={currentTrackId}
+              isCurrentTrackPlaying={isCurrentTrackPlaying}
               isLoading={isVisibleLoading}
               isError={isVisibleError}
               emptyMessage={emptyMessage}

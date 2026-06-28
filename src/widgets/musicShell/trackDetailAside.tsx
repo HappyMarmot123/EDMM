@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Disc3, Music2, Play, Radio } from "lucide-react";
+import { Disc3, Music2, Pause, Play, Radio } from "lucide-react";
 import type { Track } from "@/entities/Track/model";
 import { AudioVisualizer } from "@/features/audio/components/audioVisualizer";
 import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
@@ -218,12 +218,21 @@ export function TrackDetailAside({
 
             <button
               type="button"
+              aria-label={
+                isCurrentTrack && isPlaying
+                  ? `Pause ${track.title}`
+                  : `Play ${track.title}`
+              }
               onClick={() => onPlay?.(track, queue)}
               disabled={!onPlay || !track.streamUrl}
               className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#ff98a2] px-4 text-sm font-black text-black transition-transform hover:scale-[1.01] disabled:pointer-events-none disabled:opacity-45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb8c0]"
             >
-              <Play size={18} fill="currentColor" strokeWidth={2.1} aria-hidden="true" />
-              Play selected
+              {isCurrentTrack && isPlaying ? (
+                <Pause size={18} fill="currentColor" strokeWidth={2.1} aria-hidden="true" />
+              ) : (
+                <Play size={18} fill="currentColor" strokeWidth={2.1} aria-hidden="true" />
+              )}
+              {isCurrentTrack && isPlaying ? "Pause selected" : "Play selected"}
             </button>
 
             <dl className="grid gap-2">
