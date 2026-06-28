@@ -1,12 +1,36 @@
 import React from "react";
-import { PlayerTrackDetailsProps } from "@/shared/types/dataType";
-import clsx from "clsx";
+import { PlayerTrackDetailsProps, TrackInfo } from "@/shared/types/dataType";
 import { formatTime, handleMouseMove, handleMouseOut } from "@/shared/lib/util";
+
+export const PlayerTrackSummary: React.FC<{
+  currentTrackInfo: TrackInfo | null;
+}> = ({ currentTrackInfo }) => {
+  return (
+    <section
+      className="min-w-0 overflow-hidden"
+      aria-label="Track Information"
+    >
+      <div
+        id="track-name"
+        className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm font-semibold text-white"
+        title={currentTrackInfo?.name}
+      >
+        {currentTrackInfo?.name ?? "No track selected"}
+      </div>
+      <div
+        id="producer-name"
+        className="mt-0.5 w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs text-white/55"
+        title={currentTrackInfo?.producer}
+      >
+        {currentTrackInfo?.producer ?? "Choose a song to start playback"}
+      </div>
+    </section>
+  );
+};
 
 const PlayerTrackDetails: React.FC<
   Omit<PlayerTrackDetailsProps, "isMobile">
 > = ({
-  isPlaying,
   currentTime,
   duration,
   currentProgress,
@@ -38,31 +62,25 @@ const PlayerTrackDetails: React.FC<
   return (
     <div
       id="player-track"
-      className={clsx(
-        "absolute right-[15px] left-[15px] pt-[6px] pr-[22px] pb-[16px] pl-[147px] bg-white rounded-t-[15px] transition-transform duration-300 ease-in-out z-[1]",
-        isPlaying ? "translate-y-[-40px]" : "translate-y-0"
-      )}
+      aria-label={`${currentTrackInfo?.name ?? "Current track"} progress`}
+      className="w-full space-y-1.5"
     >
+      <div className="flex items-center justify-between px-1 text-[11px] font-black uppercase tracking-[0.12em] text-white/46">
+        <span className="min-w-[2.5rem] text-right text-white/54">
+          {formatTime(currentTime)}
+        </span>
+        <span aria-label="Track duration">{formatTime(duration)}</span>
+      </div>
+
       <section
         id="track-time"
-        className={clsx(
-          "flex items-center w-full py-2",
-          (isPlaying || currentTime > 0) &&
-            "active [&>div]:text-[#f86d92] [&>div]:bg-transparent"
-        )}
+        className="flex w-full items-center gap-2"
         aria-label="Track progress"
       >
-        <div
-          id="current-time"
-          className="text-transparent text-[11px] bg-[#ffe8ee] rounded-[10px] transition-colors,background-color duration-300 ease-in-out px-1"
-          aria-live="polite"
-        >
-          {formatTime(currentTime)}
-        </div>
         <section
           id="seek-bar-container"
           ref={seekBarContainerRef}
-          className="no-drag relative h-[8px] rounded-[4px] bg-[#ffe8ee] cursor-pointer group mx-2 flex-grow focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#fd6d94]"
+          className="group relative h-2 flex-grow cursor-pointer rounded-full bg-white/15 focus:outline-none focus:ring-2 focus:ring-[#fd6d94] focus:ring-offset-2 focus:ring-offset-black"
           onClick={handleSeekInteraction}
           onMouseMove={(e) =>
             handleMouseMove(
@@ -88,20 +106,14 @@ const PlayerTrackDetails: React.FC<
           <div
             id="seek-time"
             ref={seekTimeTooltipRef}
-            className="absolute bottom-[10px] text-white text-[12px] whitespace-pre p-[5px] rounded-[4px] bg-[#3b3d50] transform -translate-x-1/2 z-10 pointer-events-none opacity-0 transition-opacity"
+            className="pointer-events-none absolute bottom-3 z-10 -translate-x-1/2 rounded bg-black px-2 py-1 text-[12px] text-white opacity-0 shadow-lg transition-opacity"
           ></div>
           <div
             id="seek-bar"
-            className="absolute inset-0 left-0 h-full w-0 bg-[#fd6d94] rounded-[4px] transition-width duration-200 ease-in-out z-[1] pointer-events-none"
+            className="pointer-events-none absolute inset-y-0 left-0 z-[1] h-full w-0 rounded-full bg-[#fd6d94] transition-[width] duration-150 ease-out"
             style={{ width: `${currentProgress}%` }}
           ></div>
         </section>
-        <div
-          id="track-length"
-          className="text-transparent text-[11px] bg-[#ffe8ee] rounded-[10px] transition-colors,background-color duration-300 ease-in-out px-1"
-        >
-          {formatTime(duration)}
-        </div>
       </section>
     </div>
   );

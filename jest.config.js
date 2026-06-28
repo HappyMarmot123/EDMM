@@ -12,7 +12,7 @@ const config = {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
   transformIgnorePatterns: [
-    "/node_modules/(?!(jose|@panva/hkdf-node|uuid|@supabase|@szmarczak|cacheable-request|normalize-url))",
+    "/node_modules/(?!(jose|@panva/hkdf-node|uuid|@szmarczak|cacheable-request|normalize-url))",
   ],
 };
 

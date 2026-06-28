@@ -1,7 +1,5 @@
 import Landing from "@/widgets/landing";
 
-const Page: React.FC = () => {
+export default function Page() {
   return <Landing />;
-};
-
-export default Page;
+}

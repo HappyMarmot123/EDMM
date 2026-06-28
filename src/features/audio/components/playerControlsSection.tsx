@@ -2,37 +2,93 @@ import React, { useEffect } from "react";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { PlayerControlsSectionProps } from "@/shared/types/dataType";
 import {
-  SkipBack,
-  Play,
   Pause,
+  Play,
+  Shuffle,
+  SkipBack,
   SkipForward,
   Volume2,
   VolumeX,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { useVolumeControl } from "@/shared/hooks/useVolumeControl";
 import { PlayerControlButton } from "@/shared/components/playerControlBtn";
 import { IconToggleButton } from "@/shared/components/iconToggleButton";
 
+export const PlayerVolumeControls: React.FC = () => {
+  const { volume, isMuted, setVolume, setLiveVolume, toggleMute } =
+    useAudioPlayer();
+  const { localVolume, handleVolumeChange, handleVolumeChangeEnd } =
+    useVolumeControl(volume, setVolume, setLiveVolume, isMuted, toggleMute);
+  const muteLabel = isMuted ? "Unmute" : "Mute";
+
+  return (
+    <section
+      className="min-w-0 items-center justify-end gap-2 flex"
+      aria-label="Volume controls"
+    >
+      <IconToggleButton
+        id="volume-control"
+        condition={isMuted}
+        IconOnTrue={VolumeX}
+        IconOnFalse={Volume2}
+        onClick={toggleMute}
+        label={muteLabel}
+        className="h-9 w-9 text-white/70 hover:text-white"
+        iconProps={{
+          width: 20,
+          height: 20,
+          fill: "none",
+          strokeWidth: 2.2,
+          className: "text-current",
+        }}
+      />
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        value={isMuted ? 0 : localVolume}
+        onChange={handleVolumeChange}
+        onMouseUp={handleVolumeChangeEnd}
+        onTouchEnd={handleVolumeChangeEnd}
+        className="h-1.5 w-[112px] min-w-[112px] max-w-[112px] cursor-pointer appearance-none rounded-full bg-white/15 accent-[#fd6d94] [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-[#fd6d94] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#fd6d94]"
+        aria-label="Volume"
+      />
+    </section>
+  );
+};
+
 const PlayerControlsSection: React.FC<
   Omit<PlayerControlsSectionProps, "isMobile">
-> = ({ currentTrackInfo }) => {
+> = ({
+  currentTrackInfo,
+  onFullscreenOpen,
+  canOpenFullscreen = false,
+  isFullscreenOpen = false,
+}) => {
   const {
     isPlaying,
     volume,
-    isMuted,
+    isShuffleEnabled,
+    toggleShuffle,
     togglePlayPause,
     nextTrack,
     prevTrack,
     setVolume,
     setLiveVolume,
-    toggleMute,
   } = useAudioPlayer();
 
-  const { localVolume, handleVolumeChange, handleVolumeChangeEnd } =
-    useVolumeControl(volume, setVolume, setLiveVolume, isMuted, toggleMute);
-
   const playPauseLabel = isPlaying ? "Pause" : "Play";
-  const muteLabel = isMuted ? "Unmute" : "Mute";
+  const hasPlayableTrack = Boolean(currentTrackInfo?.url);
+  const hasPlayableQueue = Boolean(currentTrackInfo?.assetId);
+  const handleFullscreenClick = () => onFullscreenOpen?.();
+  const FullscreenIcon = isFullscreenOpen ? Minimize2 : Maximize2;
+  const fullscreenLabel = isFullscreenOpen
+    ? "Exit fullscreen view"
+    : "Toggle fullscreen view";
+  const fullscreenTitle = isFullscreenOpen ? "Exit fullscreen" : "Fullscreen view";
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -43,8 +99,22 @@ const PlayerControlsSection: React.FC<
         return;
       }
 
+      if (event.target instanceof HTMLElement) {
+        const interactiveTarget = event.target.closest(
+          "button, a, input, textarea, select, [role='button'], [role='slider']",
+        );
+
+        if (interactiveTarget) {
+          return;
+        }
+      }
+
       switch (event.code) {
         case "Space":
+          if (!hasPlayableTrack) {
+            return;
+          }
+
           event.preventDefault();
           togglePlayPause();
           break;
@@ -77,87 +147,99 @@ const PlayerControlsSection: React.FC<
   }, [togglePlayPause, volume, setVolume, setLiveVolume]);
 
   return (
-    <div
+    <section
       id="player-controls"
-      className="pl-40 flex flex-col justify-center items-center gap-1 h-full flex-grow overflow-hidden pr-4"
+      className="flex w-full flex-col items-center gap-2"
+      aria-label={`${currentTrackInfo?.name ?? "Current track"} controls`}
     >
-      <section
-        className="flex flex-col w-full overflow-hidden"
-        aria-label="Track Information"
-      >
-        <div
-          id="track-name"
-          className="text-slate-700 text-sm font-bold w-full transition-colors duration-300 overflow-hidden whitespace-nowrap text-ellipsis"
-          title={currentTrackInfo?.name}
-        >
-          {currentTrackInfo?.name}
-        </div>
-        <div
-          id="producer-name"
-          className="text-slate-500 text-xs w-full transition-colors duration-300 overflow-hidden whitespace-nowrap text-ellipsis"
-          title={currentTrackInfo?.producer}
-        >
-          {currentTrackInfo?.producer}
-        </div>
-      </section>
-      <section className="flex items-center justify-between w-full">
-        <PlayerControlButton
-          id="play-previous"
-          onClick={prevTrack}
-          aria-label="Previous track"
-        >
-          <SkipBack
-            className="block m-auto transition-colors duration-200 ease-[ease] text-[#fd6d94]"
-            width={20}
-            fill="#fd6d94"
-            aria-hidden="true"
-          />
-        </PlayerControlButton>
-        <IconToggleButton
-          id="play-pause"
-          condition={isPlaying}
-          IconOnTrue={Pause}
-          IconOnFalse={Play}
-          onClick={togglePlayPause}
-          label={playPauseLabel}
-          className="w-10 h-10 bg-pink-100 rounded-full hover:bg-pink-200 transition-colors duration-200"
-        />
-        <PlayerControlButton
-          id="play-next"
-          onClick={nextTrack}
-          aria-label="Next track"
-        >
-          <SkipForward
-            className="block m-auto transition-colors duration-200 ease-[ease] text-[#fd6d94]"
-            width={20}
-            fill="#fd6d94"
-            aria-hidden="true"
-          />
-        </PlayerControlButton>
-        <div className="flex items-center gap-2 justify-end">
+      <div className="flex w-full justify-center gap-2">
+        <div className="flex items-center gap-2">
+          <PlayerControlButton
+            id="shuffle"
+            onClick={toggleShuffle}
+            aria-label={
+              isShuffleEnabled ? "Disable shuffle playback" : "Enable shuffle playback"
+            }
+            title={isShuffleEnabled ? "Shuffle on" : "Shuffle off"}
+            className={`h-9 w-9 ${
+              isShuffleEnabled ? "text-[#fd6d94]" : "text-white/60"
+            }`}
+            disabled={!hasPlayableTrack}
+          >
+            <Shuffle
+              className="m-auto block transition-colors duration-200 ease-out"
+              width={17}
+              fill="currentColor"
+              aria-hidden="true"
+            />
+          </PlayerControlButton>
+
+          <PlayerControlButton
+            id="play-previous"
+            onClick={prevTrack}
+            aria-label="Previous track"
+            className="h-10 w-10 text-white/70 hover:text-white"
+            disabled={!hasPlayableQueue}
+          >
+            <SkipBack
+              className="m-auto block transition-colors duration-200 ease-out"
+              width={20}
+              fill="currentColor"
+              aria-hidden="true"
+            />
+          </PlayerControlButton>
+
           <IconToggleButton
-            id="volume-control"
-            condition={isMuted}
-            IconOnTrue={VolumeX}
-            IconOnFalse={Volume2}
-            onClick={toggleMute}
-            label={muteLabel}
+            id="play-pause"
+            condition={isPlaying}
+            IconOnTrue={Pause}
+            IconOnFalse={Play}
+            onClick={togglePlayPause}
+            label={playPauseLabel}
+            className="bg-white text-black hover:bg-[#ffd6e1]"
+            disabled={!hasPlayableTrack}
+            iconProps={{
+              width: 22,
+              height: 22,
+              fill: "currentColor",
+              className: "text-black",
+            }}
           />
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={isMuted ? 0 : localVolume}
-            onChange={handleVolumeChange}
-            onMouseUp={handleVolumeChangeEnd}
-            onTouchEnd={handleVolumeChangeEnd}
-            className="no-drag w-full max-w-[100px] h-1.5 bg-[#ffe8ee] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#fd6d94] [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[#fd6d94] [&::-moz-range-thumb]:cursor-pointer"
-            aria-label="Volume"
-          />
+
+          <PlayerControlButton
+            id="play-next"
+            onClick={nextTrack}
+            aria-label="Next track"
+            className="h-10 w-10 text-white/70 hover:text-white"
+            disabled={!hasPlayableQueue}
+          >
+            <SkipForward
+              className="m-auto block transition-colors duration-200 ease-out"
+              width={20}
+              fill="currentColor"
+              aria-hidden="true"
+            />
+          </PlayerControlButton>
+          {canOpenFullscreen ? (
+            <PlayerControlButton
+              id="fullscreen-toggle"
+              onClick={handleFullscreenClick}
+              aria-label={fullscreenLabel}
+              title={fullscreenTitle}
+              className="ml-auto grid h-9 w-9 text-white/60 hover:text-white"
+            >
+              <FullscreenIcon
+                className="m-auto block transition-colors duration-200 ease-out"
+                width={18}
+                height={18}
+                fill="currentColor"
+                aria-hidden="true"
+              />
+            </PlayerControlButton>
+          ) : null}
         </div>
-      </section>
-    </div>
+      </div>
+    </section>
   );
 };
 

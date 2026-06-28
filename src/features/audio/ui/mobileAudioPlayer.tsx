@@ -1,74 +1,99 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import MPlayerTrackDetails from "@/features/audio/components/mobile/m_playerTrackDetails";
 import MPlayerControlsSection from "@/features/audio/components/mobile/m_playerControlsSection";
 import MAlbumArtwork from "@/features/audio/components/mobile/m_albumArtwork";
-import { useToggle } from "@/shared/providers/toggleProvider";
+import MobileFullscreenPlayer from "@/features/audio/components/mobile/mobileFullscreenPlayer";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 
 // Root here
 export default function MobileAudioPlayer() {
   const { currentTrack, isPlaying, isBuffering, currentTime, duration, seek } =
     useAudioPlayer();
-  const { openToggle } = useToggle();
+  const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
   const seekBarContainerRef = useRef<HTMLDivElement>(null);
-  const isDragging = useRef(false);
 
   const currentProgress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const openFullscreen = () => {
+    if (currentTrack) {
+      setIsFullscreenOpen(true);
+    }
+  };
 
-  if (!currentTrack) {
-    return null;
-  }
+  const handlePlayerKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    openFullscreen();
+  };
 
   return (
-    <div
-      id="player-container-mobile"
-      className="fixed bottom-0 left-0 w-full h-[80px] bg-white z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.1)]"
-      aria-label="Audio Player"
-    >
-      <section
-        id="seek-bar-container-mobile"
-        ref={seekBarContainerRef}
-        className="absolute top-0 left-0 w-full h-[6px] cursor-pointer group"
+    <>
+      {isFullscreenOpen ? (
+        <MobileFullscreenPlayer
+          currentTrackInfo={currentTrack}
+          currentProgress={currentProgress}
+          duration={duration}
+          seek={seek}
+          onClose={() => setIsFullscreenOpen(false)}
+        />
+      ) : null}
+
+      <div
+        id="player-container-mobile"
+        className="fixed inset-x-3 z-[70] rounded-lg bg-[#2b111c] text-white shadow-[0_16px_42px_rgba(0,0,0,0.4)] ring-1 ring-white/10"
+        style={{ bottom: "calc(64px + max(env(safe-area-inset-bottom), 10px))" }}
+        aria-label="Audio Player"
       >
-        <div className="w-full h-full bg-gray-200">
+        <div
+          id="player-mobile"
+          className="relative min-h-[64px] overflow-hidden rounded-lg"
+          role="button"
+          tabIndex={currentTrack ? 0 : -1}
+          onClick={openFullscreen}
+          onKeyDown={handlePlayerKeyDown}
+          aria-label={currentTrack ? "Open fullscreen player" : "No track selected"}
+        >
           <div
-            id="seek-bar-mobile"
-            className="h-full bg-[#fd6d94] transition-all duration-100 ease-linear"
-            style={{ width: `${currentProgress}%` }}
+            id="seek-bar-container-mobile"
+            ref={seekBarContainerRef}
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-1"
+            aria-label="Track progress"
           >
-            <span className="absolute right-0 top-1/2 -mt-1 h-3 w-3 bg-white border-2 border-[#fd6d94] rounded-full opacity-0 group-hover:opacity-100"></span>
+            <div className="h-full w-full bg-white/20">
+              <div
+                id="seek-bar-mobile"
+                className="h-full bg-white transition-[width] duration-150 ease-out"
+                style={{ width: `${currentProgress}%` }}
+              />
+            </div>
+          </div>
+          <div className="flex min-h-[64px] items-center justify-between px-2.5 pb-1">
+            <div
+              className="flex min-w-0 flex-1 items-center"
+              aria-label="Mobile track summary"
+            >
+              <MAlbumArtwork
+                isPlaying={isPlaying}
+                isBuffering={isBuffering}
+                currentTrackInfo={currentTrack}
+              />
+              <MPlayerTrackDetails
+                isPlaying={isPlaying}
+                currentTime={currentTime}
+                duration={duration}
+                currentProgress={currentProgress}
+                seekBarContainerRef={seekBarContainerRef}
+                seek={seek}
+                currentTrackInfo={currentTrack}
+              />
+            </div>
+            <div onClick={(event) => event.stopPropagation()}>
+              <MPlayerControlsSection currentTrackInfo={currentTrack} />
+            </div>
           </div>
         </div>
-      </section>
-      <div
-        id="player-mobile"
-        className="relative h-full flex items-center px-4 justify-between"
-      >
-        <div className="flex items-center flex-1 min-w-0">
-          <MAlbumArtwork
-            isPlaying={isPlaying}
-            isBuffering={isBuffering}
-            currentTrackInfo={currentTrack}
-            onClick={() => {
-              if (!isDragging.current) {
-                openToggle();
-              }
-            }}
-          />
-          <MPlayerTrackDetails
-            isPlaying={isPlaying}
-            currentTime={currentTime}
-            duration={duration}
-            currentProgress={currentProgress}
-            seekBarContainerRef={seekBarContainerRef}
-            seek={seek}
-            currentTrackInfo={currentTrack}
-          />
-        </div>
-        <MPlayerControlsSection currentTrackInfo={currentTrack} />
       </div>
-    </div>
+    </>
   );
 }

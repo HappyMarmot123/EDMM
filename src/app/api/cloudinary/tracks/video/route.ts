@@ -1,0 +1,29 @@
+import { NextResponse } from "next/server";
+import {
+  buildCloudinaryCacheHeader,
+  fetchCloudinaryTracks,
+  getCloudinaryTrackCachePolicy,
+} from "@/shared/api/cloudinary/cloudinaryClient";
+
+export async function GET(request: Request) {
+  const requestUrl = new URL(request.url);
+  const query = requestUrl.searchParams.get("q") ?? "";
+  const cachePolicy = getCloudinaryTrackCachePolicy("video", false);
+
+  try {
+    const tracks = await fetchCloudinaryTracks(query, {
+      resourceType: "video",
+    });
+
+    return NextResponse.json(tracks, {
+      headers: {
+        "Cache-Control": buildCloudinaryCacheHeader(cachePolicy),
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const status = message === "Cloudinary configuration is missing" ? 500 : 502;
+
+    return NextResponse.json({ error: message }, { status });
+  }
+}

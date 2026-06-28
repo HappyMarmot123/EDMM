@@ -3,61 +3,38 @@
 import { memo } from "react";
 import { type PlayerControlsSectionProps } from "@/shared/types/dataType";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
-import { Play, Pause, SkipBack, SkipForward } from "lucide-react";
+import { Play, Pause } from "lucide-react";
 import { IconToggleButton } from "@/shared/components/iconToggleButton";
-import { PlayerControlButton } from "@/shared/components/playerControlBtn";
 
 const MPlayerControlsSection = ({
   currentTrackInfo,
 }: Pick<PlayerControlsSectionProps, "currentTrackInfo">) => {
-  const { isPlaying, togglePlayPause, nextTrack, prevTrack } = useAudioPlayer();
+  const { isPlaying, togglePlayPause } = useAudioPlayer();
   const playPauseLabel = isPlaying ? "Pause" : "Play";
+  const hasPlayableTrack = Boolean(currentTrackInfo?.url);
 
   return (
-    <section className="flex items-center justify-end gap-3">
-      <PlayerControlButton
-        id="play-previous"
-        onClick={prevTrack}
-        aria-label="Previous track"
-        className="p-1"
-      >
-        <SkipBack
-          className="block m-auto text-slate-600"
-          width={22}
-          height={22}
-          fill="currentColor"
-          aria-hidden="true"
-        />
-      </PlayerControlButton>
+    <section
+      id="player-controls-mobile"
+      className="flex flex-none items-center justify-end"
+      aria-label={`${currentTrackInfo?.name ?? "Current track"} controls`}
+    >
       <IconToggleButton
-        id="play-pause"
+        id="play-pause-mobile"
         condition={isPlaying}
         IconOnTrue={Pause}
         IconOnFalse={Play}
         onClick={togglePlayPause}
         label={playPauseLabel}
-        className="p-2 w-11 h-11"
+        className="h-11 w-11 text-white hover:bg-white/10"
+        disabled={!hasPlayableTrack}
         iconProps={{
-          width: 28,
-          height: 28,
+          width: 26,
+          height: 26,
           fill: "currentColor",
-          className: "text-slate-600",
+          className: "text-current",
         }}
       />
-      <PlayerControlButton
-        id="play-next"
-        onClick={nextTrack}
-        aria-label="Next track"
-        className="p-1"
-      >
-        <SkipForward
-          className="block m-auto text-slate-600"
-          width={22}
-          height={22}
-          fill="currentColor"
-          aria-hidden="true"
-        />
-      </PlayerControlButton>
     </section>
   );
 };

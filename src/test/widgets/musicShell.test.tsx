@@ -1,0 +1,521 @@
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import type { Track } from "@/entities/Track/model";
+import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
+import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
+import {
+  getCachedTrack,
+  getCachedTracks,
+} from "@/shared/db/repositories/trackCacheRepo";
+import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
+import MusicShell from "@/widgets/musicShell";
+
+jest.mock("react-virtuoso", () => ({
+  Virtuoso: ({
+    data,
+    itemContent,
+  }: {
+    data: Track[];
+    itemContent: (index: number, item: Track) => JSX.Element;
+  }) => {
+    return (
+      <div>
+        {data.map((item, index) => (
+          <div key={item.id}>{itemContent(index, item)}</div>
+        ))}
+      </div>
+    );
+  },
+}));
+
+jest.mock("@/features/cloudinary/hooks/useCloudinaryTracks");
+jest.mock("@/features/library/hooks/useRecentPlays");
+jest.mock("@/shared/db/repositories/trackCacheRepo");
+jest.mock("@/shared/providers/audioPlayerProvider", () => ({
+  useAudioPlayer: jest.fn(),
+}));
+jest.mock("@/features/audio/components/audioVisualizer", () => ({
+  AudioVisualizer: () => <div>Audio visualizer</div>,
+}));
+
+const mockUseCloudinaryTracks = useCloudinaryTracks as jest.Mock;
+const mockUseRecentPlays = useRecentPlays as jest.Mock;
+const mockUseAudioPlayer = useAudioPlayer as jest.MockedFunction<
+  typeof useAudioPlayer
+>;
+const mockGetCachedTracks = getCachedTracks as jest.MockedFunction<
+  typeof getCachedTracks
+>;
+const mockGetCachedTrack = getCachedTrack as jest.MockedFunction<
+  typeof getCachedTrack
+>;
+
+const mockTrackSelectPlaybackMedia = (matches: boolean) => {
+  window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+    matches,
+    media: query,
+    onchange: null,
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  }));
+};
+
+const track = (id: string, title: string, artistName = "EDMM Artist"): Track => ({
+  id,
+  source: "cloudinary",
+  title,
+  artistId: `artist:${id}`,
+  artistName,
+  albumName: "Rose Archive",
+  artworkUrl: "",
+  durationMs: 184000,
+  streamUrl: `https://example.com/${encodeURIComponent(id)}.mp3`,
+  metadata: {},
+});
+
+const deferred = <T,>() => {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+
+  return { promise, resolve, reject };
+};
+
+const cloudTracks = [
+  track("cloudinary:all-1", "Cloud Track One", "Cloud Artist"),
+  track("cloudinary:all-2", "Cloud Track Two", "Cloud Artist"),
+  track("cloudinary:all-3", "Cloud Track Three", "Cloud Artist"),
+];
+const hiddenTrack = track("cloudinary:hidden-1", "Hidden Track");
+const recentTrack = track("cloudinary:recent-1", "Recent Track");
+const mockAudioState = {
+  currentTrack: null,
+  isPlaying: false,
+  audioAnalyser: null,
+};
+
+describe("MusicShell", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockTrackSelectPlaybackMedia(false);
+    mockUseAudioPlayer.mockReturnValue(mockAudioState);
+
+    mockUseCloudinaryTracks.mockImplementation((query: string) => ({
+      data: query ? [cloudTracks[1]] : cloudTracks,
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    }));
+    mockUseRecentPlays.mockReturnValue({ recentIds: [] });
+    mockGetCachedTracks.mockResolvedValue([]);
+    mockGetCachedTrack.mockImplementation(async (trackId: string) =>
+      [hiddenTrack, recentTrack, ...cloudTracks].find((item) => item.id === trackId),
+    );
+  });
+
+  it("renders the EDMM catalog heading and loads blank-query Cloudinary tracks", () => {
+    render(<MusicShell />);
+
+    expect(
+      screen.getByRole("heading", { name: "EDMM" }),
+    ).toBeInTheDocument();
+    expect(mockUseCloudinaryTracks).toHaveBeenLastCalledWith("", { resourceType: "all" });
+    expect(screen.getByRole("button", { name: "Select Cloud Track One" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Select Cloud Track Two" })).toBeInTheDocument();
+  });
+
+  it("calls Cloudinary search with a normalized typed query", async () => {
+    const user = userEvent.setup();
+
+    render(<MusicShell />);
+    await user.type(
+      screen.getByRole("searchbox", { name: /search catalog/i }),
+      "  lemonade  ",
+    );
+
+    expect(mockUseCloudinaryTracks).toHaveBeenLastCalledWith("lemonade", { resourceType: "all" });
+    expect(screen.getByRole("button", { name: "Select Cloud Track Two" })).toBeInTheDocument();
+  });
+
+  it("shows cached recent tracks in the Recent view", async () => {
+    mockUseRecentPlays.mockReturnValue({
+      recentIds: ["cloudinary:recent-1"],
+    });
+    mockGetCachedTracks.mockResolvedValue([recentTrack]);
+
+    render(<MusicShell />);
+    fireEvent.click(screen.getByRole("button", { name: "Recent" }));
+
+    expect(mockGetCachedTracks).toHaveBeenCalledWith(["cloudinary:recent-1"]);
+    expect(
+      await screen.findByRole("button", { name: "Select Recent Track" }),
+    ).toBeInTheDocument();
+  });
+
+  it("starts on an initial Recent view", async () => {
+    mockUseRecentPlays.mockReturnValue({
+      recentIds: ["cloudinary:recent-1"],
+    });
+    mockGetCachedTracks.mockResolvedValue([recentTrack]);
+
+    render(<MusicShell initialView="recent" />);
+
+    expect(screen.getByRole("button", { name: "Recent" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(
+      await screen.findByRole("button", { name: "Select Recent Track" }),
+    ).toBeInTheDocument();
+  });
+
+  it("updates detail selection when initialTrackId changes", async () => {
+    mockGetCachedTrack.mockImplementation(async (trackId: string) =>
+      [hiddenTrack, recentTrack, ...cloudTracks].find((item) => item.id === trackId),
+    );
+
+    const { rerender } = render(
+      <MusicShell initialTrackId="cloudinary:hidden-1" />,
+    );
+
+    expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
+      "Hidden Track",
+    );
+
+    rerender(<MusicShell initialTrackId="cloudinary:all-3" />);
+
+    expect(mockGetCachedTrack).toHaveBeenLastCalledWith("cloudinary:all-3");
+    expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
+      "Cloud Track Three",
+    );
+  });
+
+  it("syncs detail selection to a newly playing track after an initial route selection", async () => {
+    const { rerender } = render(
+      <MusicShell initialTrackId="cloudinary:hidden-1" />,
+    );
+
+    expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
+      "Hidden Track",
+    );
+
+    mockUseAudioPlayer.mockReturnValue({
+      ...mockAudioState,
+      currentTrack: {
+        assetId: cloudTracks[1].id,
+        album: cloudTracks[1].albumName,
+        name: cloudTracks[1].title,
+        artworkId: cloudTracks[1].artworkUrl,
+        url: cloudTracks[1].streamUrl ?? "",
+        producer: cloudTracks[1].artistName,
+      },
+    });
+
+    rerender(<MusicShell initialTrackId="cloudinary:hidden-1" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("track-detail-title")).toHaveTextContent(
+        "Cloud Track Two",
+      );
+    });
+  });
+
+  it("rehydrates the initial player queue when catalog tracks load after refresh", async () => {
+    const onPlay = jest.fn();
+    mockUseCloudinaryTracks.mockReturnValue({
+      data: [],
+      isLoading: true,
+      isError: false,
+      refetch: jest.fn(),
+    });
+
+    const { rerender } = render(
+      <MusicShell initialTrackId="cloudinary:all-1" onPlay={onPlay} />,
+    );
+
+    await waitFor(() => {
+      expect(onPlay).toHaveBeenCalledWith(cloudTracks[0], [cloudTracks[0]], false);
+    });
+
+    onPlay.mockClear();
+    mockUseCloudinaryTracks.mockReturnValue({
+      data: cloudTracks,
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+
+    rerender(<MusicShell initialTrackId="cloudinary:all-1" onPlay={onPlay} />);
+
+    await waitFor(() => {
+      expect(onPlay).toHaveBeenCalledWith(cloudTracks[0], cloudTracks, false);
+    });
+  });
+
+  it("opens an initial cached track detail even when it is not visible", async () => {
+    const deepLinkedTrack = track("cloudinary:asset-1", "Route Selected Track");
+    mockGetCachedTrack.mockImplementation(async (trackId: string) =>
+      trackId === "cloudinary:asset-1" ? deepLinkedTrack : undefined,
+    );
+
+    render(<MusicShell initialTrackId="cloudinary:asset-1" />);
+
+    expect(mockGetCachedTrack).toHaveBeenCalledWith("cloudinary:asset-1");
+    expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
+      "Route Selected Track",
+    );
+  });
+
+  it("keeps an initial track detail loading while catalog data is still resolving", async () => {
+    const onPlay = jest.fn();
+    mockUseCloudinaryTracks.mockReturnValue({
+      data: [],
+      isLoading: true,
+      isError: false,
+      refetch: jest.fn(),
+    });
+    mockGetCachedTrack.mockResolvedValue(undefined);
+
+    render(
+      <MusicShell
+        initialTrackId="cloudinary:pending-route-track"
+        onPlay={onPlay}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mockGetCachedTrack).toHaveBeenCalledTimes(2);
+    });
+    expect(screen.getByText("Loading details...")).toBeInTheDocument();
+    expect(screen.queryByText("Details unavailable")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Select a track" }),
+    ).not.toBeInTheDocument();
+    expect(onPlay).not.toHaveBeenCalled();
+  });
+
+  it("selects a row and hydrates the right-side detail aside from cache", async () => {
+    render(<MusicShell />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Select Cloud Track One" }));
+
+    expect(mockGetCachedTrack).toHaveBeenCalledWith("cloudinary:all-1");
+    expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
+      "Cloud Track One",
+    );
+  });
+
+  it("does not show stale cached details after selecting another track", async () => {
+    const firstLookup = deferred<Track | undefined>();
+    const secondLookup = deferred<Track | undefined>();
+    mockGetCachedTrack
+      .mockReturnValueOnce(firstLookup.promise)
+      .mockReturnValueOnce(secondLookup.promise);
+
+    render(<MusicShell />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Select Cloud Track One" }));
+    firstLookup.resolve(cloudTracks[0]);
+
+    expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
+      "Cloud Track One",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Select Cloud Track Two" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("track-detail-title")).toHaveTextContent(
+        "Cloud Track Two",
+      );
+    });
+    expect(screen.queryByText("Cloud Track One")).toBeInTheDocument();
+    expect(screen.getByTestId("track-detail-title")).not.toHaveTextContent(
+      "Cloud Track One",
+    );
+  });
+
+  it("clears selected details when the selected recent track leaves the visible queue", async () => {
+    mockUseRecentPlays.mockReturnValue({
+      recentIds: ["cloudinary:recent-1"],
+    });
+    mockGetCachedTracks.mockResolvedValue([recentTrack]);
+
+    render(<MusicShell />);
+    fireEvent.click(screen.getByRole("button", { name: "Recent" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Select Recent Track" }),
+    );
+
+    expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
+      "Recent Track",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    await waitFor(() => {
+      expect(screen.queryByTestId("track-detail-title")).not.toBeInTheDocument();
+    });
+    expect(screen.queryByText("Recent Track")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Play selected" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Select a track" })).toBeInTheDocument();
+  });
+
+  it("plays a track with the visible queue", () => {
+    const onPlay = jest.fn();
+
+    render(<MusicShell onPlay={onPlay} />);
+    fireEvent.click(
+      within(screen.getByRole("list", { name: "Track list" })).getByRole(
+        "button",
+        { name: "Play Cloud Track One" },
+      ),
+    );
+
+    expect(onPlay).toHaveBeenLastCalledWith(
+      cloudTracks[0],
+      cloudTracks,
+      true,
+    );
+  });
+
+  it("auto seeds first visible track as the controller target on initial load", () => {
+    const onPlay = jest.fn();
+
+    render(<MusicShell onPlay={onPlay} />);
+
+    expect(onPlay).toHaveBeenCalledWith(cloudTracks[0], cloudTracks, false);
+  });
+
+  it("selects a visible row without auto-playing", async () => {
+    const onPlay = jest.fn();
+
+    render(<MusicShell onPlay={onPlay} />);
+    onPlay.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Select Cloud Track Two" }));
+
+    expect(onPlay).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockGetCachedTrack).toHaveBeenCalledWith("cloudinary:all-2");
+      expect(screen.getByTestId("track-detail-title")).toHaveTextContent(
+        "Cloud Track Two",
+      );
+    });
+  });
+
+  it("plays a selected row on coarse pointer and tablet-sized viewports", async () => {
+    const onPlay = jest.fn();
+    mockTrackSelectPlaybackMedia(true);
+
+    render(<MusicShell onPlay={onPlay} />);
+    onPlay.mockClear();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Select and play Cloud Track Two" }),
+    );
+
+    expect(onPlay).toHaveBeenLastCalledWith(
+      cloudTracks[1],
+      cloudTracks,
+      true,
+    );
+    await waitFor(() => {
+      expect(mockGetCachedTrack).toHaveBeenCalledWith("cloudinary:all-2");
+      expect(screen.getByTestId("track-detail-title")).toHaveTextContent(
+        "Cloud Track Two",
+      );
+    });
+  });
+
+  it("prefers latest recent play as first controller seed when present", async () => {
+    const onPlay = jest.fn();
+    mockUseRecentPlays.mockReturnValue({ recentIds: ["cloudinary:recent-1"] });
+
+    render(<MusicShell onPlay={onPlay} />);
+
+    await waitFor(() => {
+      expect(onPlay).toHaveBeenCalledWith(recentTrack, [recentTrack], false);
+    });
+  });
+
+  it("keeps seeded recent track details when the player current track syncs", async () => {
+    const onPlay = jest.fn();
+    mockUseRecentPlays.mockReturnValue({ recentIds: ["cloudinary:recent-1"] });
+
+    const { rerender } = render(<MusicShell onPlay={onPlay} />);
+
+    expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
+      "Recent Track",
+    );
+
+    mockUseAudioPlayer.mockReturnValue({
+      ...mockAudioState,
+      currentTrack: {
+        assetId: recentTrack.id,
+        album: recentTrack.albumName,
+        name: recentTrack.title,
+        artworkId: recentTrack.artworkUrl,
+        url: recentTrack.streamUrl ?? "",
+        producer: recentTrack.artistName,
+      },
+    });
+    rerender(<MusicShell onPlay={onPlay} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("track-detail-title")).toHaveTextContent(
+        "Recent Track",
+      );
+      expect(
+        screen.queryByRole("heading", { name: "Select a track" }),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it("shows loading and empty states without live services", async () => {
+    mockUseCloudinaryTracks.mockReturnValue({
+      data: [],
+      isLoading: true,
+      isError: false,
+      refetch: jest.fn(),
+    });
+
+    const { rerender } = render(<MusicShell />);
+    expect(screen.getByRole("status")).toHaveTextContent("Loading tracks");
+
+    mockUseCloudinaryTracks.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+    rerender(<MusicShell />);
+
+    await waitFor(() => {
+      expect(screen.getByText("No tracks in this view.")).toBeInTheDocument();
+    });
+  });
+
+  it("toggles the track detail aside using the Overflow Wrap button", async () => {
+    render(<MusicShell />);
+
+    expect(await screen.findByText("Track Detail")).toBeInTheDocument();
+    const aside = screen.getByLabelText("Track detail aside");
+    expect(aside).toHaveClass("music-shell-aside--open");
+    const closeButton = screen.getByRole("button", { name: "Close track detail" });
+    fireEvent.click(closeButton);
+
+    expect(screen.getByRole("button", { name: "Open track detail" })).toBeInTheDocument();
+    expect(aside).toHaveClass("music-shell-aside--closed");
+
+    fireEvent.click(screen.getByRole("button", { name: "Open track detail" }));
+    expect(await screen.findByText("Track Detail")).toBeInTheDocument();
+    expect(aside).toHaveClass("music-shell-aside--open");
+    expect(screen.getByRole("button", { name: "Close track detail" })).toBeInTheDocument();
+  });
+
+});

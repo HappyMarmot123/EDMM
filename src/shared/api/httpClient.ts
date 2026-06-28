@@ -19,7 +19,7 @@ class HttpClient {
     payload,
     params,
     headers,
-  }: HttpClientRequestConfig<T>): Promise<HttpClientResponse<T>> {
+  }: HttpClientRequestConfig): Promise<HttpClientResponse<T>> {
     const abortController = new AbortController();
     const timeoutId = setTimeout(() => abortController.abort(), TIMEOUT_MS);
     let lastError: unknown;

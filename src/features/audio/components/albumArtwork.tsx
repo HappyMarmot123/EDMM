@@ -1,30 +1,32 @@
+/* eslint-disable @next/next/no-img-element -- Player artwork receives dynamic CDN hosts. */
 import React from "react";
-import { CldImage } from "next-cloudinary";
 import clsx from "clsx";
+import { Music2 } from "lucide-react";
 import { ExtendedAlbumArtworkProps } from "@/shared/types/dataType";
 
 const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
   isPlaying,
   isBuffering,
   currentTrackInfo,
-  onClick,
 }) => {
+  const artworkSrc = currentTrackInfo?.artworkId?.trim() ?? "";
+  const [hasArtworkError, setHasArtworkError] = React.useState(false);
+  const [errorRetryCount, setErrorRetryCount] = React.useState(0);
+
+  React.useEffect(() => {
+    setHasArtworkError(false);
+    setErrorRetryCount(0);
+  }, [artworkSrc]);
+
+  const shouldRenderArtwork = Boolean(artworkSrc) && !hasArtworkError;
+
   const webAlbumArtClassName = (playing: boolean, buffering: boolean) => {
     return clsx(
-      "absolute w-[92px] h-[92px] top-[-22px] ml-[32px]",
-      "bg-gray-300",
-      "rounded-full overflow-hidden hover:scale-105 shadow-[0_0_0_10px_#fff]",
-      "cursor-pointer transform rotate-0 transition-all duration-300 ease-[ease]",
-      playing && [
-        "active top-[-32px]",
-        "shadow-[0_0_0_4px_#fff7f7,_0_30px_50px_-15px_#afb7c1]",
-      ],
+      "relative h-16 w-16 flex-none overflow-hidden rounded-md bg-white/10",
+      "shadow-[0_12px_28px_rgba(0,0,0,0.35)] ring-1 ring-white/10",
+      playing && "shadow-[0_0_0_1px_rgba(253,109,148,0.35),0_18px_34px_rgba(253,109,148,0.18)]",
       buffering && [
-        "buffering",
         "[&>img]:opacity-25",
-        "[&>img.active]:opacity-80",
-        "[&>img.active]:blur-sm",
-        "[&_#buffer-box]:opacity-100",
       ]
     );
   };
@@ -33,42 +35,45 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
 
   return (
     <button
+      type="button"
       id="album-art"
-      onClick={onClick}
       className={finalClassName}
-      aria-label="Toggle player details view"
+      aria-label={
+        currentTrackInfo
+          ? `Open details for ${currentTrackInfo.name}`
+        : "No track artwork"
+      }
+      disabled={!currentTrackInfo}
     >
-      {currentTrackInfo?.artworkId ? (
-        <CldImage
-          key={currentTrackInfo.artworkId}
-          src={currentTrackInfo.artworkId}
+      {!currentTrackInfo ? (
+        <span className="absolute inset-0 flex items-center justify-center bg-white/10 text-[#fd6d94]">
+          <Music2 width={26} height={26} aria-hidden="true" />
+        </span>
+      ) : shouldRenderArtwork ? (
+        <img
+          key={`${artworkSrc}-${errorRetryCount}`}
+          src={artworkSrc}
           alt={currentTrackInfo.album}
-          className={clsx(
-            "block absolute top-0 left-0 w-full h-full opacity-100 z-[1] select-none",
-            isPlaying && "animate-rotate-album active"
-          )}
+          className="absolute inset-0 z-[1] block h-full w-full object-cover opacity-100 select-none"
           draggable={false}
           width={92}
           height={92}
           loading="lazy"
+          onError={() =>
+            setErrorRetryCount((retryCount) => {
+              if (retryCount >= 1) {
+                setHasArtworkError(true);
+                return retryCount;
+              }
+
+              return retryCount + 1;
+            })
+          }
         />
       ) : (
-        <div
-          id="buffer-box"
-          className={clsx(
-            "absolute top-1/2 right-0 left-0 text-white text-sm font-medium text-center p-2 mt-[-16px] mx-auto backdrop-blur-sm rounded-lg z-[2] transition-all duration-300 pointer-events-none flex items-center justify-center animate-pulse"
-          )}
-          role="status"
-          aria-live="polite"
-        >
-          <span className="sr-only">Loading audio...</span>
-          <div
-            className={clsx(
-              "border-white border-t-transparent rounded-full animate-spin",
-              "w-8 h-8 border-4"
-            )}
-          />
-        </div>
+        <span className="absolute inset-0 flex items-center justify-center bg-white/10 text-[#fd6d94]">
+          <Music2 width={26} height={26} aria-hidden="true" />
+        </span>
       )}
     </button>
   );

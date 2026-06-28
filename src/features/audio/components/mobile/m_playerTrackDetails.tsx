@@ -2,22 +2,21 @@
 
 import React from "react";
 import { PlayerTrackDetailsProps } from "@/shared/types/dataType";
-import { formatTime } from "@/shared/lib/util";
 
 const MPlayerTrackDetails: React.FC<
   Omit<PlayerTrackDetailsProps, "isMobile">
-> = ({ currentTime, duration, currentTrackInfo }) => {
+> = ({ currentTrackInfo }) => {
   return (
-    <div className="flex-1 flex flex-col justify-center min-w-0 mx-3">
+    <div className="mx-3 flex min-w-0 flex-1 flex-col justify-center">
       <div className="flex items-baseline">
-        <span className="text-sm font-bold text-slate-800 truncate">
-          {currentTrackInfo?.name}
+        <span className="truncate text-sm font-semibold text-white">
+          {currentTrackInfo?.name ?? "No track selected"}
         </span>
       </div>
-      <div className="flex text-xs text-slate-400 mt-0.5">
-        <span>{formatTime(currentTime)}</span>
-        <span className="mx-1">/</span>
-        <span>{formatTime(duration)}</span>
+      <div className="mt-0.5 min-w-0 text-xs font-medium text-white/55">
+        <span className="block truncate">
+          {currentTrackInfo?.producer ?? "Choose a song to start playback"}
+        </span>
       </div>
     </div>
   );
