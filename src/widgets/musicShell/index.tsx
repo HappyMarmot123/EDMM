@@ -250,6 +250,8 @@ export function MusicShell({
   };
 
   const handlePlay = (track: Track) => {
+    setSelectedTrackId(track.id);
+    setSelectionSource("visible");
     activateTrackInPlayer(track, true, "visible", queueForTrack(track));
   };
 
