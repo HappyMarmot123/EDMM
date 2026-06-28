@@ -2,8 +2,11 @@
 
 import AudioPlayer from "@/features/audio/ui/audioPlayer";
 import MobileAudioPlayer from "@/features/audio/ui/mobileAudioPlayer";
+import { useAudioKeyboardShortcuts } from "@/features/audio/hooks/useAudioKeyboardShortcuts";
 
 export default function AudioPlayerWidget() {
+  useAudioKeyboardShortcuts();
+
   return (
     <>
       <div className="hidden md:block">

@@ -264,8 +264,7 @@ export function MusicTrackList({
                       {track.title}
                     </span>
                     <span className="block truncate text-xs font-semibold text-white/54">
-                      {track.artistName}
-                      {track.albumName ? ` / ${track.albumName}` : ""}
+                      {track.artistName || "unknown"}
                     </span>
                   </span>
                 </button>
