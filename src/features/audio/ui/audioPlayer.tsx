@@ -16,7 +16,15 @@ export default function AudioPlayer() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { currentTrack, isPlaying, isBuffering, currentTime, duration, seek } =
+  const {
+    currentTrack,
+    isPlaying,
+    isBuffering,
+    currentTime,
+    duration,
+    seek,
+    audioAnalyser,
+  } =
     useAudioPlayer();
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
   const seekBarContainerRef = useRef<HTMLDivElement>(null);
@@ -55,6 +63,8 @@ export default function AudioPlayer() {
       {isFullscreenOpen ? (
         <DesktopFullscreenPlayer
           currentTrackInfo={currentTrack}
+          analyser={audioAnalyser}
+          isPlaying={isPlaying}
           onClose={closeFullscreen}
         />
       ) : null}

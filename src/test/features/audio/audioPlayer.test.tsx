@@ -28,6 +28,7 @@ type MockAudioPlayerState = {
   setVolume: jest.Mock;
   setLiveVolume: jest.Mock;
   toggleMute: jest.Mock;
+  audioAnalyser: AnalyserNode | null;
 };
 
 let mockAudioPlayerState: MockAudioPlayerState = {
@@ -45,6 +46,7 @@ let mockAudioPlayerState: MockAudioPlayerState = {
   setVolume: jest.fn(),
   setLiveVolume: jest.fn(),
   toggleMute: jest.fn(),
+  audioAnalyser: null,
 };
 
 const mockRouterReplace = jest.fn();
@@ -79,6 +81,7 @@ describe("AudioPlayer", () => {
       setVolume: jest.fn(),
       setLiveVolume: jest.fn(),
       toggleMute: jest.fn(),
+      audioAnalyser: null,
     };
   });
 
@@ -183,6 +186,7 @@ describe("AudioPlayer", () => {
 
     expect(screen.getByRole("dialog", { name: "Fullscreen player" })).toBeInTheDocument();
     expect(screen.getByAltText("Track One fullscreen artwork")).toBeInTheDocument();
+    expect(screen.getByTestId("audio-visualizer-canvas")).toBeInTheDocument();
     expect(screen.getByLabelText("Audio Player")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Track One" })).not.toBeInTheDocument();
     expect(mockAudioPlayerState.togglePlayPause).not.toHaveBeenCalled();
