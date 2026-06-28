@@ -217,27 +217,6 @@ h1 {
   z-index: 1;
 }
 
-.rose-hero__eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--rose-primary-soft);
-  font-size: 0.78rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0;
-  margin-bottom: 18px;
-}
-
-.rose-hero__eyebrow::before {
-  content: "";
-  width: 44px;
-  height: 1px;
-  flex: 0 0 auto;
-  background: linear-gradient(90deg, transparent, var(--rose-primary));
-  box-shadow: 0 0 16px rgba(255, 152, 162, 0.58);
-}
-
 .rose-hero__title {
   font-family: var(--font-display);
   color: var(--space-text);
@@ -659,41 +638,63 @@ h1 {
   display: grid;
   grid-template-columns: 1fr;
   gap: 18px;
-  border-top: 1px solid rgba(255, 152, 162, 0.18);
-  padding: 34px clamp(20px, 6vw, 96px) 42px;
+  padding: 34px clamp(20px, 6vw, 96px)
+    calc(140px + max(env(safe-area-inset-bottom), 12px));
   color: rgba(255, 247, 251, 0.72);
+}
+
+.rose-footer__identity {
+  display: grid;
+  gap: 6px;
 }
 
 .rose-footer__brand {
   color: var(--space-text);
+  font-size: 0.88rem;
   font-weight: 900;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
-.rose-footer__nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
+.rose-footer__tagline {
+  max-width: 34rem;
+  color: rgba(255, 247, 251, 0.6);
+  font-size: 0.95rem;
+  line-height: 1.55;
 }
 
-.rose-footer__nav a {
+.rose-footer__github {
+  display: inline-flex;
+  min-height: 44px;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   color: rgba(255, 247, 251, 0.78);
-  font-weight: 800;
-  transition: color 180ms ease;
-}
-
-.rose-footer__nav a:hover {
-  color: var(--rose-primary-soft);
-}
-
-.rose-footer__meta {
-  color: rgba(255, 247, 251, 0.54);
   font-size: 0.88rem;
+  font-weight: 800;
+  padding: 0;
+  transition:
+    color 180ms ease,
+    transform 180ms ease;
 }
 
+.rose-footer__github:hover {
+  color: var(--rose-primary-soft);
+  transform: translateY(-1px);
+}
 @media (min-width: 768px) {
-  .rose-hero__eyebrow {
-    font-size: 0.9rem;
+  .rose-footer {
+    padding-bottom: calc(156px + max(env(safe-area-inset-bottom), 12px));
+  }
+
+  .rose-footer {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+    align-items: center;
+  }
+
+  .rose-footer__github {
+    justify-self: end;
   }
 
   .rose-hero__title {
@@ -1073,3 +1074,4 @@ h1 {
     opacity: 1;
   }
 }
+

@@ -130,7 +130,7 @@ export default function LandingCobeOrbit() {
         width={1040}
         height={1040}
       />
-      <span className="rose-cobe-orbit__label">ROSE ORBIT</span>
+      <span className="rose-cobe-orbit__label">PLUM BLOSSOM</span>
     </div>
   );
 }
