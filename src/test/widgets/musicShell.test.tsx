@@ -1,9 +1,7 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { flushSync } from "react-dom";
 import type { Track } from "@/entities/Track/model";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
-import { useFavorites } from "@/features/library/hooks/useFavorites";
 import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
 import {
   getCachedTrack,
@@ -31,15 +29,16 @@ jest.mock("react-virtuoso", () => ({
 }));
 
 jest.mock("@/features/cloudinary/hooks/useCloudinaryTracks");
-jest.mock("@/features/library/hooks/useFavorites");
 jest.mock("@/features/library/hooks/useRecentPlays");
 jest.mock("@/shared/db/repositories/trackCacheRepo");
 jest.mock("@/shared/providers/audioPlayerProvider", () => ({
   useAudioPlayer: jest.fn(),
 }));
+jest.mock("@/features/audio/components/audioVisualizer", () => ({
+  AudioVisualizer: () => <div>Audio visualizer</div>,
+}));
 
 const mockUseCloudinaryTracks = useCloudinaryTracks as jest.Mock;
-const mockUseFavorites = useFavorites as jest.Mock;
 const mockUseRecentPlays = useRecentPlays as jest.Mock;
 const mockUseAudioPlayer = useAudioPlayer as jest.MockedFunction<
   typeof useAudioPlayer
@@ -50,6 +49,19 @@ const mockGetCachedTracks = getCachedTracks as jest.MockedFunction<
 const mockGetCachedTrack = getCachedTrack as jest.MockedFunction<
   typeof getCachedTrack
 >;
+
+const mockTrackSelectPlaybackMedia = (matches: boolean) => {
+  window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+    matches,
+    media: query,
+    onchange: null,
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  }));
+};
 
 const track = (id: string, title: string, artistName = "EDMM Artist"): Track => ({
   id,
@@ -80,7 +92,7 @@ const cloudTracks = [
   track("cloudinary:all-2", "Cloud Track Two", "Cloud Artist"),
   track("cloudinary:all-3", "Cloud Track Three", "Cloud Artist"),
 ];
-const favoriteTrack = track("cloudinary:fav-1", "Favorite Track");
+const hiddenTrack = track("cloudinary:hidden-1", "Hidden Track");
 const recentTrack = track("cloudinary:recent-1", "Recent Track");
 const mockAudioState = {
   currentTrack: null,
@@ -91,6 +103,7 @@ const mockAudioState = {
 describe("MusicShell", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockTrackSelectPlaybackMedia(false);
     mockUseAudioPlayer.mockReturnValue(mockAudioState);
 
     mockUseCloudinaryTracks.mockImplementation((query: string) => ({
@@ -99,15 +112,10 @@ describe("MusicShell", () => {
       isError: false,
       refetch: jest.fn(),
     }));
-    mockUseFavorites.mockReturnValue({
-      favoriteIds: new Set<string>(),
-      isFavorite: () => false,
-      toggle: jest.fn(),
-    });
     mockUseRecentPlays.mockReturnValue({ recentIds: [] });
     mockGetCachedTracks.mockResolvedValue([]);
     mockGetCachedTrack.mockImplementation(async (trackId: string) =>
-      [favoriteTrack, recentTrack, ...cloudTracks].find((item) => item.id === trackId),
+      [hiddenTrack, recentTrack, ...cloudTracks].find((item) => item.id === trackId),
     );
   });
 
@@ -135,21 +143,6 @@ describe("MusicShell", () => {
     expect(screen.getByRole("button", { name: "Select Cloud Track Two" })).toBeInTheDocument();
   });
 
-  it("shows cached favorite tracks in the Favorites view", async () => {
-    mockUseFavorites.mockReturnValue({
-      favoriteIds: new Set(["cloudinary:fav-1"]),
-      isFavorite: (id: string) => id === "cloudinary:fav-1",
-      toggle: jest.fn(),
-    });
-    mockGetCachedTracks.mockResolvedValue([favoriteTrack]);
-
-    render(<MusicShell />);
-    fireEvent.click(screen.getByRole("button", { name: "Favorites" }));
-
-    expect(mockGetCachedTracks).toHaveBeenCalledWith(["cloudinary:fav-1"]);
-    expect(await screen.findByText("Favorite Track")).toBeInTheDocument();
-  });
-
   it("shows cached recent tracks in the Recent view", async () => {
     mockUseRecentPlays.mockReturnValue({
       recentIds: ["cloudinary:recent-1"],
@@ -160,37 +153,39 @@ describe("MusicShell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Recent" }));
 
     expect(mockGetCachedTracks).toHaveBeenCalledWith(["cloudinary:recent-1"]);
-    expect(await screen.findByText("Recent Track")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: "Select Recent Track" }),
+    ).toBeInTheDocument();
   });
 
-  it("starts on an initial Favorites view", async () => {
-    mockUseFavorites.mockReturnValue({
-      favoriteIds: new Set(["cloudinary:fav-1"]),
-      isFavorite: (id: string) => id === "cloudinary:fav-1",
-      toggle: jest.fn(),
+  it("starts on an initial Recent view", async () => {
+    mockUseRecentPlays.mockReturnValue({
+      recentIds: ["cloudinary:recent-1"],
     });
-    mockGetCachedTracks.mockResolvedValue([favoriteTrack]);
+    mockGetCachedTracks.mockResolvedValue([recentTrack]);
 
-    render(<MusicShell initialView="favorites" />);
+    render(<MusicShell initialView="recent" />);
 
-    expect(screen.getByRole("button", { name: "Favorites" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Recent" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
-    expect(await screen.findByText("Favorite Track")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: "Select Recent Track" }),
+    ).toBeInTheDocument();
   });
 
   it("updates detail selection when initialTrackId changes", async () => {
     mockGetCachedTrack.mockImplementation(async (trackId: string) =>
-      [favoriteTrack, recentTrack, ...cloudTracks].find((item) => item.id === trackId),
+      [hiddenTrack, recentTrack, ...cloudTracks].find((item) => item.id === trackId),
     );
 
     const { rerender } = render(
-      <MusicShell initialTrackId="cloudinary:fav-1" />,
+      <MusicShell initialTrackId="cloudinary:hidden-1" />,
     );
 
     expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
-      "Favorite Track",
+      "Hidden Track",
     );
 
     rerender(<MusicShell initialTrackId="cloudinary:all-3" />);
@@ -213,6 +208,34 @@ describe("MusicShell", () => {
     expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
       "Route Selected Track",
     );
+  });
+
+  it("keeps an initial track detail loading while catalog data is still resolving", async () => {
+    const onPlay = jest.fn();
+    mockUseCloudinaryTracks.mockReturnValue({
+      data: [],
+      isLoading: true,
+      isError: false,
+      refetch: jest.fn(),
+    });
+    mockGetCachedTrack.mockResolvedValue(undefined);
+
+    render(
+      <MusicShell
+        initialTrackId="cloudinary:pending-route-track"
+        onPlay={onPlay}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mockGetCachedTrack).toHaveBeenCalledTimes(2);
+    });
+    expect(screen.getByText("Loading details...")).toBeInTheDocument();
+    expect(screen.queryByText("Details unavailable")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Select a track" }),
+    ).not.toBeInTheDocument();
+    expect(onPlay).not.toHaveBeenCalled();
   });
 
   it("selects a row and hydrates the right-side detail aside from cache", async () => {
@@ -255,43 +278,43 @@ describe("MusicShell", () => {
     );
   });
 
-  it("clears selected details when the selected favorite leaves the visible queue", async () => {
-    mockUseFavorites.mockReturnValue({
-      favoriteIds: new Set(["cloudinary:fav-1"]),
-      isFavorite: (id: string) => id === "cloudinary:fav-1",
-      toggle: jest.fn(),
+  it("clears selected details when the selected recent track leaves the visible queue", async () => {
+    mockUseRecentPlays.mockReturnValue({
+      recentIds: ["cloudinary:recent-1"],
     });
-    mockGetCachedTracks.mockResolvedValue([favoriteTrack]);
+    mockGetCachedTracks.mockResolvedValue([recentTrack]);
 
     render(<MusicShell />);
-    fireEvent.click(screen.getByRole("button", { name: "Favorites" }));
+    fireEvent.click(screen.getByRole("button", { name: "Recent" }));
     fireEvent.click(
-      await screen.findByRole("button", { name: "Select Favorite Track" }),
+      await screen.findByRole("button", { name: "Select Recent Track" }),
     );
 
     expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
-      "Favorite Track",
+      "Recent Track",
     );
 
-    act(() => {
-      flushSync(() => {
-        screen.getByRole("button", { name: "All" }).click();
-      });
-
+    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    await waitFor(() => {
       expect(screen.queryByTestId("track-detail-title")).not.toBeInTheDocument();
-      expect(screen.queryByText("Favorite Track")).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole("button", { name: "Play selected" }),
-      ).not.toBeInTheDocument();
-      expect(screen.getByRole("heading", { name: "Select a track" })).toBeInTheDocument();
     });
+    expect(screen.queryByText("Recent Track")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Play selected" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Select a track" })).toBeInTheDocument();
   });
 
   it("plays a track with the visible queue", () => {
     const onPlay = jest.fn();
 
     render(<MusicShell onPlay={onPlay} />);
-    fireEvent.click(screen.getByRole("button", { name: "Play Cloud Track One" }));
+    fireEvent.click(
+      within(screen.getByRole("list", { name: "Track list" })).getByRole(
+        "button",
+        { name: "Play Cloud Track One" },
+      ),
+    );
 
     expect(onPlay).toHaveBeenLastCalledWith(
       cloudTracks[0],
@@ -312,9 +335,33 @@ describe("MusicShell", () => {
     const onPlay = jest.fn();
 
     render(<MusicShell onPlay={onPlay} />);
+    onPlay.mockClear();
     fireEvent.click(screen.getByRole("button", { name: "Select Cloud Track Two" }));
 
     expect(onPlay).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockGetCachedTrack).toHaveBeenCalledWith("cloudinary:all-2");
+      expect(screen.getByTestId("track-detail-title")).toHaveTextContent(
+        "Cloud Track Two",
+      );
+    });
+  });
+
+  it("plays a selected row on coarse pointer and tablet-sized viewports", async () => {
+    const onPlay = jest.fn();
+    mockTrackSelectPlaybackMedia(true);
+
+    render(<MusicShell onPlay={onPlay} />);
+    onPlay.mockClear();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Select and play Cloud Track Two" }),
+    );
+
+    expect(onPlay).toHaveBeenLastCalledWith(
+      cloudTracks[1],
+      cloudTracks,
+      true,
+    );
     await waitFor(() => {
       expect(mockGetCachedTrack).toHaveBeenCalledWith("cloudinary:all-2");
       expect(screen.getByTestId("track-detail-title")).toHaveTextContent(
@@ -331,6 +378,39 @@ describe("MusicShell", () => {
 
     await waitFor(() => {
       expect(onPlay).toHaveBeenCalledWith(recentTrack, [recentTrack], false);
+    });
+  });
+
+  it("keeps seeded recent track details when the player current track syncs", async () => {
+    const onPlay = jest.fn();
+    mockUseRecentPlays.mockReturnValue({ recentIds: ["cloudinary:recent-1"] });
+
+    const { rerender } = render(<MusicShell onPlay={onPlay} />);
+
+    expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
+      "Recent Track",
+    );
+
+    mockUseAudioPlayer.mockReturnValue({
+      ...mockAudioState,
+      currentTrack: {
+        assetId: recentTrack.id,
+        album: recentTrack.albumName,
+        name: recentTrack.title,
+        artworkId: recentTrack.artworkUrl,
+        url: recentTrack.streamUrl ?? "",
+        producer: recentTrack.artistName,
+      },
+    });
+    rerender(<MusicShell onPlay={onPlay} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("track-detail-title")).toHaveTextContent(
+        "Recent Track",
+      );
+      expect(
+        screen.queryByRole("heading", { name: "Select a track" }),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -361,15 +441,18 @@ describe("MusicShell", () => {
   it("toggles the track detail aside using the Overflow Wrap button", async () => {
     render(<MusicShell />);
 
-    expect(await screen.findByRole("heading", { name: "Track detail" })).toBeInTheDocument();
+    expect(await screen.findByText("Track Detail")).toBeInTheDocument();
+    const aside = screen.getByLabelText("Track detail aside");
+    expect(aside).toHaveClass("music-shell-aside--open");
     const closeButton = screen.getByRole("button", { name: "Close track detail" });
     fireEvent.click(closeButton);
 
     expect(screen.getByRole("button", { name: "Open track detail" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Track detail" })).not.toBeInTheDocument();
+    expect(aside).toHaveClass("music-shell-aside--closed");
 
     fireEvent.click(screen.getByRole("button", { name: "Open track detail" }));
-    expect(await screen.findByRole("heading", { name: "Track detail" })).toBeInTheDocument();
+    expect(await screen.findByText("Track Detail")).toBeInTheDocument();
+    expect(aside).toHaveClass("music-shell-aside--open");
     expect(screen.getByRole("button", { name: "Close track detail" })).toBeInTheDocument();
   });
 

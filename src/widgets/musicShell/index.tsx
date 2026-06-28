@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { type Track } from "@/entities/Track/model";
+import { isPlayable, type Track } from "@/entities/Track/model";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
 import { getCachedTracks } from "@/shared/db/repositories/trackCacheRepo";
@@ -32,9 +32,38 @@ type CachedTrackState = {
   isLoading: boolean;
 };
 const noop: NonNullable<MusicShellProps["onPlay"]> = () => {};
+const TRACK_SELECT_PLAYBACK_MEDIA_QUERY = "(pointer: coarse), (max-width: 1023px)";
 
 const isMusicView = (view: MusicView | undefined): view is MusicView =>
   view === "all" || view === "recent";
+
+function useTrackSelectPlaybackMode() {
+  const [shouldPlayOnSelect, setShouldPlayOnSelect] = useState(false);
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia(TRACK_SELECT_PLAYBACK_MEDIA_QUERY);
+    const handleChange = () => setShouldPlayOnSelect(mediaQuery.matches);
+
+    handleChange();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, []);
+
+  return shouldPlayOnSelect;
+}
 
 function useCachedTrackList(ids: string[]): CachedTrackState {
   const [state, setState] = useState<CachedTrackState>({
@@ -96,6 +125,7 @@ export function MusicShell({
   const { currentTrack, isPlaying } = useAudioPlayer();
   const currentTrackId = currentTrack?.assetId ?? null;
   const isCurrentTrackPlaying = Boolean(currentTrackId && isPlaying);
+  const shouldPlayOnTrackSelect = useTrackSelectPlaybackMode();
 
   const handleTrackZoneScrollHandled = useCallback(
     () => setPlayerZoneScrollRequest(null),
@@ -138,25 +168,6 @@ export function MusicShell({
     };
   }, []);
 
-  useEffect(() => {
-    if (normalizedInitialTrackId) {
-      setSelectedTrackId(normalizedInitialTrackId);
-      setSelectionSource("initial");
-      return;
-    }
-
-    if (currentTrackId) {
-      setSelectedTrackId((previousId) =>
-        previousId === currentTrackId ? previousId : currentTrackId,
-      );
-      setSelectionSource("visible");
-      return;
-    }
-
-    setSelectedTrackId(null);
-    setSelectionSource(null);
-  }, [currentTrackId, normalizedInitialTrackId]);
-
   const normalizedQuery = query.trim();
   const {
     data: cloudinaryData,
@@ -186,6 +197,42 @@ export function MusicShell({
   );
 
   useEffect(() => {
+    if (normalizedInitialTrackId) {
+      setSelectedTrackId(normalizedInitialTrackId);
+      setSelectionSource("initial");
+      return;
+    }
+
+    if (currentTrackId) {
+      const nextSelectionSource =
+        selectionSource === "initial" && selectedTrackId === currentTrackId
+          ? "initial"
+          : visibleTrackIds.has(currentTrackId)
+            ? "visible"
+            : "initial";
+
+      setSelectedTrackId((previousId) =>
+        previousId === currentTrackId ? previousId : currentTrackId,
+      );
+      setSelectionSource(nextSelectionSource);
+      return;
+    }
+
+    if (selectedTrackId) {
+      return;
+    }
+
+    setSelectedTrackId(null);
+    setSelectionSource(null);
+  }, [
+    currentTrackId,
+    normalizedInitialTrackId,
+    selectedTrackId,
+    selectionSource,
+    visibleTrackIds,
+  ]);
+
+  useEffect(() => {
     if (!currentTrackId || selectionSource === "initial") {
       return;
     }
@@ -195,6 +242,17 @@ export function MusicShell({
       setSelectionSource(null);
     }
   }, [currentTrackId, selectionSource, visibleTrackIds]);
+
+  useEffect(() => {
+    if (!selectedTrackId || selectionSource !== "visible") {
+      return;
+    }
+
+    if (!visibleTrackIds.has(selectedTrackId)) {
+      setSelectedTrackId(null);
+      setSelectionSource(null);
+    }
+  }, [selectedTrackId, selectionSource, visibleTrackIds]);
 
   const selectedTrack = useMemo(() => {
     if (!selectedTrackId) return null;
@@ -206,8 +264,13 @@ export function MusicShell({
     selectionSource === "initial" ? selectedTrackId : visibleSelectedTrackId ?? selectedTrackId;
 
   const queueForTrack = useCallback(
-    (track: Track) =>
-      visibleTracks.length > 0 ? visibleTracks : [track],
+    (track: Track) => {
+      const trackIsVisible = visibleTracks.some(
+        (visibleTrack) => visibleTrack.id === track.id,
+      );
+
+      return trackIsVisible ? visibleTracks : [track];
+    },
     [visibleTracks],
   );
 
@@ -238,6 +301,11 @@ export function MusicShell({
   );
 
   const handleSelect = (track: Track) => {
+    if (shouldPlayOnTrackSelect && isPlayable(track)) {
+      activateTrackInPlayer(track, true, "visible", queueForTrack(track));
+      return;
+    }
+
     setSelectedTrackId(track.id);
     setSelectionSource("visible");
   };
@@ -309,6 +377,7 @@ export function MusicShell({
               isLoading={isVisibleLoading}
               isError={isVisibleError}
               emptyMessage={emptyMessage}
+              playOnSelect={shouldPlayOnTrackSelect}
               onSelect={handleSelect}
               onPlay={handlePlay}
               scrollToTrackId={playerZoneScrollRequest?.trackId ?? null}
@@ -349,6 +418,9 @@ export function MusicShell({
                 fallbackTrack={selectedTrack}
                 queue={visibleTracks}
                 onPlay={handlePlay}
+                isWaitingForSelectionSeed={
+                  selectionSource === "initial" && !selectedTrack && isVisibleLoading
+                }
               />
             </div>
           </aside>

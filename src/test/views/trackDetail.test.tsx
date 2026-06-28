@@ -83,7 +83,9 @@ describe("TrackDetailAside", () => {
       />,
     );
 
-    fireEvent.click(await screen.findByRole("button", { name: "Play selected" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Play Cached Track" }),
+    );
 
     expect(onPlay).toHaveBeenCalledWith(track, queue);
   });

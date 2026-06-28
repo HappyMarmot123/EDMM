@@ -62,7 +62,7 @@ export const useMusicShellTrackSeed = ({
 
     const selectedTrackFingerprint = selectedTrack
       ? `${selectedTrack.id}|${normalizeArtworkForFingerprint(selectedTrack)}`
-      : selectedTrackId;
+      : `${selectedTrackId}|visible:${visibleTracks.length > 0 ? "ready" : "waiting"}`;
 
     if (resolvedInitialTrackRef.current === selectedTrackFingerprint) {
       return;
@@ -84,6 +84,10 @@ export const useMusicShellTrackSeed = ({
       }
 
       if (!resolvedTrack) {
+        if (visibleTracks.length === 0 && !selectedTrack) {
+          return;
+        }
+
         fallbackToFirstPlayable();
         return;
       }

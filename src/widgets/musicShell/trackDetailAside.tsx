@@ -13,10 +13,11 @@ type TrackDetailAsideProps = {
   fallbackTrack?: Track | null;
   queue: Track[];
   onPlay?: (track: Track, queue?: Track[]) => void;
+  isWaitingForSelectionSeed?: boolean;
 };
 
 const formatDuration = (durationMs: number) => {
-  const totalSeconds = Math.max(0, Math.round(durationMs / 1024));
+  const totalSeconds = Math.max(0, Math.round(durationMs / 1000));
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = String(totalSeconds % 60).padStart(2, "0");
 
@@ -46,6 +47,7 @@ export function TrackDetailAside({
   fallbackTrack = null,
   queue,
   onPlay,
+  isWaitingForSelectionSeed = false,
 }: TrackDetailAsideProps) {
   const [cachedTrack, setCachedTrack] = useState<Track | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -164,7 +166,7 @@ export function TrackDetailAside({
           </div>
         ) : null}
 
-        {selectedTrackId && !track && isLoading ? (
+        {selectedTrackId && !track && (isLoading || isWaitingForSelectionSeed) ? (
           <div role="status" className="space-y-4 text-sm text-white/62">
             <span>Loading details...</span>
             <div className="aspect-square animate-pulse rounded-md bg-white/10" />
@@ -173,7 +175,7 @@ export function TrackDetailAside({
           </div>
         ) : null}
 
-        {selectedTrackId && !track && !isLoading ? (
+        {selectedTrackId && !track && !isLoading && !isWaitingForSelectionSeed ? (
           <div className="rounded-md border border-white/10 bg-white/[0.04] p-5">
             <h2 className="text-lg font-black text-white">Details unavailable</h2>
             <p className="mt-2 break-all text-sm leading-6 text-white/58">
@@ -248,6 +250,8 @@ export function TrackDetailAside({
 
             <dl className="grid gap-2">
               <DetailLine label="Duration" value={formatDuration(track.durationMs)} />
+              <DetailLine label="Album" value={track.albumName || "Unknown"} />
+              <DetailLine label="Source" value={track.source} />
               <DetailLine
                 label="GitHub"
                 value={

@@ -26,7 +26,6 @@ export function MusicShellHeader({
   query,
   view,
   resultCount,
-  favoriteCount,
   recentCount,
   onQueryChange,
   onViewChange,

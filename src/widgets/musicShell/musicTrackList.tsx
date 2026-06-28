@@ -3,7 +3,6 @@
 import { Disc3, Pause, Play } from "lucide-react";
 import {
   type ComponentPropsWithoutRef,
-  type KeyboardEvent,
   type MouseEvent,
   useCallback,
   useEffect,
@@ -21,6 +20,7 @@ type MusicTrackListProps = {
   isLoading?: boolean;
   isError?: boolean;
   emptyMessage?: string;
+  playOnSelect?: boolean;
   onSelect: (track: Track) => void;
   onPlay: (track: Track) => void;
   onRetry?: () => void;
@@ -58,6 +58,7 @@ export function MusicTrackList({
   isLoading = false,
   isError = false,
   emptyMessage = "No tracks in this view.",
+  playOnSelect = false,
   onSelect,
   onPlay,
   onRetry,
@@ -119,7 +120,7 @@ export function MusicTrackList({
   }, [onTrackZoneScrollHandled, scrollToTrackId, scrollToTrackRequest, tracks]);
 
   const handleSelect = useCallback(
-    (event: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>, track: Track) => {
+    (event: MouseEvent<HTMLElement>, track: Track) => {
       event.preventDefault();
       if (
         typeof document !== "undefined" &&
@@ -200,6 +201,8 @@ export function MusicTrackList({
           const isCurrentTrack = track.id === currentTrackId;
           const isTrackPlayable = isPlayable(track);
           const isCurrentTrackActive = isCurrentTrack && isCurrentTrackPlaying;
+          const selectActionLabel =
+            playOnSelect && isTrackPlayable ? "Select and play" : "Select";
 
           const handlePlay = (event: MouseEvent<HTMLButtonElement>) => {
             event.stopPropagation();
@@ -216,22 +219,19 @@ export function MusicTrackList({
               <li
                 role="listitem"
                 className={[
-                  "cursor-pointer grid min-h-[68px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md border p-2 transition-colors",
+                  "grid min-h-[68px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md border p-2 transition-colors",
                   isSelected
                     ? "border-[#ff98a2]/70 bg-[#ff98a2]/13"
                     : "border-transparent bg-white/[0.035] hover:border-white/10 hover:bg-white/[0.06]",
                 ].join(" ")}
               >
-                <div
+                <button
+                  type="button"
+                  aria-label={`${selectActionLabel} ${track.title}`}
                   onPointerDown={(event) => event.preventDefault()}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={(event) => handleSelect(event, track)}
-                  onKeyDown={(event) => {
-                    if (event.key !== "Enter" && event.key !== " ") return;
-
-                    handleSelect(event, track);
-                  }}
-                  className="grid min-w-0 grid-cols-[30px_48px_minmax(0,1fr)] items-center gap-3 rounded p-1.5 text-left"
+                  className="grid min-w-0 grid-cols-[30px_48px_minmax(0,1fr)] items-center gap-3 rounded bg-transparent p-1.5 text-left"
                 >
                   <span className="text-sm font-black text-white/38">{index + 1}</span>
                   <span
@@ -258,7 +258,7 @@ export function MusicTrackList({
                       {track.albumName ? ` / ${track.albumName}` : ""}
                     </span>
                   </span>
-                </div>
+                </button>
 
                 <div className="flex items-center gap-2 pr-1">
                   <span className="hidden min-w-10 text-right text-sm font-bold text-white/42 sm:inline">
@@ -272,7 +272,7 @@ export function MusicTrackList({
                     onClick={handlePlay}
                     onKeyDown={(event) => event.stopPropagation()}
                     disabled={!isTrackPlayable}
-                    className="grid h-10 w-10 place-items-center rounded-full bg-[#ff98a2] text-black"
+                    className="cursor-pointer grid h-10 w-10 place-items-center rounded-full bg-[#ff98a2] text-black"
                   >
                     {isCurrentTrackActive ? (
                       <Pause size={18} fill="currentColor" strokeWidth={2.1} />
