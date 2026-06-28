@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Disc3, Music2, Pause, Play, Radio } from "lucide-react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { Disc3, Link, Music2, Pause, Play, Radio } from "lucide-react";
 import type { Track } from "@/entities/Track/model";
 import { AudioVisualizer } from "@/features/audio/components/audioVisualizer";
 import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
@@ -23,11 +23,18 @@ const formatDuration = (durationMs: number) => {
   return `${minutes}:${seconds}`;
 };
 
-function DetailLine({ label, value }: { label: string; value: string }) {
+type DetailLineProps = {
+  label: string;
+  value: ReactNode;
+};
+
+function DetailLine({ label, value }: DetailLineProps) {
+  const valueText = typeof value === "string" ? value : undefined;
+
   return (
     <div className="min-w-0 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2">
       <dt className="text-[11px] font-black uppercase text-[#ff98a2]">{label}</dt>
-      <dd className="mt-1 truncate text-sm font-semibold text-white/74" title={value}>
+      <dd className="mt-1 truncate text-sm font-semibold text-white/74" title={valueText}>
         {value}
       </dd>
     </div>
@@ -132,8 +139,12 @@ export function TrackDetailAside({
 
     return liveTrackFallback;
   }, [cachedTrack, fallbackTrack, selectedTrackId, liveTrackFallback]);
-  const isCurrentTrack = track && currentTrack?.assetId === track.id;
+    const isCurrentTrack = track && currentTrack?.assetId === track.id;
   const isVisualizerActive = Boolean(isCurrentTrack && isPlaying);
+  const githubUrl =
+    (typeof process !== "undefined" &&
+      process.env.NEXT_PUBLIC_GITHUB_URL?.trim()) ||
+    "https://github.com/HappyMarmot123";
 
   return (
     <aside
@@ -237,6 +248,25 @@ export function TrackDetailAside({
 
             <dl className="grid gap-2">
               <DetailLine label="Duration" value={formatDuration(track.durationMs)} />
+              <DetailLine
+                label="GitHub"
+                value={
+                  <a
+                    href={githubUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 truncate font-semibold text-white/74 transition-colors hover:text-white"
+                  >
+                    <Link
+                      size={14}
+                      strokeWidth={2.1}
+                      className="shrink-0 text-white/74"
+                      aria-hidden="true"
+                    />
+                    Made by Lucas
+                  </a>
+                }
+              />
             </dl>
           </div>
         ) : null}
