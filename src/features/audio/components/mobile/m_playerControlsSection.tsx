@@ -3,69 +3,38 @@
 import { memo } from "react";
 import { type PlayerControlsSectionProps } from "@/shared/types/dataType";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
-import { Play, Pause, SkipBack, SkipForward } from "lucide-react";
+import { Play, Pause } from "lucide-react";
 import { IconToggleButton } from "@/shared/components/iconToggleButton";
-import { PlayerControlButton } from "@/shared/components/playerControlBtn";
 
 const MPlayerControlsSection = ({
   currentTrackInfo,
 }: Pick<PlayerControlsSectionProps, "currentTrackInfo">) => {
-  const { isPlaying, togglePlayPause, nextTrack, prevTrack } = useAudioPlayer();
+  const { isPlaying, togglePlayPause } = useAudioPlayer();
   const playPauseLabel = isPlaying ? "Pause" : "Play";
   const hasPlayableTrack = Boolean(currentTrackInfo?.url);
 
   return (
     <section
-      id="player-controls"
-      className="flex flex-none items-center justify-end gap-1"
+      id="player-controls-mobile"
+      className="flex flex-none items-center justify-end"
       aria-label={`${currentTrackInfo?.name ?? "Current track"} controls`}
     >
-      <PlayerControlButton
-        id="play-previous"
-        onClick={prevTrack}
-        aria-label="Previous track"
-        className="h-10 w-10 text-white/70 hover:text-white"
-        disabled={!hasPlayableTrack}
-      >
-        <SkipBack
-          className="m-auto block"
-          width={22}
-          height={22}
-          fill="currentColor"
-          aria-hidden="true"
-        />
-      </PlayerControlButton>
       <IconToggleButton
-        id="play-pause"
+        id="play-pause-mobile"
         condition={isPlaying}
         IconOnTrue={Pause}
         IconOnFalse={Play}
         onClick={togglePlayPause}
         label={playPauseLabel}
-        className="h-11 w-11 bg-white text-black hover:bg-[#ffd6e1]"
+        className="h-11 w-11 text-white hover:bg-white/10"
         disabled={!hasPlayableTrack}
         iconProps={{
-          width: 28,
-          height: 28,
+          width: 26,
+          height: 26,
           fill: "currentColor",
-          className: "text-black",
+          className: "text-current",
         }}
       />
-      <PlayerControlButton
-        id="play-next"
-        onClick={nextTrack}
-        aria-label="Next track"
-        className="h-10 w-10 text-white/70 hover:text-white"
-        disabled={!hasPlayableTrack}
-      >
-        <SkipForward
-          className="m-auto block"
-          width={22}
-          height={22}
-          fill="currentColor"
-          aria-hidden="true"
-        />
-      </PlayerControlButton>
     </section>
   );
 };

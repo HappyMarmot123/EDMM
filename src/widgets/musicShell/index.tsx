@@ -33,6 +33,10 @@ type CachedTrackState = {
 };
 const noop: NonNullable<MusicShellProps["onPlay"]> = () => {};
 const TRACK_SELECT_PLAYBACK_MEDIA_QUERY = "(pointer: coarse), (max-width: 1023px)";
+const MOBILE_VIEW_OPTIONS: Array<{ value: MusicView; label: string }> = [
+  { value: "all", label: "All" },
+  { value: "recent", label: "Recent" },
+];
 
 const isMusicView = (view: MusicView | undefined): view is MusicView =>
   view === "all" || view === "recent";
@@ -382,7 +386,7 @@ export function MusicShell({
       : "No tracks in this view.";
   return (
     <main
-      className="relative flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[#050306] px-4 pb-[calc(78px+max(env(safe-area-inset-bottom),10px))] pt-5 text-white sm:px-6 sm:pb-[calc(96px+max(env(safe-area-inset-bottom),12px))] lg:px-8"
+      className="relative flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[#050306] px-4 pb-[calc(148px+max(env(safe-area-inset-bottom),10px))] pt-5 text-white sm:px-6 sm:pb-[calc(156px+max(env(safe-area-inset-bottom),12px))] md:pb-[calc(96px+max(env(safe-area-inset-bottom),12px))] lg:px-8"
     >
       <section className="music-shell-grid mx-auto grid min-h-0 w-full flex-1 gap-5">
         <main className="min-w-0 flex min-h-0 flex-1 flex-col gap-5">
@@ -397,7 +401,7 @@ export function MusicShell({
 
           <section
             aria-label="Track list section"
-            className="min-h-0 flex-1 overflow-hidden rounded-lg border border-white/10 bg-black/24 p-3 sm:p-4"
+            className="min-h-0 flex-1 overflow-hidden rounded-lg border border-white/10 bg-black/24 p-0 md:p-4"
           >
             <MusicTrackList
               tracks={visibleTracks}
@@ -418,7 +422,7 @@ export function MusicShell({
           </section>
         </main>
 
-        <section className="music-shell-aside-shell">
+        <section className="music-shell-aside-shell hidden md:block">
           <button
             type="button"
             onClick={() => setIsTrackDetailOpen((value) => !value)}
@@ -456,6 +460,34 @@ export function MusicShell({
           </aside>
         </section>
       </section>
+
+      <nav
+        id="bottom-tab-navigation"
+        className="fixed inset-x-0 bottom-0 z-[60] grid grid-cols-2 gap-2 border-t border-white/10 bg-[#080609]/96 px-4 pt-2 text-white shadow-[0_-18px_45px_rgba(0,0,0,0.38)] backdrop-blur-xl md:hidden"
+        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 10px)" }}
+        aria-label="Bottom tab navigation"
+      >
+        {MOBILE_VIEW_OPTIONS.map(({ value, label }) => {
+          const isActive = view === value;
+
+          return (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={isActive}
+              onClick={() => setView(value)}
+              className={[
+                "flex min-h-[52px] items-center justify-center rounded-xl text-sm font-black transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#ffb8c0]",
+                isActive
+                  ? "bg-[#ff98a2] text-black shadow-[0_10px_26px_rgba(255,152,162,0.22)]"
+                  : "bg-transparent text-white/58 hover:bg-white/10 hover:text-white",
+              ].join(" ")}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </nav>
     </main>
   );
 }

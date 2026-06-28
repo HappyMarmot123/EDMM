@@ -37,8 +37,7 @@ const MAlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
   const finalClassName = mobileAlbumArtClassName(isBuffering);
 
   return (
-    <button
-      type="button"
+    <div
       id="album-art"
       className={finalClassName}
       aria-label={
@@ -46,7 +45,6 @@ const MAlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
           ? `Open details for ${currentTrackInfo.name}`
           : "No track artwork"
       }
-      disabled={!currentTrackInfo}
     >
       {!currentTrackInfo ? (
         <span className="absolute inset-0 flex items-center justify-center bg-white/10 text-[#fd6d94]">
@@ -78,7 +76,7 @@ const MAlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
           <Music2 width={22} height={22} aria-hidden="true" />
         </span>
       )}
-    </button>
+    </div>
   );
 };
 

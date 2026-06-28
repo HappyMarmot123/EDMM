@@ -39,10 +39,10 @@ export function MusicShellHeader({
     <header className="space-y-5">
       <div className="flex min-w-0 items-end justify-between gap-12">
         <div className="min-w-0 shrink-0">
-          <p className="text-xs font-black uppercase tracking-normal text-[#ff98a2]">
+          <p className="hidden text-xs font-black uppercase tracking-normal text-[#ff98a2] md:block">
             Lucas archive
           </p>
-          <h1 className="mt-2 truncate text-3xl font-black tracking-normal text-white sm:text-4xl">
+          <h1 className="truncate text-3xl font-black tracking-normal text-white md:mt-2 sm:text-4xl">
             EDMM
           </h1>
         </div>
@@ -70,7 +70,7 @@ export function MusicShellHeader({
         </form>
       </div>
 
-      <nav className="flex flex-wrap gap-2" aria-label="Music views">
+      <nav className="hidden flex-wrap gap-2 md:flex" aria-label="Music views">
         {VIEW_OPTIONS.map(({ value, label, Icon }) => {
           const isActive = view === value;
 
