@@ -176,6 +176,24 @@ describe("AudioPlayer", () => {
     expect(screen.getByRole("button", { name: "No track artwork" })).toBeDisabled();
   });
 
+  it("opens and closes the desktop fullscreen player without changing playback", () => {
+    render(<AudioPlayer />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Toggle fullscreen view" }));
+
+    expect(screen.getByRole("dialog", { name: "Fullscreen player" })).toBeInTheDocument();
+    expect(screen.getByAltText("Track One fullscreen artwork")).toBeInTheDocument();
+    expect(screen.getByLabelText("Audio Player")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Track One" })).not.toBeInTheDocument();
+    expect(mockAudioPlayerState.togglePlayPause).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Exit fullscreen view" }));
+
+    expect(
+      screen.queryByRole("dialog", { name: "Fullscreen player" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("keeps the mobile player visible before a track is selected", () => {
     mockAudioPlayerState.currentTrack = null;
     mockAudioPlayerState.currentTime = 0;

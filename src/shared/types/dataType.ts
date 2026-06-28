@@ -32,6 +32,7 @@ export interface AlbumArtworkProps {
 export interface PlayerControlsSectionProps {
   currentTrackInfo: TrackInfo | null;
   isMobile?: boolean;
+  onFullscreenOpen?: () => void;
 }
 
 export type ExtendedAlbumArtworkProps = AlbumArtworkProps & {

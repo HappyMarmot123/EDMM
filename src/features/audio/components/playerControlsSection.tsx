@@ -61,7 +61,7 @@ export const PlayerVolumeControls: React.FC = () => {
 
 const PlayerControlsSection: React.FC<
   Omit<PlayerControlsSectionProps, "isMobile">
-> = ({ currentTrackInfo }) => {
+> = ({ currentTrackInfo, onFullscreenOpen }) => {
   const {
     isPlaying,
     volume,
@@ -77,7 +77,7 @@ const PlayerControlsSection: React.FC<
   const playPauseLabel = isPlaying ? "Pause" : "Play";
   const hasPlayableTrack = Boolean(currentTrackInfo?.url);
   const hasPlayableQueue = Boolean(currentTrackInfo?.assetId);
-  const handleFullscreenClick = () => {};
+  const handleFullscreenClick = () => onFullscreenOpen?.();
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -86,6 +86,16 @@ const PlayerControlsSection: React.FC<
         event.target instanceof HTMLTextAreaElement
       ) {
         return;
+      }
+
+      if (event.target instanceof HTMLElement) {
+        const interactiveTarget = event.target.closest(
+          "button, a, input, textarea, select, [role='button'], [role='slider']",
+        );
+
+        if (interactiveTarget) {
+          return;
+        }
       }
 
       switch (event.code) {
@@ -204,7 +214,7 @@ const PlayerControlsSection: React.FC<
             onClick={handleFullscreenClick}
             aria-label="Toggle fullscreen view"
             title="Fullscreen view"
-            className="ml-auto h-9 w-9 text-white/60 hover:text-white"
+            className="ml-auto hidden h-9 w-9 text-white/60 hover:text-white lg:grid"
           >
             <Maximize2
               className="m-auto block transition-colors duration-200 ease-out"
