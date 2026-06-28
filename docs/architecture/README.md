@@ -54,7 +54,9 @@ flowchart TD
 - `all` 뷰는 `useCloudinaryTracks(query, { resourceType: "all" })` 결과를 사용한다.
 - `recent` 뷰는 `useRecentPlays()`에서 id 목록을 받고 `getCachedTracks(ids)`로 표시 가능한 트랙을 복원한다.
 - `MusicShell`은 `selectedTrackId`, `selectionSource`, `visibleTracks`, `currentTrackId`를 조합해 리스트 선택과 상세 패널 선택을 동기화한다.
-- 데스크탑의 리스트 row select는 상세 선택만 수행하고, coarse pointer 또는 1023px 이하 viewport에서는 row select가 즉시 재생까지 수행한다.
+- 768px 미만 모바일에서는 리스트 row select가 즉시 재생까지 수행하고, 768px 이상에서는 row select가 상세 선택만 수행한다.
+- 모바일에서는 `TrackDetailAside`를 렌더링하지 않고, `MusicShellHeader`의 `Music views` nav 대신 하단 `bottom-tab-navigation`에서 `All`, `Recent`를 전환한다.
+- 768px~1024px 구간에서는 aside를 열고 닫을 수 있고, 1025px 이상 데스크탑에서는 aside를 상시 표시한다.
 - `queueForTrack(track)`은 트랙이 현재 visible 목록에 있으면 `visibleTracks` 전체를 큐로 넘기고, 딥링크/캐시 트랙처럼 보이지 않는 트랙이면 단일 트랙 큐를 넘긴다.
 - `useMusicShellTrackSeed`는 초기 딥링크 트랙과 최근 재생 트랙의 자동 시드 부수효과를 담당한다.
 - `trackSeedUtils`는 선택 트랙, visible match, cache match, first playable fallback 우선순위를 순수 함수로 제공한다.
@@ -97,11 +99,13 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-  AudioWidget[src/widgets/audioPlayer] --> AudioPlayer[src/features/audio/ui/audioPlayer.tsx]
-  AudioPlayer --> Controls[playerControlsSection.tsx]
-  AudioPlayer --> DesktopFullscreen[desktopFullscreenPlayer.tsx]
+  AudioWidget[src/widgets/audioPlayer] --> DesktopAudio[src/features/audio/ui/audioPlayer.tsx]
+  AudioWidget --> MobileAudio[src/features/audio/ui/mobileAudioPlayer.tsx]
+  DesktopAudio --> Controls[playerControlsSection.tsx]
+  DesktopAudio --> DesktopFullscreen[desktopFullscreenPlayer.tsx]
   DesktopFullscreen --> FullscreenViz[fullscreenAudioVisualizer.tsx]
   DesktopFullscreen --> FullscreenDisc[fullscreenAlbumDisc.tsx]
+  MobileAudio --> MobileFullscreen[mobile/mobileFullscreenPlayer.tsx]
   FullscreenViz --> VizLoop[visualizers/useCanvasAudioVisualizer.ts]
   FullscreenViz --> SegmentRenderer[visualizers/segmentedBarRenderer.ts]
   DesktopFullscreen --> AlbumPalette[visualizers/albumColorPalette.ts]
@@ -109,18 +113,22 @@ flowchart TD
   RegularViz --> SegmentRenderer
 ```
 
-- `AudioPlayer`는 하단 플레이어 shell과 데스크탑 fullscreen overlay 상태를 소유한다.
-- fullscreen 버튼은 hydration mismatch를 피하기 위해 클라이언트 mount 이후 `matchMedia("(min-width: 768px)")` 결과가 true일 때만 렌더링한다.
-- fullscreen overlay는 페이지를 덮지만 하단 플레이어는 유지한다.
-- fullscreen artwork 영역은 최대 400x400 앨범 이미지와 앨범 기반 CD 요소를 조합한다.
+- `src/widgets/audioPlayer`는 768px 이상에서 데스크탑 `AudioPlayer`, 768px 미만에서 `MobileAudioPlayer`를 렌더링한다.
+- 데스크탑 `AudioPlayer`는 하단 플레이어 shell과 데스크탑 fullscreen overlay 상태를 소유한다.
+- 데스크탑 fullscreen 버튼은 hydration mismatch를 피하기 위해 클라이언트 mount 이후 `matchMedia("(min-width: 768px)")` 결과가 true일 때만 렌더링한다.
+- 데스크탑 fullscreen overlay는 페이지를 덮지만 하단 플레이어는 유지한다. 하단 플레이어의 fullscreen 버튼은 열린 상태에서 다시 누르면 닫는 toggle로 동작한다.
+- 데스크탑 fullscreen artwork 영역은 최대 400x400 앨범 이미지와 앨범 기반 CD 요소를 조합한다.
 - fullscreen visualizer는 `liquid-glass-panel` 내부에서 동작하며, 일반 visualizer와 같은 segmented bar renderer 및 canvas loop를 공유한다.
 - 일반 visualizer는 기존 플레이어 톤을 유지하고, fullscreen visualizer는 `albumColorPalette`가 canvas pixel sampling으로 추출한 앨범 색상을 적용한다.
+- 모바일 mini player는 앨범 이미지, 곡 제목/아티스트, play/pause, 읽기 전용 progress bar만 노출한다.
+- 모바일 mini player를 누르면 모바일 fullscreen player가 열리고, fullscreen에서는 shuffle, prev, play/pause, next, seek, current/duration time을 제어한다.
+- 모바일 fullscreen player는 상단 close bar 클릭 또는 아래 방향 drag-to-dismiss로 닫힌다. 비주얼라이저와 기기 연결 기능은 포함하지 않는다.
 
 ## 7. 데이터 계층
 
 - `src/shared/db/edmmDB.ts`가 Dexie 스키마를 정의한다.
 - `trackCacheRepo`는 Cloudinary/API에서 얻은 `Track` 메타데이터를 캐시하고 상세 패널/최근 목록 복원에 사용한다.
-- `recentPlaysRepo`는 최근 재생 id를 최신순으로 저장하고 중복을 정리한다.
+- `recentPlaysRepo`는 최근 재생 id를 최신순으로 저장하고 중복을 정리하며 최대 10개까지만 유지한다.
 - `favoritesRepo`와 `useFavorites`는 `TrackList`, `LibraryView` 등에서 사용 가능하지만 현재 `MusicShell`의 뷰 전환 축에는 포함되지 않는다.
 
 ## 8. API와 외부 데이터
@@ -138,7 +146,8 @@ flowchart TD
 | `AudioPlayerProvider` 내부 오디오 제어 | 5 | DOM Audio/API와 이벤트 상태를 직접 관리 | 재생/일시정지/seek/volume |
 | `MusicShell` ↔ `useMusicShellTrackSeed` | 4 | 초기 진입, 최근 재생, 딥링크 선택을 조정 | `/search?track=...`, 최근 재생 복원 |
 | `MusicShell` ↔ `trackCacheRepo` | 4 | 최근 목록과 초기 트랙 복구가 캐시에 의존 | Detail 표시, Recent 뷰 |
-| fullscreen player ↔ visualizer/color extraction | 3 | fullscreen overlay가 analyser, artwork pixel sampling, shared renderer를 함께 사용 | fullscreen UI, visualizer 색상 |
+| desktop fullscreen player ↔ visualizer/color extraction | 3 | fullscreen overlay가 analyser, artwork pixel sampling, shared renderer를 함께 사용 | fullscreen UI, visualizer 색상 |
+| mobile player ↔ fullscreen overlay | 3 | mini player와 fullscreen player가 같은 `useAudioPlayer` 상태를 공유 | 모바일 재생 제어, drag close |
 | `TrackDetailAside` ↔ `trackCacheRepo/useAudioPlayer` | 3 | 캐시, fallback, 현재 재생 트랙을 조합 | 상세 패널 메타데이터 |
 | `trackSeedUtils` | 2 | 순수 함수 중심 | 시드 우선순위 규칙 |
 | `trackArtwork` | 2 | artwork fallback 정규화 | 썸네일 일관성 |
@@ -153,6 +162,8 @@ flowchart TD
 - `visibleTracks`가 비동기로 비어 있는 로딩 구간과 실제 빈 결과를 구분한다.
 - fullscreen 버튼처럼 viewport에 의존하는 UI는 서버 렌더에서 조건부 분기하지 않고, 클라이언트 mount 이후 상태로 렌더링 여부를 결정한다.
 - visualizer 구현은 `useCanvasAudioVisualizer`와 `drawSegmentedBars`를 공유하고, 일반/풀스크린별 차이는 컴포넌트 props와 palette 계산으로 제한한다.
+- 모바일 mini player의 progress bar는 읽기 전용이며, seek는 모바일 fullscreen에서만 허용한다.
+- 모바일 전용 UX는 768px 미만으로 제한하고, 768px~1024px 태블릿 구간은 데스크탑 플레이어와 접이식 aside를 사용한다.
 
 ## 11. 현재 보완된 초기 진입 이슈
 
@@ -180,9 +191,13 @@ flowchart TD
 3. `/search?track=<id>`로 들어온 뒤 다른 곡을 재생하면 리스트 selected와 Track Detail이 현재 재생 곡으로 갱신되는지 확인한다.
 4. `/search` 기본 진입에서 첫 visible track이 컨트롤러 대상이 되는지 확인한다.
 5. `Recent` 뷰에서 캐시 트랙을 표시하고, `All`로 전환할 때 보이지 않는 선택 상세가 정리되는지 확인한다.
-6. 데스크탑 row select는 상세 선택만 수행하고, 모바일/태블릿 row select는 즉시 재생하는지 확인한다.
-7. fullscreen 버튼은 768px 이상에서만 보이고, fullscreen overlay에서도 하단 플레이어가 유지되는지 확인한다.
-8. `/track/[id]`가 `/search?track=<id>`로 정규화되는지 확인한다.
+6. 768px 미만 row select는 즉시 재생하고, 768px 이상 row select는 상세 선택만 수행하는지 확인한다.
+7. 모바일에서는 aside와 `Music views` header nav가 사라지고, `bottom-tab-navigation`으로 `All`/`Recent` 전환이 가능한지 확인한다.
+8. 768px~1024px에서 aside 열기/닫기 버튼이 보이고 실제로 접히는지 확인한다.
+9. 데스크탑 fullscreen 버튼은 768px 이상에서만 보이고, 열린 상태에서 같은 버튼으로 닫히는지 확인한다.
+10. 모바일 fullscreen은 mini player에서 열리고, 상단 close bar 클릭과 drag-to-dismiss로 닫히는지 확인한다.
+11. Recent 기록은 10개까지만 유지되는지 확인한다.
+12. `/track/[id]`가 `/search?track=<id>`로 정규화되는지 확인한다.
 
 ## 13. 롤백 포인트
 
@@ -192,3 +207,5 @@ flowchart TD
 - Recent 뷰가 비면 `useRecentPlays` 결과와 `getCachedTracks(ids)` 호출 순서를 확인한다.
 - 재생 자체가 실패하면 `MusicShell`보다 먼저 `AudioPlayerProvider.playTrack`과 오디오 인스턴스 상태를 확인한다.
 - fullscreen 버튼 hydration 문제가 재발하면 `AudioPlayer`의 클라이언트 mount 이후 viewport gating 로직을 확인한다.
+- 모바일 player가 보이지 않으면 `src/widgets/audioPlayer`의 `md` breakpoint 분기와 `MobileAudioPlayer` mount 여부를 확인한다.
+- 모바일 fullscreen drag 닫기가 오작동하면 `mobileFullscreenPlayer.tsx`의 pointer capture, drag threshold, click guard를 확인한다.

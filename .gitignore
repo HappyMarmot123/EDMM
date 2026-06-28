@@ -13,13 +13,15 @@ build
 *.pem
 README.txt
 spotify.http
+test.http
 middleware.ts
 .superpowers/
 .tmp-*
 docs/mockups/
 docs/superpowers/
-.agents/skills/ui-ux-pro-max
-.claude/skills/ui-ux-pro-max
+skills-lock.json
+.agents/
+.claude/
 
 # env files (can opt-in for committing if needed)
 .env*
