@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- Fullscreen artwork receives dynamic CDN hosts. */
 import { type CSSProperties, useEffect } from "react";
 import { Minimize2, Music2 } from "lucide-react";
+import FullscreenAlbumDisc from "@/features/audio/components/fullscreenAlbumDisc";
 import FullscreenAudioVisualizer from "@/features/audio/components/fullscreenAudioVisualizer";
 import { useAlbumColorPalette } from "@/features/audio/components/visualizers/albumColorPalette";
 import type { TrackInfo } from "@/shared/types/dataType";
@@ -49,7 +50,7 @@ export default function DesktopFullscreenPlayer({
     <section
       role="dialog"
       aria-label="Fullscreen player"
-      className="fixed inset-0 z-[60] hidden min-h-dvh overflow-hidden bg-[#050306] text-white lg:block"
+      className="fixed inset-0 z-[60] min-h-dvh overflow-hidden bg-[#050306] text-white"
       style={albumPaletteStyle}
     >
       <div
@@ -133,9 +134,20 @@ export default function DesktopFullscreenPlayer({
         </span>
       </button>
 
-      <div className="relative z-[1] flex min-h-dvh flex-col items-center justify-center px-12 pb-[calc(130px+max(env(safe-area-inset-bottom),12px))] pt-20">
+      <div className="relative z-[1] flex min-h-dvh flex-col items-center px-12 pb-[calc(130px+max(env(safe-area-inset-bottom),12px))] pt-20">
         <div className="grid w-full max-w-[560px] justify-items-center">
-          <div className="relative aspect-square w-[min(42vw,440px)] overflow-hidden rounded-xl bg-white/8 shadow-[0_40px_120px_rgba(0,0,0,0.58)] ring-1 ring-white/12">
+          <div className="relative">
+            <FullscreenAlbumDisc
+              artworkSrc={artworkSrc}
+              trackTitle={trackTitle}
+              isPlaying={isPlaying}
+            />
+            <div
+              className="relative z-[1] aspect-square w-[min(42vw,400px)] overflow-hidden rounded-xl bg-white/8 shadow-[0_40px_120px_rgba(0,0,0,0.58)] ring-1 ring-white/12"
+              style={{
+                clipPath: "polygon(0 0, 100% 0, 70% 100%, 0 100%)",
+              }}
+            >
             {hasArtwork ? (
               <img
                 src={artworkSrc}
@@ -154,6 +166,7 @@ export default function DesktopFullscreenPlayer({
                 <Music2 size={96} strokeWidth={1.4} aria-hidden="true" />
               </div>
             )}
+            </div>
           </div>
         </div>
       </div>

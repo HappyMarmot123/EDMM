@@ -51,6 +51,19 @@ let mockAudioPlayerState: MockAudioPlayerState = {
 
 const mockRouterReplace = jest.fn();
 
+const mockFullscreenViewport = (matches: boolean) => {
+  window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+    matches,
+    media: query,
+    onchange: null,
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  }));
+};
+
 jest.mock("next/navigation", () => ({
   useRouter: () => ({
     replace: mockRouterReplace,
@@ -66,6 +79,7 @@ jest.mock("@/shared/providers/audioPlayerProvider", () => ({
 describe("AudioPlayer", () => {
   beforeEach(() => {
     mockRouterReplace.mockClear();
+    mockFullscreenViewport(true);
     mockAudioPlayerState = {
       currentTrack: track,
       isPlaying: false,
@@ -196,6 +210,19 @@ describe("AudioPlayer", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Exit fullscreen view" }));
 
+    expect(
+      screen.queryByRole("dialog", { name: "Fullscreen player" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not expose fullscreen controls below the 768px viewport", () => {
+    mockFullscreenViewport(false);
+
+    render(<AudioPlayer />);
+
+    expect(
+      screen.queryByRole("button", { name: "Toggle fullscreen view" }),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("dialog", { name: "Fullscreen player" }),
     ).not.toBeInTheDocument();

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import DesktopFullscreenPlayer from "@/features/audio/components/desktopFullscreenPlayer";
 import PlayerTrackDetails, {
   PlayerTrackSummary,
@@ -11,6 +11,49 @@ import PlayerControlsSection, {
 } from "@/features/audio/components/playerControlsSection";
 import AlbumArtwork from "@/features/audio/components/albumArtwork";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
+
+const FULLSCREEN_VIEWPORT_QUERY = "(min-width: 768px)";
+
+function getCanUseFullscreenViewport() {
+  if (
+    typeof window === "undefined" ||
+    typeof window.matchMedia !== "function"
+  ) {
+    return false;
+  }
+
+  return window.matchMedia(FULLSCREEN_VIEWPORT_QUERY).matches;
+}
+
+function useCanUseFullscreenViewport() {
+  const [canUseFullscreen, setCanUseFullscreen] = useState(
+    getCanUseFullscreenViewport,
+  );
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia(FULLSCREEN_VIEWPORT_QUERY);
+    const handleChange = () => setCanUseFullscreen(mediaQuery.matches);
+
+    handleChange();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, []);
+
+  return canUseFullscreen;
+}
 
 export default function AudioPlayer() {
   const router = useRouter();
@@ -27,12 +70,23 @@ export default function AudioPlayer() {
   } =
     useAudioPlayer();
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
+  const canUseFullscreen = useCanUseFullscreenViewport();
   const seekBarContainerRef = useRef<HTMLDivElement>(null);
   const currentProgress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const currentTrackId = currentTrack?.assetId;
 
-  const openFullscreen = useCallback(() => setIsFullscreenOpen(true), []);
+  const openFullscreen = useCallback(() => {
+    if (canUseFullscreen) {
+      setIsFullscreenOpen(true);
+    }
+  }, [canUseFullscreen]);
   const closeFullscreen = useCallback(() => setIsFullscreenOpen(false), []);
+
+  useEffect(() => {
+    if (!canUseFullscreen) {
+      setIsFullscreenOpen(false);
+    }
+  }, [canUseFullscreen]);
 
   const handleTrackZoneClick = () => {
     if (!currentTrackId) {
@@ -60,7 +114,7 @@ export default function AudioPlayer() {
 
   return (
     <>
-      {isFullscreenOpen ? (
+      {isFullscreenOpen && canUseFullscreen ? (
         <DesktopFullscreenPlayer
           currentTrackInfo={currentTrack}
           analyser={audioAnalyser}
@@ -107,6 +161,7 @@ export default function AudioPlayer() {
             <PlayerControlsSection
               currentTrackInfo={currentTrack}
               onFullscreenOpen={openFullscreen}
+              canOpenFullscreen={canUseFullscreen}
             />
             <PlayerTrackDetails
               isPlaying={isPlaying}

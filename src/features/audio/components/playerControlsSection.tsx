@@ -61,7 +61,7 @@ export const PlayerVolumeControls: React.FC = () => {
 
 const PlayerControlsSection: React.FC<
   Omit<PlayerControlsSectionProps, "isMobile">
-> = ({ currentTrackInfo, onFullscreenOpen }) => {
+> = ({ currentTrackInfo, onFullscreenOpen, canOpenFullscreen = false }) => {
   const {
     isPlaying,
     volume,
@@ -209,21 +209,23 @@ const PlayerControlsSection: React.FC<
               aria-hidden="true"
             />
           </PlayerControlButton>
-          <PlayerControlButton
-            id="fullscreen-toggle"
-            onClick={handleFullscreenClick}
-            aria-label="Toggle fullscreen view"
-            title="Fullscreen view"
-            className="ml-auto hidden h-9 w-9 text-white/60 hover:text-white lg:grid"
-          >
-            <Maximize2
-              className="m-auto block transition-colors duration-200 ease-out"
-              width={18}
-              height={18}
-              fill="currentColor"
-              aria-hidden="true"
-            />
-          </PlayerControlButton>
+          {canOpenFullscreen ? (
+            <PlayerControlButton
+              id="fullscreen-toggle"
+              onClick={handleFullscreenClick}
+              aria-label="Toggle fullscreen view"
+              title="Fullscreen view"
+              className="ml-auto grid h-9 w-9 text-white/60 hover:text-white"
+            >
+              <Maximize2
+                className="m-auto block transition-colors duration-200 ease-out"
+                width={18}
+                height={18}
+                fill="currentColor"
+                aria-hidden="true"
+              />
+            </PlayerControlButton>
+          ) : null}
         </div>
       </div>
     </section>
