@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type Track } from "@/entities/Track/model";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
-import { useFavorites } from "@/features/library/hooks/useFavorites";
 import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
 import { getCachedTracks } from "@/shared/db/repositories/trackCacheRepo";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
@@ -35,7 +34,7 @@ type CachedTrackState = {
 const noop: NonNullable<MusicShellProps["onPlay"]> = () => {};
 
 const isMusicView = (view: MusicView | undefined): view is MusicView =>
-  view === "all" || view === "favorites" || view === "recent";
+  view === "all" || view === "recent";
 
 function useCachedTrackList(ids: string[]): CachedTrackState {
   const [state, setState] = useState<CachedTrackState>({
@@ -170,24 +169,16 @@ export function MusicShell({
   );
   const catalogTracks = useMemo(() => cloudinaryData ?? [], [cloudinaryData]);
 
-  const { favoriteIds } = useFavorites();
   const { recentIds } = useRecentPlays();
 
-  const favoriteTrackIds = useMemo(
-    () => dedupeIds(Array.from(favoriteIds)),
-    [favoriteIds],
-  );
   const recentTrackIds = useMemo(() => dedupeIds(recentIds), [recentIds]);
-
-  const favoriteState = useCachedTrackList(favoriteTrackIds);
   const recentState = useCachedTrackList(recentTrackIds);
 
   const visibleTracks = useMemo(() => {
-    if (view === "favorites") return favoriteState.tracks;
     if (view === "recent") return recentState.tracks;
 
     return catalogTracks;
-  }, [catalogTracks, favoriteState.tracks, recentState.tracks, view]);
+  }, [catalogTracks, recentState.tracks, view]);
 
   const visibleTrackIds = useMemo(
     () => new Set(visibleTracks.map((track) => track.id)),
@@ -283,9 +274,7 @@ export function MusicShell({
   const isVisibleLoading =
     view === "all"
       ? isCatalogLoading
-      : view === "favorites"
-        ? favoriteState.isLoading
-        : recentState.isLoading;
+      : recentState.isLoading;
   const isVisibleError = view === "all" ? isCatalogError : false;
   const emptyMessage =
     view === "all"
@@ -303,7 +292,6 @@ export function MusicShell({
             query={query}
             view={view}
             resultCount={catalogTracks.length}
-            favoriteCount={favoriteTrackIds.length}
             recentCount={recentTrackIds.length}
             onQueryChange={setQuery}
             onViewChange={setView}

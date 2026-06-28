@@ -1,14 +1,13 @@
 "use client";
 
-import { Clock3, Heart, Library, Search } from "lucide-react";
+import { Clock3, Library, Search } from "lucide-react";
 
-export type MusicView = "all" | "favorites" | "recent";
+export type MusicView = "all" | "recent";
 
 type MusicShellHeaderProps = {
   query: string;
   view: MusicView;
   resultCount: number;
-  favoriteCount: number;
   recentCount: number;
   onQueryChange: (query: string) => void;
   onViewChange: (view: MusicView) => void;
@@ -20,7 +19,6 @@ const VIEW_OPTIONS: Array<{
   Icon: typeof Library;
 }> = [
   { value: "all", label: "All", Icon: Library },
-  { value: "favorites", label: "Favorites", Icon: Heart },
   { value: "recent", label: "Recent", Icon: Clock3 },
 ];
 
@@ -35,7 +33,6 @@ export function MusicShellHeader({
 }: MusicShellHeaderProps) {
   const counts: Record<MusicView, number> = {
     all: resultCount,
-    favorites: favoriteCount,
     recent: recentCount,
   };
 
