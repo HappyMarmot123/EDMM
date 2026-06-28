@@ -14,21 +14,8 @@ import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 
 const FULLSCREEN_VIEWPORT_QUERY = "(min-width: 768px)";
 
-function getCanUseFullscreenViewport() {
-  if (
-    typeof window === "undefined" ||
-    typeof window.matchMedia !== "function"
-  ) {
-    return false;
-  }
-
-  return window.matchMedia(FULLSCREEN_VIEWPORT_QUERY).matches;
-}
-
 function useCanUseFullscreenViewport() {
-  const [canUseFullscreen, setCanUseFullscreen] = useState(
-    getCanUseFullscreenViewport,
-  );
+  const [canUseFullscreen, setCanUseFullscreen] = useState(false);
 
   useEffect(() => {
     if (

@@ -134,7 +134,7 @@ export default function DesktopFullscreenPlayer({
         </span>
       </button>
 
-      <div className="relative z-[1] flex min-h-dvh flex-col items-center px-12 pb-[calc(130px+max(env(safe-area-inset-bottom),12px))] pt-20">
+      <div className="relative z-[1] flex min-h-dvh flex-col items-center justify-center px-12 pb-[calc(130px+max(env(safe-area-inset-bottom),12px))] pt-20">
         <div className="grid w-full max-w-[560px] justify-items-center">
           <div className="relative">
             <FullscreenAlbumDisc
@@ -145,7 +145,7 @@ export default function DesktopFullscreenPlayer({
             <div
               className="relative z-[1] aspect-square w-[min(42vw,400px)] overflow-hidden rounded-xl bg-white/8 shadow-[0_40px_120px_rgba(0,0,0,0.58)] ring-1 ring-white/12"
               style={{
-                clipPath: "polygon(0 0, 100% 0, 70% 100%, 0 100%)",
+                clipPath: "polygon(0 0, 100% 0, 100% 0, 60% 50%, 100% 100%, 100% 100%, 0 100%)",
               }}
             >
             {hasArtwork ? (
