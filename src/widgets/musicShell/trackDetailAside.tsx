@@ -88,7 +88,7 @@ export function TrackDetailAside({
 
     return {
       id: currentTrack.assetId,
-      source: "cloudinary",
+      source: "cloudinary" as const,
       title: currentTrack.name,
       artistId: "",
       artistName: currentTrack.producer,
@@ -188,7 +188,7 @@ export function TrackDetailAside({
                   <Disc3 size={70} strokeWidth={1.4} />
                 </span>
               ) : null}
-              <span className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/55 to-transparent" />
+              <span className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black to-transparent" />
               <AudioVisualizer
                 analyser={audioAnalyser}
                 isActive={isVisualizerActive}

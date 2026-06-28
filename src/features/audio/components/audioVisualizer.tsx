@@ -1,7 +1,6 @@
-"use client";
+﻿"use client";
 
 import { type CSSProperties, useEffect, useRef } from "react";
-import clsx from "clsx";
 
 export interface AudioVisualizerProps {
   analyser: AnalyserNode | null;
@@ -16,12 +15,17 @@ export interface AudioVisualizerProps {
   inactiveOpacity?: number;
 }
 
-const BASE_CANVAS_HEIGHT = 224;
-const BAR_WIDTH_RATIO = 2.5;
-const BAR_GAP = 3;
-const SEGMENT_VISIBLE_HEIGHT = 6;
-const SEGMENT_GAP_HEIGHT = 1;
-const LOW_FREQUENCY_PUMPING = 0.6;
+const BAR_WIDTH_RATIO = 2.5; // 막대 너비 비율: FFT 구간 하나당 칸의 실제 막대 폭 배율
+const BAR_GAP = 3; // 막대 간 간격(px): 막대 결합도를 조절해 촘촘함/분산감 균형
+const SEGMENT_VISIBLE_HEIGHT = 6; // 세그먼트별 실제 표시 높이(px): 격자형 라인 느낌 강도
+const SEGMENT_GAP_HEIGHT = 1; // 세그먼트 사이 간격(px): 줄무늬를 구분하는 음영 간격
+const BAR_HEIGHT_SAFE_RATIO = 1.7; // 비주얼라이저 막대기 최대 높이(캔버스 높이 비율 기준)
+const SPECTRUM_GAMMA = 1.38; // 오디오 에너지-펌핑 매핑 곡선: 값 크기 반응의 완급 조절
+const LOW_SIDE_ATTENUATION = 0.35; // 저역(좌측) 초반 과도한 펌핑을 줄이는 감쇠 비율
+const HIGH_FREQUENCY_BOOST = 0.55; // 고역(우측) 상대 펌핑 보강값
+const VISUALIZER_DRIVE = 1.22; // 전체 바 증폭량 배율: 글로벌 펌핑 강도
+const VISUALIZER_BASE_RATIO = 0.01; // 무음/저신호일 때도 보이는 최소 높이 비율
+const PEAK_COMPENSATION_POWER = 0.55; // 프레임 피크 기반 자동 게인 보정 민감도
 
 function clampChannel(value: number) {
   return Math.max(0, Math.min(255, Math.round(value)));
@@ -53,12 +57,24 @@ function getPumpedBarHeight(
   value: number,
   index: number,
   bufferLength: number,
-  canvasHeight: number
+  canvasHeight: number,
+  frameGain: number
 ) {
-  const lowFreqBoost = 1 + LOW_FREQUENCY_PUMPING * (1 - index / bufferLength);
-  const responsiveScale = canvasHeight / BASE_CANVAS_HEIGHT;
+  const normalizedIndex =
+    bufferLength > 1 ? index / Math.max(1, bufferLength - 1) : 0;
+  const rawValue = Math.max(0, Math.min(255, value)) / 255;
+  const bassNormalized = Math.pow(normalizedIndex, 1.95);
+  const bandBalance = LOW_SIDE_ATTENUATION + (1 - LOW_SIDE_ATTENUATION) * bassNormalized;
+  const bowCurve = 0.94 + 0.12 * Math.sin(Math.PI * normalizedIndex);
+  const bandWeight =
+    bandBalance * bowCurve + HIGH_FREQUENCY_BOOST * normalizedIndex;
+  const normalizedValue = VISUALIZER_BASE_RATIO
+    + (1 - VISUALIZER_BASE_RATIO) * Math.pow(rawValue, SPECTRUM_GAMMA);
+  const maxBarHeight = Math.max(1, canvasHeight * BAR_HEIGHT_SAFE_RATIO);
+  const normalizedGain = Math.min(1.35, Math.max(0.72, frameGain));
+  const rawHeight = normalizedValue * maxBarHeight * bandWeight * VISUALIZER_DRIVE * normalizedGain;
 
-  return (value / 1.5) * lowFreqBoost * responsiveScale;
+  return Math.min(maxBarHeight, Math.max(0, Math.round(rawHeight)));
 }
 
 function getRoseSpectrumColor(
@@ -160,7 +176,7 @@ export function AudioVisualizer({
       };
     }
 
-    analyser.smoothingTimeConstant = 0.78;
+    analyser.smoothingTimeConstant = 0.72;
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
 
@@ -178,12 +194,20 @@ export function AudioVisualizer({
 
       drawVisualizerBase(context, canvas.width, canvas.height, pixelRatio);
 
+      let framePeak = 1;
+      for (let index = 0; index < bufferLength; index += 1) {
+        framePeak = Math.max(framePeak, dataArray[index]);
+      }
+
+      const frameGain = 0.72 + 0.28 * (1 - Math.pow(framePeak / 255, PEAK_COMPENSATION_POWER));
+
       for (let index = 0; index < bufferLength; index += 1) {
         const barHeight = getPumpedBarHeight(
           dataArray[index],
           index,
           bufferLength,
-          canvas.height
+          canvas.height,
+          frameGain
         );
         context.fillStyle = getRoseSpectrumColor(
           dataArray[index],
@@ -279,3 +303,5 @@ export function AudioVisualizer({
 }
 
 export default AudioVisualizer;
+
+

@@ -9,7 +9,7 @@ import {
   useEffect,
   useRef,
 } from "react";
-import { type StateSnapshot, type VirtuosoHandle, Virtuoso } from "react-virtuoso";
+import { type VirtuosoHandle, Virtuoso } from "react-virtuoso";
 import type { Track } from "@/entities/Track/model";
 import { isPlayable } from "@/entities/Track/model";
 
@@ -61,9 +61,8 @@ export function MusicTrackList({
   scrollToTrackRequest,
   onTrackZoneScrollHandled,
 }: MusicTrackListProps) {
-  const persistedStateRef = useRef<StateSnapshot | null>(null);
   const virtuosoRef = useRef<VirtuosoHandle | null>(null);
-  const scrollerRef = useRef<HTMLElement | null>(null);
+  const scrollerRef = useRef<HTMLElement | Window | null>(null);
 
   useEffect(() => {
     if (!scrollToTrackId || scrollToTrackRequest === undefined) {
@@ -85,9 +84,23 @@ export function MusicTrackList({
 
     const rafId = requestAnimationFrame(() => {
       const escapedTrackId = scrollToTrackId.replace(/"/g, '\\"');
-      const selectedRow = scrollerRef.current?.querySelector<HTMLElement>(
-        `[data-track-row-id="${escapedTrackId}"]`,
-      );
+      const selectedRow = (() => {
+        const currentScroller = scrollerRef.current;
+
+        if (!currentScroller) {
+          return null;
+        }
+
+        if (currentScroller instanceof Window) {
+          return currentScroller.document.querySelector<HTMLElement>(
+            `[data-track-row-id="${escapedTrackId}"]`,
+          );
+        }
+
+        return currentScroller.querySelector<HTMLElement>(
+          `[data-track-row-id="${escapedTrackId}"]`,
+        );
+      })();
 
       if (selectedRow) {
         selectedRow.focus({ preventScroll: true });
@@ -178,12 +191,6 @@ export function MusicTrackList({
         style={{ height: "100%", width: "100%" }}
         components={trackScrollerComponents}
         fixedItemHeight={84}
-        stateChanged={(state: any) => {
-          if (state) {
-            persistedStateRef.current = state;
-          }
-        }}
-        restoreStateFrom={persistedStateRef.current ?? undefined}
         itemContent={(index, track) => {
           const isSelected = selectedTrackId === track.id;
           const isTrackPlayable = isPlayable(track);
@@ -203,7 +210,7 @@ export function MusicTrackList({
               <li
                 role="listitem"
                 className={[
-                  "grid min-h-[68px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md border p-2 transition-colors",
+                  "cursor-pointer grid min-h-[68px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md border p-2 transition-colors",
                   isSelected
                     ? "border-[#ff98a2]/70 bg-[#ff98a2]/13"
                     : "border-transparent bg-white/[0.035] hover:border-white/10 hover:bg-white/[0.06]",
@@ -218,7 +225,7 @@ export function MusicTrackList({
 
                     handleSelect(event, track);
                   }}
-                  className="grid min-w-0 cursor-pointer grid-cols-[30px_48px_minmax(0,1fr)] items-center gap-3 rounded p-1.5 text-left"
+                  className="grid min-w-0 grid-cols-[30px_48px_minmax(0,1fr)] items-center gap-3 rounded p-1.5 text-left"
                 >
                   <span className="text-sm font-black text-white/38">{index + 1}</span>
                   <span
@@ -257,7 +264,7 @@ export function MusicTrackList({
                     onClick={handlePlay}
                     onKeyDown={(event) => event.stopPropagation()}
                     disabled={!isTrackPlayable}
-                    className="grid h-10 w-10 place-items-center rounded-full bg-[#ff98a2] text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb8c0] disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/45"
+                    className="grid h-10 w-10 place-items-center rounded-full bg-[#ff98a2] text-black"
                   >
                     <Play size={18} fill="currentColor" strokeWidth={2.1} />
                   </button>
