@@ -950,6 +950,63 @@ h1 {
   }
 }
 
+@media (min-width: 768px) and (max-width: 1024px) {
+  .music-shell-grid {
+    transition:
+      grid-template-columns 240ms cubic-bezier(0.2, 0, 0, 1),
+      column-gap 220ms ease;
+  }
+
+  .music-shell-grid--aside-open {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+
+  .music-shell-grid--aside-closed {
+    grid-template-columns: minmax(0, 1fr) 0;
+    column-gap: 0;
+  }
+
+  .music-shell-aside-shell {
+    position: relative;
+    overflow: visible;
+  }
+
+  .music-shell-aside__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 8px;
+    right: 0;
+    z-index: 30;
+    transform: translateX(-8px);
+  }
+
+  .music-shell-grid--aside-closed .music-shell-aside__toggle {
+    right: auto;
+    left: -46px;
+    transform: none;
+  }
+
+  .music-shell-aside {
+    overflow: hidden;
+    transition:
+      opacity 180ms ease,
+      transform 220ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .music-shell-aside--closed {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .music-shell-aside--closed .music-shell-aside__content {
+    display: flex;
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
 .glow-button {
   position: relative;
   overflow: hidden;

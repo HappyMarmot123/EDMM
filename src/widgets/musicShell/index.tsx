@@ -32,7 +32,7 @@ type CachedTrackState = {
   isLoading: boolean;
 };
 const noop: NonNullable<MusicShellProps["onPlay"]> = () => {};
-const TRACK_SELECT_PLAYBACK_MEDIA_QUERY = "(pointer: coarse), (max-width: 1023px)";
+const TRACK_SELECT_PLAYBACK_MEDIA_QUERY = "(max-width: 767px)";
 const MOBILE_VIEW_OPTIONS: Array<{ value: MusicView; label: string }> = [
   { value: "all", label: "All" },
   { value: "recent", label: "Recent" },
@@ -388,7 +388,13 @@ export function MusicShell({
     <main
       className="relative flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[#050306] px-4 pb-[calc(148px+max(env(safe-area-inset-bottom),10px))] pt-5 text-white sm:px-6 sm:pb-[calc(156px+max(env(safe-area-inset-bottom),12px))] md:pb-[calc(96px+max(env(safe-area-inset-bottom),12px))] lg:px-8"
     >
-      <section className="music-shell-grid mx-auto grid min-h-0 w-full flex-1 gap-5">
+      <section
+        className={`music-shell-grid mx-auto grid min-h-0 w-full flex-1 gap-5 ${
+          isTrackDetailOpen
+            ? "music-shell-grid--aside-open"
+            : "music-shell-grid--aside-closed"
+        }`}
+      >
         <main className="min-w-0 flex min-h-0 flex-1 flex-col gap-5">
           <MusicShellHeader
             query={query}
