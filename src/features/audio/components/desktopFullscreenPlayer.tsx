@@ -1,7 +1,8 @@
 /* eslint-disable @next/next/no-img-element -- Fullscreen artwork receives dynamic CDN hosts. */
-import { useEffect } from "react";
+import { type CSSProperties, useEffect } from "react";
 import { Minimize2, Music2 } from "lucide-react";
-import AudioVisualizer from "@/features/audio/components/audioVisualizer";
+import FullscreenAudioVisualizer from "@/features/audio/components/fullscreenAudioVisualizer";
+import { useAlbumColorPalette } from "@/features/audio/components/visualizers/albumColorPalette";
 import type { TrackInfo } from "@/shared/types/dataType";
 
 type DesktopFullscreenPlayerProps = {
@@ -20,6 +21,12 @@ export default function DesktopFullscreenPlayer({
   const artworkSrc = currentTrackInfo?.artworkId?.trim() ?? "";
   const trackTitle = currentTrackInfo?.name ?? "No track selected";
   const hasArtwork = Boolean(artworkSrc);
+  const albumPalette = useAlbumColorPalette(artworkSrc);
+  const albumPaletteStyle = {
+    "--album-primary-rgb": albumPalette.primary,
+    "--album-secondary-rgb": albumPalette.secondary,
+    "--album-accent-rgb": albumPalette.accent,
+  } as CSSProperties;
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -43,6 +50,7 @@ export default function DesktopFullscreenPlayer({
       role="dialog"
       aria-label="Fullscreen player"
       className="fixed inset-0 z-[60] hidden min-h-dvh overflow-hidden bg-[#050306] text-white lg:block"
+      style={albumPaletteStyle}
     >
       <div
         aria-hidden="true"
@@ -69,12 +77,18 @@ export default function DesktopFullscreenPlayer({
         <div
           aria-hidden="true"
           className="absolute left-1/2 top-[43%] h-[56vmin] w-[56vmin] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fd6d94]/20 blur-[100px]"
+          style={{
+            background: `rgba(${albumPalette.primary}, 0.20)`,
+          }}
         />
       )}
 
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-[radial-gradient(circle_at_50%_34%,rgba(255,255,255,0.14),rgba(8,8,8,0.42)_30%,rgba(5,3,6,0.90)_74%,rgba(0,0,0,0.98)_100%)]"
+        style={{
+          backgroundImage: `radial-gradient(circle at 50% 34%, rgba(${albumPalette.accent}, 0.16), rgba(${albumPalette.primary}, 0.12) 26%, rgba(5, 3, 6, 0.90) 74%, rgba(0, 0, 0, 0.98) 100%)`,
+        }}
       />
       <div
         aria-hidden="true"
@@ -83,30 +97,28 @@ export default function DesktopFullscreenPlayer({
       <div
         aria-hidden="true"
         className="absolute inset-x-[9vw] bottom-[calc(122px+max(env(safe-area-inset-bottom),12px))] h-36 rounded-full bg-[linear-gradient(90deg,transparent,rgba(253,109,148,0.13),rgba(255,255,255,0.10),rgba(253,109,148,0.12),transparent)] opacity-70 blur-3xl"
+        style={{
+          backgroundImage: `linear-gradient(90deg, transparent, rgba(${albumPalette.secondary}, 0.12), rgba(${albumPalette.accent}, 0.16), rgba(${albumPalette.primary}, 0.12), transparent)`,
+        }}
       />
       <div
         aria-hidden="true"
-        className="absolute inset-x-10 top-8 h-[calc(100%-150px)] rounded-[42px] border border-white/[0.055] bg-white/[0.018] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_60px_160px_rgba(0,0,0,0.24)]"
-      />
-      <div
+        aria-label="liquid-glass-panel"
+        className="liquid-glass-panel absolute inset-x-10 top-8 h-[calc(100%-150px)] overflow-hidden rounded-[42px] border border-white/[0.055] bg-white/[0.018] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_60px_160px_rgba(0,0,0,0.24)]"
+      >
+        <div className="absolute inset-x-[-2.5rem] bottom-0 top-[10%] overflow-hidden">
+          <FullscreenAudioVisualizer
+            analyser={analyser}
+            isActive={isPlaying}
+            isCurrentTrack={Boolean(currentTrackInfo)}
+            palette={albumPalette}
+          />
+        </div>
+      </div>
+      {/* <div
         aria-hidden="true"
         className="absolute inset-0 opacity-[0.10] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:88px_88px]"
-      />
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-0 bottom-[calc(96px+max(env(safe-area-inset-bottom),12px))] top-[34%] overflow-hidden"
-      >
-        <AudioVisualizer
-          analyser={analyser}
-          isActive={isPlaying}
-          isCurrentTrack={Boolean(currentTrackInfo)}
-          showHeader={false}
-          blendMode="screen"
-          activeOpacity={0.34}
-          pausedOpacity={0.14}
-          inactiveOpacity={0.08}
-        />
-      </div>
+      /> */}
 
       <button
         type="button"
@@ -132,7 +144,13 @@ export default function DesktopFullscreenPlayer({
                 draggable={false}
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(253,109,148,0.22),rgba(255,255,255,0.06))] text-[#fd6d94]">
+              <div
+                className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(253,109,148,0.22),rgba(255,255,255,0.06))] text-[#fd6d94]"
+                style={{
+                  backgroundImage: `linear-gradient(135deg, rgba(${albumPalette.primary}, 0.22), rgba(255, 255, 255, 0.06))`,
+                  color: `rgb(${albumPalette.accent})`,
+                }}
+              >
                 <Music2 size={96} strokeWidth={1.4} aria-hidden="true" />
               </div>
             )}

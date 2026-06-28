@@ -186,7 +186,10 @@ describe("AudioPlayer", () => {
 
     expect(screen.getByRole("dialog", { name: "Fullscreen player" })).toBeInTheDocument();
     expect(screen.getByAltText("Track One fullscreen artwork")).toBeInTheDocument();
-    expect(screen.getByTestId("audio-visualizer-canvas")).toBeInTheDocument();
+    expect(screen.getByTestId("fullscreen-audio-visualizer-canvas")).toHaveAttribute(
+      "data-visualizer-renderer",
+      "fullscreen-segmented-bars",
+    );
     expect(screen.getByLabelText("Audio Player")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Track One" })).not.toBeInTheDocument();
     expect(mockAudioPlayerState.togglePlayPause).not.toHaveBeenCalled();
