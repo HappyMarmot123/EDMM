@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -93,7 +93,13 @@ function MissingTrackState({ trackId }: { trackId: string }) {
   );
 }
 
-function TrackArtwork({ track }: { track: Track }) {
+function TrackArtwork({
+  track,
+  children,
+}: {
+  track: Track;
+  children?: ReactNode;
+}) {
   return (
     <div
       className="relative aspect-square overflow-hidden rounded-lg border border-white/10 bg-[#16080f] shadow-[0_30px_80px_rgba(0,0,0,0.38)]"
@@ -112,6 +118,11 @@ function TrackArtwork({ track }: { track: Track }) {
         </span>
       )}
       <span className="absolute inset-x-0 bottom-0 h-24 bg-black/35" />
+      {children ? (
+        <div className="pointer-events-none absolute inset-0 rounded-lg">
+          {children}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -198,7 +209,23 @@ export function TrackDetailView({ trackId, onPlay }: TrackDetailViewProps) {
         </nav>
 
         <section className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-end">
-          <TrackArtwork track={track} />
+          <TrackArtwork
+            track={track}
+            children={
+              <AudioVisualizer
+                analyser={audioAnalyser}
+                isActive={isVisualizerActive}
+                isCurrentTrack={isCurrentTrack}
+                trackTitle={track.title}
+                artistName={track.artistName}
+                showHeader={false}
+                blendMode="screen"
+                activeOpacity={1}
+                pausedOpacity={0.72}
+                inactiveOpacity={0.35}
+              />
+            }
+          />
 
           <div className="min-w-0 space-y-5">
             <div>

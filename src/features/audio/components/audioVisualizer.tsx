@@ -1,15 +1,19 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { type CSSProperties, useEffect, useRef } from "react";
 import clsx from "clsx";
 
 export interface AudioVisualizerProps {
   analyser: AnalyserNode | null;
   isActive: boolean;
-  className?: string;
   trackTitle?: string;
   artistName?: string;
   isCurrentTrack?: boolean;
+  showHeader?: boolean;
+  blendMode?: CSSProperties["mixBlendMode"];
+  activeOpacity?: number;
+  pausedOpacity?: number;
+  inactiveOpacity?: number;
 }
 
 const BASE_CANVAS_HEIGHT = 224;
@@ -102,10 +106,14 @@ function drawVisualizerBase(
 export function AudioVisualizer({
   analyser,
   isActive,
-  className,
   trackTitle,
   artistName,
   isCurrentTrack = false,
+  showHeader = true,
+  blendMode = "normal",
+  activeOpacity = 1,
+  pausedOpacity = 0.5,
+  inactiveOpacity = 0.2,
 }: AudioVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameIdRef = useRef<number | null>(null);
@@ -118,6 +126,11 @@ export function AudioVisualizer({
     : isCurrentTrack
       ? "Paused on this track"
       : "Ready when playback starts";
+  const visualizerOpacity = isActive
+    ? activeOpacity
+    : isCurrentTrack
+      ? pausedOpacity
+      : inactiveOpacity;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -219,44 +232,43 @@ export function AudioVisualizer({
     };
   }, [analyser, isActive]);
 
+  const visualizerTitle = showHeader ? "track-visualizer-title" : undefined;
+
   return (
     <section
-      className={clsx(
-        "relative overflow-hidden rounded-lg border border-[#ff98a2]/20 bg-[#080407] p-4 shadow-[0_22px_70px_rgba(255,152,162,0.09)]",
-        className
-      )}
-      aria-labelledby="track-visualizer-title"
+      className="pointer-events-none absolute inset-x-0 bottom-0 p-4 h-1/2 bg-transparent"
+      aria-label="Audio visualizer"
+      aria-labelledby={visualizerTitle}
+      style={{ opacity: visualizerOpacity, mixBlendMode: blendMode }}
     >
-      <div
-        className="pointer-events-none absolute inset-0 border-t border-[#ffb8c0]/10"
-        aria-hidden="true"
-      />
-      <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-xs font-black uppercase text-[#ffb8c0]">
-            Rose spectrum
-          </p>
-          <h2
-            id="track-visualizer-title"
-            className="text-xl font-black text-white"
+      {showHeader ? (
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase text-[#ffb8c0]">
+              Rose spectrum 
+            </p>
+            <h2
+              id={visualizerTitle}
+              className="text-xl font-black text-white"
+            >
+              Audio visualizer
+            </h2>
+            <p className="mt-1 max-w-sm truncate text-xs font-semibold text-white/48">
+              {trackContext}
+            </p>
+          </div>
+          <p
+            className="rounded-full border border-[#ff98a2]/18 bg-[#ff98a2]/8 px-3 py-1 text-xs font-bold text-white/68"
+            aria-live="polite"
           >
-            Audio visualizer
-          </h2>
-          <p className="mt-1 max-w-sm truncate text-xs font-semibold text-white/48">
-            {trackContext}
+            {statusLabel}
           </p>
         </div>
-        <p
-          className="rounded-full border border-[#ff98a2]/18 bg-[#ff98a2]/8 px-3 py-1 text-xs font-bold text-white/68"
-          aria-live="polite"
-        >
-          {statusLabel}
-        </p>
-      </div>
+      ) : null}
 
       <canvas
         ref={canvasRef}
-        className="block h-64 w-full rounded-md border border-white/[0.06] bg-[#030206] md:h-72"
+        className="h-full w-full bg-transparent"
         data-testid="audio-visualizer-canvas"
         data-visualizer-renderer="legacy-segmented-bars"
         data-visualizer-theme="edmm-rose"

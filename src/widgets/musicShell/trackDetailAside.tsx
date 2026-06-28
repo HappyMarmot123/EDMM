@@ -109,8 +109,7 @@ export function TrackDetailAside({
     if (cachedTrack?.id === selectedTrackId) {
       const cachedArtworkUrl = pickArtworkUrl(
         cachedTrack.artworkUrl,
-        liveTrackFallback?.artworkUrl,
-        fallbackTrack?.artworkUrl,
+        fallbackTrack?.artworkUrl ?? liveTrackFallback?.artworkUrl,
       );
 
       return {
@@ -190,6 +189,18 @@ export function TrackDetailAside({
                 </span>
               ) : null}
               <span className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/55 to-transparent" />
+              <AudioVisualizer
+                analyser={audioAnalyser}
+                isActive={isVisualizerActive}
+                isCurrentTrack={Boolean(isCurrentTrack)}
+                trackTitle={track.title}
+                artistName={track.artistName}
+                showHeader={false}
+                blendMode="screen"
+                activeOpacity={1}
+                pausedOpacity={0.72}
+                inactiveOpacity={0.35}
+              />
             </div>
 
             <div className="min-w-0">
@@ -217,18 +228,7 @@ export function TrackDetailAside({
 
             <dl className="grid gap-2">
               <DetailLine label="Duration" value={formatDuration(track.durationMs)} />
-              <DetailLine label="Album" value={track.albumName ?? "Single"} />
-              <DetailLine label="Source" value={track.source} />
-              <DetailLine label="Track ID" value={track.id} />
             </dl>
-
-            <AudioVisualizer
-              analyser={audioAnalyser}
-              isActive={isVisualizerActive}
-              isCurrentTrack={Boolean(isCurrentTrack)}
-              trackTitle={track.title}
-              artistName={track.artistName}
-            />
           </div>
         ) : null}
       </div>
