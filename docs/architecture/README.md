@@ -1,323 +1,155 @@
-﻿# search 플레이어 아키텍처 (2026-06-27)
+﻿# EDMM 아키텍처 현행 문서
 
-## 1) 런타임 범위
-- 주요 동작 진입점은 `/search`입니다.
-- `/library` 라우트는 제거되었고, 즐겨찾기 화면은 `/search?view=favorites` 쿼리로 접근합니다.
-- 플레이어 관련 동작은 `MusicShell`과 `AudioPlayerProvider` 조합이 담당합니다.
-- `/track/[id]`로 유입되는 트랙 요청은 내부에서 `/search?track=<id>`로 정규화해 처리하는 현재 설계를 유지합니다.
-- 현재 작업 기준으로 초기 결합 지점은 정리되었고, 초기 시드/디테일/재생 동기화는 책임별 분리된 훅/도우미로 관리됩니다.
+기준일: 2026-06-28
 
-## 2) 전체 구조(시스템 + 데이터)
+## 1. 런타임 진입점
+
+- `/`는 `src/app/page.tsx`에서 `src/widgets/landing`을 렌더링한다.
+- `/search`는 현재 음악 탐색과 플레이어 선택의 주 진입점이다.
+- `/search?view=all|recent`만 유효한 검색 뷰로 처리한다. 그 외 값은 `all`로 정규화된다.
+- `/search?track=<trackId>`는 특정 트랙을 초기 선택 대상으로 전달한다.
+- `/track/[id]`는 트랙 상세 페이지를 직접 렌더링하지 않고, id를 디코딩한 뒤 `/search?track=<id>`로 리다이렉트한다.
+- `src/views/library`와 favorites 저장소는 코드에 남아 있지만 현재 `src/app` 아래의 `/library` 라우트에는 연결되어 있지 않다.
+
+## 2. 최상위 구성
 
 ```mermaid
 flowchart TD
-  L[app/layout.tsx] --> P[appProviders.tsx]
-  P --> SP[app/search/page.tsx (Server)]
-  SP --> SC[app/search/searchPageClient.tsx]
-  SC --> PS[audioPlayerShell.tsx]
-  PS --> VL[views/search/index.tsx]
-  VL --> MS[widgets/musicShell/index.tsx]
+  Root[src/app/layout.tsx] --> Providers[src/app/appProviders.tsx]
+  Providers --> Tanstack[TanstackProvider]
+  Providers --> AudioProvider[AudioPlayerProvider]
+  Providers --> ToggleProvider[ToggleProvider]
+  Providers --> PlayerWidget[src/widgets/audioPlayer]
 
+  HomeRoute[src/app/page.tsx] --> Landing[src/widgets/landing]
 
+  SearchRoute[src/app/search/page.tsx] --> SearchClient[src/app/search/searchPageClient.tsx]
+  SearchClient --> AudioShell[src/widgets/audioPlayer/audioPlayerShell.tsx]
+  AudioShell --> SearchView[src/views/search/index.tsx]
+  SearchView --> MusicShell[src/widgets/musicShell/index.tsx]
 
-  TR[app/track/[id]/page.tsx] -->|decode+route| SRV2[/search?track=id]
-  SRV2 --> SP
-
-  MS --> H[musicShellHeader]
-  MS --> ML[musicTrackList]
-  MS --> AD[trackDetailAside]
-  MS --> FV[useFavorites hook]
-  MS --> RP[useRecentPlays hook]
-  MS --> CQ[useCloudinaryTracks]
-  MS --> ST[useMusicShellTrackSeed]
-
-  MS --> APW[audioPlayerShell (onPlay callback)]
-  APW --> AP[AudioPlayerProvider]
-
-  AP --> Store[audioInstanceStore]
-  AP --> Evt[audioEventManager]
-  AP --> Repo[recentPlaysRepo + trackCacheRepo]
+  TrackRoute[src/app/track/[id]/page.tsx] --> Decode[src/app/track/[id]/trackId.ts]
+  Decode --> Redirect[/search?track=id]
 ```
 
-## 3) 현재 모듈 지도
+## 3. Search/MusicShell 구성
 
-- 라우트 레이어
-  - `app/search/page.tsx`, `app/search/searchPageClient.tsx`
-  - `app/track/[id]/page.tsx`
+```mermaid
+flowchart TD
+  MusicShell[src/widgets/musicShell/index.tsx]
+  MusicShell --> Header[musicShellHeader.tsx]
+  MusicShell --> List[musicTrackList.tsx]
+  MusicShell --> Detail[trackDetailAside.tsx]
+  MusicShell --> Seed[useMusicShellTrackSeed.ts]
+  MusicShell --> SeedUtils[trackSeedUtils.ts]
 
-- 기능 레이어
-  - `views/search/index.tsx` (검색 화면 구성)
-  - `features/cloudinary/hooks/useCloudinaryTracks.ts`
-  - `features/library/hooks/useFavorites.ts`
-  - `features/library/hooks/useRecentPlays.ts`
+  MusicShell --> CloudHook[useCloudinaryTracks]
+  MusicShell --> RecentHook[useRecentPlays]
+  MusicShell --> TrackCache[trackCacheRepo]
+  Detail --> TrackCache
+  Detail --> AudioProvider[useAudioPlayer]
+```
 
-- 셸 레이어
-  - `widgets/musicShell/index.tsx` (오케스트레이션 + 시드 상태)
-  - `widgets/musicShell/useMusicShellTrackSeed.ts` (시드 부팅 부수효과 전담)
-  - `widgets/musicShell/trackSeedUtils.ts` (시드 해상도 순수 로직)
-  - `widgets/musicShell/trackDetailAside.tsx` (상세 패널 UI 및 조회)
+- `MusicShellHeader`는 `all`, `recent` 두 뷰만 노출한다.
+- `all` 뷰는 `useCloudinaryTracks(query, { resourceType: "all" })` 결과를 사용한다.
+- `recent` 뷰는 `useRecentPlays()`에서 id 목록을 받고 `getCachedTracks(ids)`로 표시 가능한 트랙을 복원한다.
+- `MusicShell`은 `selectedTrackId`, `selectionSource`, `visibleTracks`, `currentTrackId`를 조합해 리스트 선택과 상세 패널 선택을 동기화한다.
+- `useMusicShellTrackSeed`는 초기 딥링크 트랙과 최근 재생 트랙의 자동 시드 부수효과를 담당한다.
+- `trackSeedUtils`는 선택 트랙, visible match, cache match, first playable fallback 우선순위를 순수 함수로 제공한다.
 
-- 플레이어 레이어
-  - `shared/providers/audioPlayerProvider.tsx`
-  - `app/store/audioInstanceStore.ts`
-  - `shared/lib/audioEventManager.ts`
-  - `shared/lib/audioInstance.ts`
-
-- 데이터 레이어
-  - `shared/db/edmmDB.ts`
-  - `shared/db/repositories/{trackCacheRepo,recentPlaysRepo,favoritesRepo}`
-
-- 미디어 유틸
-  - `features/audio/components/audioVisualizer.tsx`
-  - `shared/lib/util.ts`
-
-- 공통 도우미
-  - `shared/lib/trackArtwork.ts`
-
-## 4) 핵심 데이터/상태 흐름
+## 4. 초기 트랙 시드 흐름
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant User
-  participant MS as MusicShell
+  participant Route as /search page
+  participant Shell as MusicShell
   participant Seed as useMusicShellTrackSeed
-  participant AP as AudioPlayerProvider
-  participant Store as audioInstanceStore
-  participant DB as trackCacheRepo/recentPlaysRepo
-  participant Cloud as useCloudinaryTracks
+  participant Cache as trackCacheRepo
+  participant Player as AudioPlayerProvider
+  participant Detail as TrackDetailAside
 
-  User->>MS: /search 진입(선택적으로 trackId 존재)
-  MS->>Cloud: 카탈로그 조회
-  MS->>Seed: selectionSource + visible tracks 전달
-  Seed->>DB: 필요 시 캐시 트랙 조회
-  Seed->>MS: activateTrackInPlayer(track) 호출
-  MS->>AP: onPlay(track, queue) 전달
-  AP->>Store: audio src/큐/재생상태 반영
-  AP->>DB: cacheTrack(track), addRecentPlay(track.id)
-  Note right of MS: 미디어 DOM 조작은 플레이어 공급자에서만 수행
+  Route->>Shell: initialView, initialTrackId 전달
+  Shell->>Shell: selectionSource = initial 또는 null
+  Shell->>Seed: selectedTrackId, selectedTrack, visibleTracks 전달
+  Seed->>Cache: 필요 시 getCachedTrack(trackId)
+  Seed->>Shell: resolve 성공 시 activateTrackInPlayer(track)
+  Shell->>Player: onPlay(track, queue, false)
+  Shell->>Detail: detailSelectedTrackId, fallbackTrack, isWaitingForSelectionSeed 전달
+  Detail->>Cache: getCachedTrack(selectedTrackId)
 ```
 
-## 5) 결합도 지도(의존 관계)
+현재 `/search?track=...` 첫 진입에서 `visibleTracks`가 아직 비어 있고 캐시도 즉시 준비되지 않은 경우가 있다. 이때 `useMusicShellTrackSeed`는 성급하게 첫 곡 fallback 또는 선택 해제를 하지 않고, visible 데이터가 준비되는 다음 렌더에서 다시 평가한다. `TrackDetailAside`도 이 초기 대기 구간에서는 `Details unavailable` 대신 로딩 상태를 유지한다.
 
-- 높은 결합도
-  - `MusicShell` -> `AudioPlayerProvider` (`onPlay` 콜백)
-    - 부수효과: 오디오 인스턴스 및 제어 상태가 플레이어 셸 바깥에 존재
-  - `MusicShell` -> `trackCacheRepo`, `recentPlaysRepo`
-    - 부수효과: 시드/최근 재생 영속화 경로와 강결합
-  - `TrackDetailAside` -> `AudioPlayerProvider`, `trackCacheRepo`
-    - 부수효과: 상세 패널이 현재 재생 메타데이터 및 캐시를 직접 참조
+## 5. 플레이어 경계
 
-- 중간 결합도
-  - `MusicShell` -> `useFavorites`, `useRecentPlays`
-    - 부수효과: Dexie 라이브 쿼리 변경이 UI 렌더에 직접 반영
-  - `MusicShell` -> `useCloudinaryTracks`
-    - 부수효과: 비동기 로딩/에러 타이밍이 화면 상태와 연동
+- `AudioPlayerShell`은 `useAudioPlayer().playTrack`을 `SearchView`에 콜백으로 전달하는 얇은 어댑터다.
+- 실제 오디오 부수효과는 `AudioPlayerProvider`가 소유한다.
+- `AudioPlayerProvider`는 재생 트랙, 큐, 재생 상태, duration/currentTime, volume/mute, analyser 상태를 관리한다.
+- 트랙 재생 시 `trackCacheRepo.cacheTrack`과 `recentPlaysRepo.addRecentPlay`로 캐시와 최근 재생 목록을 갱신한다.
+- 오디오 인스턴스와 이벤트 리스너 관리는 `audioInstanceStore`, `audioEventManager`, `audioInstance` 계층에 분리되어 있다.
 
-- 낮은 결합도
-  - `trackDetailAside` 내부 `formatDuration` 유틸은 내부 전용
-  - `trackSeedUtils`는 순수 함수 중심
-  - `trackArtwork`는 아트워크 정규화 전용
+## 6. 데이터 계층
 
-## 6) 부수효과 경계(리팩토링 시 반드시 보존)
+- `src/shared/db/edmmDB.ts`가 Dexie 스키마를 정의한다.
+- `trackCacheRepo`는 Cloudinary/API에서 얻은 `Track` 메타데이터를 캐시하고 상세 패널/최근 목록 복원에 사용한다.
+- `recentPlaysRepo`는 최근 재생 id를 최신순으로 저장하고 중복을 정리한다.
+- `favoritesRepo`와 `useFavorites`는 `TrackList`, `LibraryView` 등에서 사용 가능하지만 현재 `MusicShell`의 뷰 전환 축에는 포함되지 않는다.
 
-- 미디어/재생
-  - `audioPlayerProvider.tsx`에서만 실제 오디오 부수효과 수행
-    - 오디오 요소 재할당, 재생/일시정지, seek, resume
-    - `audioEventManager`를 통한 이벤트 리스너 등록/해제
+## 7. API와 외부 데이터
 
-- 저장소/캐시
-  - `trackCacheRepo`: `cacheTrack`, `getCachedTrack`, `getCachedTracks`
-  - `recentPlaysRepo`: `addRecentPlay`
+- `src/app/api/cloudinary/tracks/route.ts`는 통합 트랙 조회 엔드포인트다.
+- `src/app/api/cloudinary/tracks/video/route.ts`와 `image/route.ts`는 리소스 타입별 조회를 담당한다.
+- `useCloudinaryTracks`는 React Query로 API 결과를 가져오고, `resourceType: "all"`일 때 비디오 트랙에 이미지 트랙을 artwork fallback으로 병합한다.
+- 조회된 트랙은 가능한 경우 `trackCacheRepo.cacheTrack`으로 저장된다.
 
-- 라우팅/쿼리
-  - `/track/[id]` 정규화 라우팅 분기(`decode`) + `/search` 쿼리(view/track) 바인딩
+## 8. 결합도와 변경 위험
 
-- UI 효과
-  - `MusicShell`: 상세 열림 상태, 선택 트랙 id, 시드 소스 제어
-  - `TrackDetailAside`: 선택 id 기반으로 캐시 조회 후 렌더
-
-## 7) 현재 위험 지점(사이드이펙트 관점)
-
-- `useMusicShellTrackSeed`가 초기 시드 부팅을 단일 훅에서 수행합니다.
-  - 같은 목적의 중복 `useEffect` 분산을 줄여 재현성/중복 트리거를 낮춤
-- `trackArtwork`로 아트워크 fallback를 통일했습니다.
-  - 상세 패널/플레이어 간 이미지 노출 규칙 충돌 감소
-- 리팩터링 시 `selectionSource` 상태(`initial`/`visible`) 전이를 흔들면 초기 시드가 깨질 수 있으므로 주의
-
-## 8) 리팩터링 가드레일(절대 위반 금지)
-
-- 부수효과는 계층별로 단방향 처리
-  1) 라우팅/필터 상태
-  2) 시드 해상도(순수 함수 + 제어된 비동기 훅)
-  3) 재생 호출(`onPlay`)
-  4) 미디어 부수효과(플레이어 provider only)
-
-- 미디어 제어 코드를 `MusicShell`이나 라우트 컴포넌트로 이동하지 않음
-- 렌더 중 `await` 기반 캐시 조회를 넣지 않음 (`useEffect`/hook + 취소 가드에서만 처리)
-- 상세 선택과 즉시 재생을 분리
-  - 상세 패널은 어떤 항목이든 선택만 가능해야 하며, 즉시 재생은 명시 액션만 수행
-
-## 9) 다음 리팩터링 우선순위
-
-1. 계약 정비
-   - `trackSeedUtils.ts`를 `sync/async` 해상도 함수를 명시적으로 나누고 에러/폴백 규약 문서화
-   - `isPlayable` 검증은 한 지점에서만 수행
-
-2. 상태 흐름 단순화
-   - `selectionSource`와 `seededTrack` 전이를 작은 상태 머신으로 추출해 prop 체인을 축소
-
-3. 복원력 강화
-   - 리스트/상세/플레이어에서 공통으로 쓰는 `getSafeTrack` 유틸 추가
-   - fallback 전략을 통합해 일관된 트랙 표현 보장
-
-4. 추적성 확보
-   - 시드 동작(초기/최근/직접 선택)을 플래그 기반 로그로 제한 노출
-   - 필요 시 디버깅 모드에서만 출력
-
-## 10) 현재 구조의 안전성 근거
-- 초기 시드 로직은 중복된 여러 effect가 아닌 단일 훅으로 고정됨
-- 아트워크 결정 로직이 통합되어 중복 분기 제거
-- 상세 패널과 플레이어가 캐시 우선 전략을 공유해 메타데이터 정합성 향상
-- 라우팅 fallback 경로가 명확히 고정되어 예외 경로가 제한됨
-
-## 11) 현재 상태(요약)
-- `/search` 첫 진입 시 초기 시드 동작: 활성화
-- 리스트 Play 버튼/행 클릭의 기본 재생 흐름: 활성화
-- 트랙 상세/플레이어 동기화: 현재 플로우에서 일치하도록 정비
-- 과거 hydration mismatch 이슈: 현재 흐름에서 방어 포인트 반영
-- build 의존성 문제(dexie 패키지): `package.json` 의존성 정합성 단계에서 추가 정리 필요
-
-## 12) 결합도 정량표(가중치 기반, 1~5)
-
-- 가중치 기준
-  - 5: 상태 변경이 다수 경로로 즉시 퍼짐, 실패 영향이 큼
-  - 4: 변경 시 특정 상위 기능 영향 큼
-  - 3: 단일 기능 경로에 영향
-  - 2: 주변 경계에서만 영향
-  - 1: 독립도 높음
-
-| 항목 | 결합도 점수 | 근거 | 변경 영향 범위 |
+| 영역 | 결합도 | 근거 | 주요 영향 |
 | --- | ---: | --- | --- |
-| `MusicShell` ↔ `AudioPlayerProvider` | 5 | `onPlay`, 시드 전이, 큐 전달이 핵심 경로 | 라우팅/플레이어 UX 전체 |
-| `audioPlayerProvider.tsx` 내부 미디어 제어 | 5 | 오디오 DOM/API를 직접 조작 | 재생/정지/상태 표시 전체 |
-| `MusicShell` ↔ `trackCacheRepo` | 4 | 시드 복구와 캐시 조회 의존 | 초기 시드/재생 실패 시 복구 경로 |
-| `MusicShell` ↔ `recentPlaysRepo` | 4 | 최근 재생 큐 시드 및 내비게이션 힌트 | 최근 목록/초기 진입 분기 |
-| `MusicShell` ↔ `useFavorites`/`useRecentPlays` | 3 | 리스트 뷰 데이터 주입 | favorites/recent 뷰의 정합성 |
-| `TrackDetailAside` ↔ `trackCacheRepo` | 3 | 상세 메타데이터 조회 경로 | 상세 패널 렌더, 썸네일 표시 |
-| `trackSeedUtils` ↔ `MusicShell` | 2 | 순수 함수 기반, 데이터 형식 규약 의존 | 초기 시드 규칙만 |
-| `trackArtwork` ↔ 플레이어/상세 | 2 | 아트워크 정규화 규약 공유 | 썸네일 표시 일치성 |
+| `MusicShell` ↔ `AudioPlayerProvider` | 5 | `onPlay`, 큐, 현재 트랙 상태가 핵심 UX를 결정 | 검색, 상세, 하단 플레이어 |
+| `AudioPlayerProvider` 내부 오디오 제어 | 5 | DOM Audio/API와 이벤트 상태를 직접 관리 | 재생/일시정지/seek/volume |
+| `MusicShell` ↔ `useMusicShellTrackSeed` | 4 | 초기 진입, 최근 재생, 딥링크 선택을 조정 | `/search?track=...`, 최근 재생 복원 |
+| `MusicShell` ↔ `trackCacheRepo` | 4 | 최근 목록과 초기 트랙 복구가 캐시에 의존 | Detail 표시, Recent 뷰 |
+| `TrackDetailAside` ↔ `trackCacheRepo/useAudioPlayer` | 3 | 캐시, fallback, 현재 재생 트랙을 조합 | 상세 패널 메타데이터 |
+| `trackSeedUtils` | 2 | 순수 함수 중심 | 시드 우선순위 규칙 |
+| `trackArtwork` | 2 | artwork fallback 정규화 | 썸네일 일관성 |
 
-## 13) 변경 영향도 매트릭스(권고 순서)
+## 9. 리팩터링 가드레일
 
-1. **낮은 위험 우선 (2~3점)**  
-   - `trackArtwork.ts`, `trackSeedUtils.ts`  
-   - 기대 효과: 이미지/시드 규칙 통일, 부수효과 최소
+- 오디오 DOM/API 조작은 `AudioPlayerProvider` 밖으로 옮기지 않는다.
+- 라우트 컴포넌트는 쿼리 파싱과 초기 prop 전달까지만 담당한다.
+- `MusicShell`은 선택/뷰/시드 상태를 오케스트레이션하되 실제 미디어 부수효과를 직접 수행하지 않는다.
+- 캐시 조회는 렌더 중 실행하지 않고 hook/effect에서 취소 가드와 함께 처리한다.
+- 초기 딥링크 선택(`selectionSource="initial"`)과 사용자의 직접 선택(`selectionSource="visible"`)을 섞지 않는다.
+- `visibleTracks`가 비동기로 비어 있는 로딩 구간과 실제 빈 결과를 구분한다.
 
-2. **중간 위험 (3~4점)**  
-   - `MusicShell`의 시드/선택 분기 정리  
-   - `TrackDetailAside` 캐시 조회 경계 강화  
-   - 기대 효과: 초기 진입 안정성, 상세-플레이어 동기화 보강
+## 10. 현재 보완된 초기 진입 이슈
 
-3. **높은 위험 (5점, 기능 블로킹 주의)**  
-   - `audioPlayerProvider.tsx`  
-   - `MusicShell`↔`AudioPlayerProvider` 인터페이스 정합  
-   - 기대 효과: 핵심 플레이어 동작 전체 개선/회귀 최소화
+문제 경로:
 
-4. **리스크 체크리스트(변경 전/후 필수 확인)**  
-   - `/search` 첫 진입 시 첫 곡 세팅
-   - 목록 Play 버튼 동작
-   - 목록 행 클릭 시 상세 표시 후 재생 전환
-   - 썸네일(상세/플레이어) 동기화
-   - hydration mismatch 경고 없음
-   - 라우팅/쿼리(`/track/[id]`, `/search` view/track) 정상 동작
+- `/search?track=<id>`로 처음 진입한다.
+- `selectedTrackId`는 먼저 세팅되지만 Cloudinary 목록과 IndexedDB 캐시 조회가 아직 완료되지 않았다.
+- 이전 흐름에서는 `visibleTracks=[]`인 순간에 fallback이 먼저 실행되어 선택이 해제되거나 상세 패널이 `Details unavailable`로 전환될 수 있었다.
 
-## 14) 작업별 실패 포인트 / 롤백 포인트
+현재 대응:
 
-### 14-1) `trackArtwork.ts` 변경
+- `useMusicShellTrackSeed`는 `visibleTracks`가 아직 비어 있고 `selectedTrack`도 없으면 초기 fallback을 보류한다.
+- 초기 시드 fingerprint에 visible 준비 상태를 포함해, 목록이 준비된 뒤 같은 `selectedTrackId`를 다시 평가한다.
+- `TrackDetailAside`는 `isWaitingForSelectionSeed`가 true인 동안 오류 UI 대신 로딩 UI를 유지한다.
+- `MusicShell`은 이 대기 상태를 `selectionSource === "initial" && !selectedTrack && isVisibleLoading`일 때만 전달한다.
 
-- 실패 포인트
-  - 캐시/상세/플레이어에서 사용되는 아트워크 우선순위가 뒤바뀌어 썸네일이 깨짐
-  - 빈 문자열(`""`)이 그대로 전달되어 fallback 아이콘만 표시됨
-  - `normalizeArtworkUrl` 로직이 과도하게 공백만 정리해 실제 유효 URL도 제거함
-- 롤백 포인트
-  - `trackArtwork.ts` 변경은 단위로 되돌리기 쉬움
-  - 기존 `cachedTrack.artworkUrl || fallback` 방식으로 즉시 복구
+## 11. 검증 우선순위
 
-### 14-2) `trackSeedUtils.ts` + 시드 규칙 변경
+1. `/search?track=<id>` 첫 진입 중 캐시 미스와 카탈로그 로딩이 겹쳐도 Detail이 선택을 잃지 않는지 확인한다.
+2. `/search` 기본 진입에서 첫 visible track이 컨트롤러 대상이 되는지 확인한다.
+3. `Recent` 뷰에서 캐시 트랙을 표시하고, `All`로 전환할 때 보이지 않는 선택 상세가 정리되는지 확인한다.
+4. 행 클릭은 상세 선택만 수행하고, Play 버튼은 명시적으로 재생을 시작하는지 확인한다.
+5. `/track/[id]`가 `/search?track=<id>`로 정규화되는지 확인한다.
 
-- 실패 포인트
-  - 최근 재생/초기 쿼리(`trackId`) 시드 선택 우선순위 역전
-  - 최근 재생 id가 없을 때 첫 재생 가능 트랙으로 내려가지 않음
-  - 캐시 미스 처리 시 예외가 전파되어 초기 진입에서 아무 곡도 세팅되지 않음
-- 롤백 포인트
-  - `resolveInitialSeedTrackWithCache` / `resolveRecentSeedTrackWithCache` 로직만 분기 전환 가능
-  - 실패 시 `firstPlayableTrack(visibleTracks)` 폴백으로 되돌리면 UI는 즉시 회복
+## 12. 롤백 포인트
 
-### 14-3) `useMusicShellTrackSeed.ts` 변경
-
-- 실패 포인트
-  - `selectionSource` 전환 타이밍이 틀어져 시드가 반복 실행되거나 실행 안 됨
-  - 비동기 캐시 조회 race condition으로 잘못된 곡이 시드됨
-  - `seededTrackRef` 정합성 깨짐으로 최초 세팅 후 영구적으로 재생이 멈춤
-- 롤백 포인트
-  - 훅 단위로 `selectionSource` 분기를 이전 동작으로 되돌릴 수 있음
-  - `resolvedInitialTrackRef`/`resolvedRecentTrackRef` 가드 제거 후 기존 `MusicShell` 인라인 시드 로직으로 되돌리기
-
-### 14-4) `MusicShell/index.tsx` 변경
-
-- 실패 포인트
-    - 현재 재생 상태와 상세 선택 상태가 분리되지 않아 목록 클릭/상세 선택이 서로 덮어쓰기
-  - 라우트 파라미터 기반 초기값(`initialTrackId`) 변경 시 뷰 렌더와 플레이어 큐 불일치
-  - `visibleTracks` 전환 중 선택 트랙이 누락되어 화면에서는 재생 중인 곡과 다른 상세가 보임
-- 롤백 포인트
-  - `onPlay` 래퍼(`activateTrackInPlayer`)만 이전 버전으로 되돌리면 대다수 경로 복구
-  - `selectionSource`와 `selectedTrackId` 관리만 이전 동작으로 임시 고정 가능
-  - 필요 시 리스트 선택만 담당하는 최소 패치로 단계적 롤백
-
-### 14-5) `TrackDetailAside.tsx` 변경
-
-- 실패 포인트
-  - 캐시 조회 시 selected id 불일치로 상세가 빈 화면으로 전환
-  - 로딩 스테이트 미흡으로 `track` 객체가 undefined 상태에서 렌더 분기 오류
-  - 썸네일/재생 버튼이 선택 트랙과 불일치
-- 롤백 포인트
-  - 캐시 조회 fallback 분기(`cachedTrack?.id === selectedTrackId`)만 이전 방식으로 되돌리면 표시 안정화
-  - `selectedTrackId` 기준 렌더 게이트를 보수적으로 처리해 즉시 복구
-
-### 14-6) `audioPlayerProvider.tsx` 변경
-
-- 실패 포인트
-  - `audio.src` 동기화 지연으로 재생이 안 되거나 이전 트랙이 계속 재생
-  - `playTrack`에서 `TrackInfo` 변환 실패 시 큐/현재곡 상태가 깨짐
-  - `cacheTrack`/`addRecentPlay` 에러로 초기 로딩이 멈추는 현상
-- 롤백 포인트
-  - `trackInfo` 변환 + 큐 구성 부분만 이전 구현으로 되돌리는 게 가장 안전한 단일 복구 경로
-  - `audio` 부수효과 블록을 분리하지 못한 경우 바로 이전 커밋 전 상태로 롤백
-  - 필요 시 `playTrack` 진입부에서 즉시 리턴 가드와 동기 fallback만 적용
-
-### 14-7) 라우팅/쿼리 변경
-
-- 실패 포인트
-  - `/track/[id]` decode 분기에서 `view` 파라미터가 유실됨
-  - 쿼리 갱신 타이밍에 따라 첫 시드가 비어 있음
-- 롤백 포인트
-  - 라우팅 전환은 `app/track/[id]/page.tsx` 각각 개별 파일 단위로 되돌릴 수 있음
-  - 쿼리 우선순위 규칙을 임시로 `trackId` > `view` > 기본값으로 고정해 안정 동작 확보
-
-### 14-8) `"/" -> "/search"` 진입 초기화 이슈
-
-- 원인
-  - `"/"` 에서 `"/search"` 이동 시 `initialTrackId`가 비어 있으므로, `MusicShell`가 새 세션처럼 `selectionSource`를 `null`로 두고 최근 트랙/첫 곡 시드를 시도할 가능성이 있음.
-  - 재생 중이어도 링크가 단순 `/search` 고정 경로라면 `SearchPage`가 현재 트랙을 알 수 없음.
-
-- 대응(현재 적용)
-  - 랜딩 Hero/Footer에서 현재 플레이어 `currentTrackId`를 읽어 `/search` 링크에 `track` 쿼리를 붙임.
-    - 예: `/search?track=<assetId>`
-  - `/track/[id]` 및 `/search` 진입에서 `view`/`track` 쿼리 보존 규칙으로 현재 컨텍스트 복구를 유지.
-  - `MusicShell`는 `initialTrackId` 또는 현재 오디오 트랙(`currentTrackId`)를 기반으로 초기 `selectionSource`/`selectedTrackId`를 유지하도록 보정.
-
-- 롤백 포인트
-  - 링크 보존 로직만 되돌리면 즉시 기존 동작으로 복귀 가능
-  - 필요 시 `MusicShell`의 `selectionSource` 초기화 로직만 이전 버전으로 되돌려 비교 검증
-
+- 초기 시드 문제가 생기면 `useMusicShellTrackSeed.ts`의 initial branch부터 확인한다.
+- 상세 패널이 오래 로딩되면 `MusicShell`의 `isWaitingForSelectionSeed` 조건과 `isVisibleLoading` 계산을 확인한다.
+- Recent 뷰가 비면 `useRecentPlays` 결과와 `getCachedTracks(ids)` 호출 순서를 확인한다.
+- 재생 자체가 실패하면 `MusicShell`보다 먼저 `AudioPlayerProvider.playTrack`과 오디오 인스턴스 상태를 확인한다.
