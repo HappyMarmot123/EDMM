@@ -13,6 +13,12 @@ jest.mock("@/features/landing/components/parallax", () => ({
   ),
 }));
 
+jest.mock("@/shared/providers/audioPlayerProvider", () => ({
+  useAudioPlayer: () => ({
+    currentTrack: null,
+  }),
+}));
+
 describe("Landing", () => {
   it("renders the Rose Orbit landing without old visual clutter", () => {
     const { container } = render(<Landing />);

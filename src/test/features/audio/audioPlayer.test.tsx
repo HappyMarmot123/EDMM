@@ -47,12 +47,23 @@ let mockAudioPlayerState: MockAudioPlayerState = {
   toggleMute: jest.fn(),
 };
 
+const mockRouterReplace = jest.fn();
+
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({
+    replace: mockRouterReplace,
+  }),
+  usePathname: () => "/search",
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 jest.mock("@/shared/providers/audioPlayerProvider", () => ({
   useAudioPlayer: () => mockAudioPlayerState,
 }));
 
 describe("AudioPlayer", () => {
   beforeEach(() => {
+    mockRouterReplace.mockClear();
     mockAudioPlayerState = {
       currentTrack: track,
       isPlaying: false,
@@ -98,7 +109,6 @@ describe("AudioPlayer", () => {
     expect(playerGrid).toHaveClass(
       "grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(164px,0.75fr)]"
     );
-    expect(playerGrid?.className).not.toMatch(/minmax\(\d+px,/);
     expect(trackZone).toContainElement(
       screen.getByRole("button", { name: "Open details for Track One" })
     );

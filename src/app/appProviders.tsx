@@ -1,6 +1,7 @@
 "use client";
 
 import type { PropsWithChildren } from "react";
+import { Suspense } from "react";
 import { AudioPlayerProvider } from "@/shared/providers/audioPlayerProvider";
 import { TanstackProvider } from "@/shared/providers/tanstackProvider";
 import { ToggleProvider } from "@/shared/providers/toggleProvider";
@@ -12,7 +13,9 @@ export function AppProviders({ children }: PropsWithChildren) {
       <AudioPlayerProvider>
         <ToggleProvider>
           {children}
-          <AudioPlayerWidget />
+          <Suspense fallback={null}>
+            <AudioPlayerWidget />
+          </Suspense>
         </ToggleProvider>
       </AudioPlayerProvider>
     </TanstackProvider>
