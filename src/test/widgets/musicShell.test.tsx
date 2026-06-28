@@ -196,6 +196,68 @@ describe("MusicShell", () => {
     );
   });
 
+  it("syncs detail selection to a newly playing track after an initial route selection", async () => {
+    const { rerender } = render(
+      <MusicShell initialTrackId="cloudinary:hidden-1" />,
+    );
+
+    expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
+      "Hidden Track",
+    );
+
+    mockUseAudioPlayer.mockReturnValue({
+      ...mockAudioState,
+      currentTrack: {
+        assetId: cloudTracks[1].id,
+        album: cloudTracks[1].albumName,
+        name: cloudTracks[1].title,
+        artworkId: cloudTracks[1].artworkUrl,
+        url: cloudTracks[1].streamUrl ?? "",
+        producer: cloudTracks[1].artistName,
+      },
+    });
+
+    rerender(<MusicShell initialTrackId="cloudinary:hidden-1" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("track-detail-title")).toHaveTextContent(
+        "Cloud Track Two",
+      );
+    });
+  });
+
+  it("rehydrates the initial player queue when catalog tracks load after refresh", async () => {
+    const onPlay = jest.fn();
+    mockUseCloudinaryTracks.mockReturnValue({
+      data: [],
+      isLoading: true,
+      isError: false,
+      refetch: jest.fn(),
+    });
+
+    const { rerender } = render(
+      <MusicShell initialTrackId="cloudinary:all-1" onPlay={onPlay} />,
+    );
+
+    await waitFor(() => {
+      expect(onPlay).toHaveBeenCalledWith(cloudTracks[0], [cloudTracks[0]], false);
+    });
+
+    onPlay.mockClear();
+    mockUseCloudinaryTracks.mockReturnValue({
+      data: cloudTracks,
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+
+    rerender(<MusicShell initialTrackId="cloudinary:all-1" onPlay={onPlay} />);
+
+    await waitFor(() => {
+      expect(onPlay).toHaveBeenCalledWith(cloudTracks[0], cloudTracks, false);
+    });
+  });
+
   it("opens an initial cached track detail even when it is not visible", async () => {
     const deepLinkedTrack = track("cloudinary:asset-1", "Route Selected Track");
     mockGetCachedTrack.mockImplementation(async (trackId: string) =>

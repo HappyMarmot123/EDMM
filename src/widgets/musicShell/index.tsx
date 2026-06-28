@@ -124,6 +124,12 @@ export function MusicShell({
   const [isTrackDetailOpen, setIsTrackDetailOpen] = useState(true);
   const { currentTrack, isPlaying } = useAudioPlayer();
   const currentTrackId = currentTrack?.assetId ?? null;
+  const appliedInitialTrackIdRef = useRef<string | null>(
+    normalizedInitialTrackId,
+  );
+  const ignoredInitialCurrentTrackIdRef = useRef<string | null>(
+    normalizedInitialTrackId ? currentTrackId : null,
+  );
   const isCurrentTrackPlaying = Boolean(currentTrackId && isPlaying);
   const shouldPlayOnTrackSelect = useTrackSelectPlaybackMode();
 
@@ -197,13 +203,30 @@ export function MusicShell({
   );
 
   useEffect(() => {
-    if (normalizedInitialTrackId) {
+    if (
+      normalizedInitialTrackId &&
+      appliedInitialTrackIdRef.current !== normalizedInitialTrackId
+    ) {
+      appliedInitialTrackIdRef.current = normalizedInitialTrackId;
+      ignoredInitialCurrentTrackIdRef.current = currentTrackId;
       setSelectedTrackId(normalizedInitialTrackId);
       setSelectionSource("initial");
       return;
     }
 
     if (currentTrackId) {
+      const shouldKeepInitialSelection =
+        Boolean(normalizedInitialTrackId) &&
+        appliedInitialTrackIdRef.current === normalizedInitialTrackId &&
+        selectedTrackId === normalizedInitialTrackId &&
+        selectionSource === "initial" &&
+        ignoredInitialCurrentTrackIdRef.current === currentTrackId &&
+        currentTrackId !== normalizedInitialTrackId;
+
+      if (shouldKeepInitialSelection) {
+        return;
+      }
+
       const nextSelectionSource =
         selectionSource === "initial" && selectedTrackId === currentTrackId
           ? "initial"
@@ -217,6 +240,13 @@ export function MusicShell({
       setSelectionSource(nextSelectionSource);
       return;
     }
+
+    if (normalizedInitialTrackId) {
+      return;
+    }
+
+    appliedInitialTrackIdRef.current = null;
+    ignoredInitialCurrentTrackIdRef.current = null;
 
     if (selectedTrackId) {
       return;
@@ -274,8 +304,9 @@ export function MusicShell({
     [visibleTracks],
   );
 
-  const buildTrackSeedFingerprint = useCallback((track: Track) => {
-    return `${track.id}|${normalizeArtworkUrl(track.artworkUrl)}`;
+  const buildTrackSeedFingerprint = useCallback((track: Track, queue: Track[]) => {
+    const queueFingerprint = queue.map((queuedTrack) => queuedTrack.id).join(",");
+    return `${track.id}|${normalizeArtworkUrl(track.artworkUrl)}|${queueFingerprint}`;
   }, []);
 
   const activateTrackInPlayer = useCallback(
@@ -285,12 +316,11 @@ export function MusicShell({
       source: SelectionSource = "visible",
       queueOverride?: Track[],
     ) => {
-      const seedFingerprint = buildTrackSeedFingerprint(track);
+      const queue = queueOverride ?? queueForTrack(track);
+      const seedFingerprint = buildTrackSeedFingerprint(track, queue);
       if (!playImmediately && seededTrackIdRef.current === seedFingerprint) {
         return;
       }
-
-      const queue = queueOverride ?? queueForTrack(track);
 
       seededTrackIdRef.current = seedFingerprint;
       onPlay(track, queue, playImmediately);
