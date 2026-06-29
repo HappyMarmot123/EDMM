@@ -1,4 +1,4 @@
-import type { Track } from "@/entities/Track/model";
+import type { Track } from "@/entities/track/model";
 
 type CloudinaryContext = {
   custom?: Record<string, string | undefined>;
@@ -66,12 +66,17 @@ export function adaptCloudinaryTrack(resource: CloudinaryResource): Track {
   const context = resource.context as Record<string, unknown> | undefined;
   const metadataContext = asRecord(metadata?.context);
   const contextCustom = asRecord(context?.custom);
-
-  const title =
-    readStringFromRecords(
+  const caption = readStringFromRecords(
     [custom, context, contextCustom, metadataContext, metadata],
     ["caption"],
-  ) ??
+  );
+
+  const title =
+    caption ??
+    readStringFromRecords(
+      [custom, context, contextCustom, metadataContext, metadata],
+      ["title", "name", "display_name", "displayName"],
+    ) ??
     basename(resource.public_id);
   const artistName =
     readStringFromRecords(
@@ -138,6 +143,7 @@ export function adaptCloudinaryTrack(resource: CloudinaryResource): Track {
       bytes: resource.bytes,
       createdAt: resource.created_at,
       tags: resource.tags ?? [],
+      caption,
       context: resource.context,
       cloudinaryMetadata: resource.metadata,
     },

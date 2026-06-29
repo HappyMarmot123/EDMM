@@ -27,11 +27,11 @@ describe("Landing", () => {
     expect(screen.getByTestId("rose-space-background")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "EDMM" })).toBeInTheDocument();
     expect(
-      screen.getByText("Electronic dance music in rose orbit")
+      screen.getByText("Electronic dance music")
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("Rose Orbit / Midnight signal / Dance floor")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Tech House")).toBeInTheDocument();
+    expect(screen.getByText("Bass House")).toBeInTheDocument();
+    expect(screen.getByText("Future House")).toBeInTheDocument();
     expect(screen.getByTestId("rose-cobe-orbit")).toBeInTheDocument();
     expect(screen.getByTestId("rose-cobe-canvas")).toBeInTheDocument();
     expect(screen.queryByTestId("rose-hero-orbit")).not.toBeInTheDocument();
@@ -46,7 +46,7 @@ describe("Landing", () => {
     expect(screen.getAllByTestId("parallax")).toHaveLength(2);
     expect(container.querySelector(".rose-followup__links")).toBeNull();
     expect(screen.getByTestId("rose-footer")).toBeInTheDocument();
-    expect(screen.getByText("EDMM / Rose Orbit")).toBeInTheDocument();
+    expect(screen.getByText("@2026 EDMM / Made by Lucas")).toBeInTheDocument();
     expect(screen.queryByText("EDM Marmot")).not.toBeInTheDocument();
   });
 });

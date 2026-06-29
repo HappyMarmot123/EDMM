@@ -1,4 +1,4 @@
-import type { Track } from "@/entities/Track/model";
+import type { Track } from "@/entities/track/model";
 import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
 
 export const normalizeArtworkUrl = (value: string | undefined | null): string => {

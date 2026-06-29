@@ -1,4 +1,4 @@
-import type { Track } from "@/entities/Track/model";
+import type { Track } from "@/entities/track/model";
 import { db } from "../../edmmDB";
 import {
   cacheTrack,
@@ -61,5 +61,34 @@ describe("trackCacheRepo", () => {
       trackB,
       trackA,
     ]);
+  });
+
+  it("returns undefined when reading a cached track fails", async () => {
+    jest
+      .spyOn(db.trackCache, "get")
+      .mockRejectedValueOnce(new Error("IndexedDB unavailable"));
+
+    await expect(getCachedTrack("track-1")).resolves.toBeUndefined();
+  });
+
+  it("returns an empty list when reading cached tracks fails", async () => {
+    jest
+      .spyOn(db.trackCache, "bulkGet")
+      .mockRejectedValueOnce(new Error("IndexedDB unavailable"));
+
+    await expect(getCachedTracks(["track-1"])).resolves.toEqual([]);
+  });
+
+  it("does not reject when writing a cached track fails", async () => {
+    jest.spyOn(console, "warn").mockImplementation(() => {});
+    jest
+      .spyOn(db.trackCache, "put")
+      .mockRejectedValueOnce(new Error("Quota exceeded"));
+
+    await expect(cacheTrack(makeTrack())).resolves.toBeUndefined();
+    expect(console.warn).toHaveBeenCalledWith(
+      "Failed to cache track:",
+      expect.any(Error),
+    );
   });
 });

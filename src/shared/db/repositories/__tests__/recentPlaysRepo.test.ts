@@ -38,4 +38,27 @@ describe("recentPlaysRepo", () => {
       Array.from({ length: 10 }, (_, index) => `track-${54 - index}`)
     );
   });
+
+  it("returns an empty list when reading recent plays fails", async () => {
+    jest
+      .spyOn(db.recentPlays, "orderBy")
+      .mockImplementationOnce(() => {
+        throw new Error("IndexedDB unavailable");
+      });
+
+    await expect(getRecentPlays()).resolves.toEqual([]);
+  });
+
+  it("does not reject when recording a recent play fails", async () => {
+    jest.spyOn(console, "warn").mockImplementation(() => {});
+    jest
+      .spyOn(db, "transaction")
+      .mockRejectedValueOnce(new Error("Quota exceeded"));
+
+    await expect(addRecentPlay("track-1")).resolves.toBeUndefined();
+    expect(console.warn).toHaveBeenCalledWith(
+      "Failed to record recent play:",
+      expect.any(Error),
+    );
+  });
 });

@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { Track } from "@/entities/Track/model";
+import { Track } from "@/entities/track/model";
 import { useFavorites } from "@/features/library/hooks/useFavorites";
 import { TrackList } from "@/widgets/trackList";
 
