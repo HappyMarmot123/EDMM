@@ -12,12 +12,29 @@ interface WindowWithWebKitAudioContext extends Window {
   webkitAudioContext?: typeof AudioContext;
 }
 
+export type AudioCapabilities = {
+  audioElementAvailable: boolean;
+  audioContextAvailable: boolean;
+  analyserAvailable: boolean;
+  initializationError: string | null;
+};
+
+const DEFAULT_AUDIO_CAPABILITIES: AudioCapabilities = {
+  audioElementAvailable: false,
+  audioContextAvailable: false,
+  analyserAvailable: false,
+  initializationError: null,
+};
+
 class AudioSingletonInstance {
   private static instance: AudioSingletonInstance | null = null;
   public audio: HTMLAudioElement | null = null;
   public audioContext: AudioContext | null = null;
   public analyser: AnalyserNode | null = null;
   public source: MediaElementAudioSourceNode | null = null;
+  public audioCapabilities: AudioCapabilities = {
+    ...DEFAULT_AUDIO_CAPABILITIES,
+  };
 
   private constructor() {
     // Browser only
@@ -26,6 +43,7 @@ class AudioSingletonInstance {
       this.audio.crossOrigin = "anonymous";
       this.audio.src = "";
       this.audio.loop = false;
+      this.audioCapabilities.audioElementAvailable = true;
       console.log("HTMLAudioElement instance created");
 
       const Globalwindow = window as WindowWithWebKitAudioContext;
@@ -33,25 +51,50 @@ class AudioSingletonInstance {
         window.AudioContext || Globalwindow.webkitAudioContext;
 
       if (AudioContextConstructor) {
-        this.audioContext = new AudioContextConstructor();
+        try {
+          this.audioContext = new AudioContextConstructor();
+          this.audioCapabilities.audioContextAvailable = true;
+        } catch (error) {
+          this.audioCapabilities.initializationError =
+            error instanceof Error ? error.message : "AudioContext initialization failed";
+          console.error(
+            "AudioSingletonInstance: AudioContext failed to initialize.",
+            error,
+          );
+        }
 
-        if (this.audio) {
-          this.analyser = this.audioContext.createAnalyser();
-          this.source = this.audioContext.createMediaElementSource(this.audio);
-          this.source.connect(this.analyser);
-          this.analyser.connect(this.audioContext.destination);
-          this.analyser.fftSize = 512;
+        if (this.audio && this.audioContext) {
+          try {
+            this.analyser = this.audioContext.createAnalyser();
+            this.source = this.audioContext.createMediaElementSource(this.audio);
+            this.source.connect(this.analyser);
+            this.analyser.connect(this.audioContext.destination);
+            this.analyser.fftSize = 512;
+            this.audioCapabilities.analyserAvailable = true;
 
-          console.log("Web Audio API components initialized");
+            console.log("Web Audio API components initialized");
+          } catch (error) {
+            this.analyser = null;
+            this.source = null;
+            this.audioCapabilities.analyserAvailable = false;
+            this.audioCapabilities.initializationError =
+              error instanceof Error ? error.message : "Audio analyser initialization failed";
+            console.error(
+              "AudioSingletonInstance: Web Audio analyser failed to initialize.",
+              error,
+            );
+          }
         } else {
           console.error("HTMLAudioElement failed to initialize");
         }
       } else {
+        this.audioCapabilities.initializationError = "AudioContext not supported";
         console.error(
           "AudioSingletonInstance: AudioContext not supported in this environment."
         );
       }
     } else {
+      this.audioCapabilities.initializationError = "Not in a browser environment";
       console.error("AudioSingletonInstance: not in a browser environment.");
     }
   }
@@ -116,6 +159,18 @@ export const getAnalyser = () => {
   if (typeof window === "undefined") return null;
   const instance = AudioSingletonInstance.getInstance();
   return instance.analyser;
+};
+
+export const getAudioCapabilities = (): AudioCapabilities => {
+  if (typeof window === "undefined") {
+    return {
+      ...DEFAULT_AUDIO_CAPABILITIES,
+      initializationError: "Not in a browser environment",
+    };
+  }
+
+  const instance = AudioSingletonInstance.getInstance();
+  return { ...instance.audioCapabilities };
 };
 
 export const cleanupAudioInstance = (): void => {

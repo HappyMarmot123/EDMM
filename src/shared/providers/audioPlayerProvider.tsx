@@ -1,7 +1,7 @@
 "use client";
 
-import type { Track } from "@/entities/Track/model";
-import { isPlayable } from "@/entities/Track/model";
+import type { Track } from "@/entities/track/model";
+import { isPlayable } from "@/entities/track/model";
 import useAudioInstanceStore from "@/app/store/audioInstanceStore";
 import { cacheTrack, getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
 import { addRecentPlay } from "@/shared/db/repositories/recentPlaysRepo";
@@ -10,6 +10,7 @@ import { normalizeArtworkUrl, resolveArtworkUrlWithCache } from "@/shared/lib/tr
 import { setupAudioEventListeners } from "@/shared/lib/audioEventManager";
 import {
   AudioPlayerLogicReturnType,
+  PlaybackError,
   TrackInfo,
 } from "@/shared/types/dataType";
 import {
@@ -35,10 +36,29 @@ const toTrackInfo = (track: Track, artworkId?: string): TrackInfo => ({
   producer: track.artistName,
 });
 
+const classifyPlaybackError = (
+  error: unknown,
+  fallback: NonNullable<PlaybackError>,
+): NonNullable<PlaybackError> => {
+  if (error instanceof DOMException) {
+    if (error.name === "NotAllowedError") {
+      return "autoplay-blocked";
+    }
+    if (error.name === "NotSupportedError") {
+      return "source-load-failed";
+    }
+  }
+
+  return fallback;
+};
+
 function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
   const audio = useAudioInstanceStore((state) => state.audioInstance);
   const audioContext = useAudioInstanceStore((state) => state.audioContext);
   const audioAnalyser = useAudioInstanceStore((state) => state.audioAnalyser);
+  const audioCapabilities = useAudioInstanceStore(
+    (state) => state.audioCapabilities
+  );
   const cleanAudioInstance = useAudioInstanceStore(
     (state) => state.cleanAudioInstance
   );
@@ -58,6 +78,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
   const [volume, setVolumeState] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [isShuffleEnabled, setIsShuffleEnabled] = useState(false);
+  const [playbackError, setPlaybackError] = useState<PlaybackError>(null);
   const [playbackQueue, setPlaybackQueue] = useState<TrackInfo[]>([]);
   const activeQueue = useMemo(
     () => (playbackQueue.length > 0 ? playbackQueue : queue),
@@ -375,7 +396,11 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
         if (audioContext?.state === "suspended") {
           try {
             await audioContext.resume();
+            setPlaybackError(null);
           } catch (error) {
+            setPlaybackError(
+              classifyPlaybackError(error, "unsupported-audio-context"),
+            );
             console.warn("Error resuming audio context:", error);
           }
         }
@@ -493,7 +518,16 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
     if (!currentTrack?.url) return;
 
     if (audioContext?.state === "suspended") {
-      await audioContext.resume();
+      try {
+        await audioContext.resume();
+        setPlaybackError(null);
+      } catch (error) {
+        setPlaybackError(
+          classifyPlaybackError(error, "unsupported-audio-context"),
+        );
+        setIsPlaying(false);
+        return;
+      }
     }
 
     setIsPlaying((playing) => !playing);
@@ -535,12 +569,19 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       audioContext
         .resume()
         .catch((error) => {
+          setPlaybackError(
+            classifyPlaybackError(error, "unsupported-audio-context"),
+          );
           console.warn("Error resuming audio context:", error);
         })
         .finally(() => {
           void audio
             .play()
+            .then(() => setPlaybackError(null))
             .catch((error) => {
+              setPlaybackError(
+                classifyPlaybackError(error, "source-load-failed"),
+              );
               console.warn("Error playing audio:", error);
               setIsPlaying(false);
             });
@@ -548,7 +589,8 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       return;
     }
 
-    void audio.play().catch((error) => {
+    void audio.play().then(() => setPlaybackError(null)).catch((error) => {
+      setPlaybackError(classifyPlaybackError(error, "source-load-failed"));
       console.warn("Error playing audio:", error);
       setIsPlaying(false);
     });
@@ -588,7 +630,9 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       audioInstance: audio,
       audioContext,
       audioAnalyser,
+      audioCapabilities,
       cleanAudioInstance,
+      playbackError,
       setTrack,
       playTrack,
       handleSelectTrack,
@@ -609,6 +653,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
     [
       audio,
       audioAnalyser,
+      audioCapabilities,
       audioContext,
       cleanAudioInstance,
       currentTime,
@@ -620,6 +665,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       isPlaying,
       isShuffleEnabled,
       nextTrack,
+      playbackError,
       playTrack,
       prevTrack,
       seek,
