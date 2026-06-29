@@ -61,14 +61,27 @@ export function useCanvasAudioVisualizer({
     if (!context) return;
 
     const pixelRatioRef = { current: syncCanvasSize(canvas) };
+    const syncSize = () => {
+      pixelRatioRef.current = syncCanvasSize(canvas);
+    };
     const resizeObserver =
       typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(() => {
-            pixelRatioRef.current = syncCanvasSize(canvas);
-          })
+        ? new ResizeObserver(syncSize)
         : null;
 
-    resizeObserver?.observe(canvas);
+    if (resizeObserver) {
+      resizeObserver.observe(canvas);
+    } else {
+      window.addEventListener("resize", syncSize);
+    }
+
+    const cleanupResize = () => {
+      resizeObserver?.disconnect();
+      if (!resizeObserver) {
+        window.removeEventListener("resize", syncSize);
+      }
+    };
+
     context.clearRect(0, 0, canvas.width, canvas.height);
 
     if (!analyser || !isActive) {
@@ -79,7 +92,7 @@ export function useCanvasAudioVisualizer({
       });
 
       return () => {
-        resizeObserver?.disconnect();
+        cleanupResize();
         if (animationFrameIdRef.current) {
           cancelAnimationFrame(animationFrameIdRef.current);
           animationFrameIdRef.current = null;
@@ -105,7 +118,7 @@ export function useCanvasAudioVisualizer({
     draw();
 
     return () => {
-      resizeObserver?.disconnect();
+      cleanupResize();
       if (animationFrameIdRef.current) {
         cancelAnimationFrame(animationFrameIdRef.current);
         animationFrameIdRef.current = null;

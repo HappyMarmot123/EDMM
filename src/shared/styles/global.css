@@ -176,6 +176,7 @@ h1 {
   position: relative;
   width: 100%;
   max-width: 100%;
+  min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
   color: var(--space-text);
@@ -196,6 +197,7 @@ h1 {
 }
 
 .rose-hero {
+  min-height: 92vh;
   min-height: 92dvh;
   display: flex;
   align-items: center;
@@ -638,6 +640,7 @@ h1 {
   display: grid;
   grid-template-columns: 1fr;
   gap: 18px;
+  border-top: 1px solid rgba(255, 152, 162, 0.14);
   padding: 34px clamp(20px, 6vw, 96px)
     calc(140px + max(env(safe-area-inset-bottom), 12px));
   color: rgba(255, 247, 251, 0.72);

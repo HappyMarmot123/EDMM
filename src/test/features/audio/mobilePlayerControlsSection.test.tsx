@@ -21,12 +21,12 @@ const track: TrackInfo = {
 };
 
 describe("MPlayerControlsSection", () => {
-  it("uses the shared player-controls container id on mobile", () => {
+  it("uses the mobile player-controls container id", () => {
     render(<MPlayerControlsSection currentTrackInfo={track} />);
 
     expect(screen.getByLabelText("Track One controls")).toHaveAttribute(
       "id",
-      "player-controls"
+      "player-controls-mobile"
     );
   });
 });

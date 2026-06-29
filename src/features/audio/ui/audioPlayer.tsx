@@ -11,35 +11,12 @@ import PlayerControlsSection, {
 } from "@/features/audio/components/playerControlsSection";
 import AlbumArtwork from "@/features/audio/components/albumArtwork";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
+import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 
 const FULLSCREEN_VIEWPORT_QUERY = "(min-width: 768px)";
 
 function useCanUseFullscreenViewport() {
-  const [canUseFullscreen, setCanUseFullscreen] = useState(false);
-
-  useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      typeof window.matchMedia !== "function"
-    ) {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia(FULLSCREEN_VIEWPORT_QUERY);
-    const handleChange = () => setCanUseFullscreen(mediaQuery.matches);
-
-    handleChange();
-
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", handleChange);
-      return () => mediaQuery.removeEventListener("change", handleChange);
-    }
-
-    mediaQuery.addListener(handleChange);
-    return () => mediaQuery.removeListener(handleChange);
-  }, []);
-
-  return canUseFullscreen;
+  return useMediaQuery(FULLSCREEN_VIEWPORT_QUERY, false);
 }
 
 export default function AudioPlayer() {

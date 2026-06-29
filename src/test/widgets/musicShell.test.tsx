@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { Track } from "@/entities/Track/model";
+import type { Track } from "@/entities/track/model";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
 import {
@@ -26,7 +26,7 @@ jest.mock("react-virtuoso", () => ({
       </div>
     );
   },
-}));
+}), { virtual: true });
 
 jest.mock("@/features/cloudinary/hooks/useCloudinaryTracks");
 jest.mock("@/features/library/hooks/useRecentPlays");
@@ -100,6 +100,12 @@ const mockAudioState = {
   audioAnalyser: null,
 };
 
+const getDesktopViewButton = (name: string) =>
+  within(screen.getByRole("navigation", { name: "Music views" })).getByRole(
+    "button",
+    { name },
+  );
+
 describe("MusicShell", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -120,11 +126,17 @@ describe("MusicShell", () => {
   });
 
   it("renders the EDMM catalog heading and loads blank-query Cloudinary tracks", () => {
-    render(<MusicShell />);
+    const { container } = render(<MusicShell />);
 
     expect(
       screen.getByRole("heading", { name: "EDMM" }),
     ).toBeInTheDocument();
+    expect(container.querySelector("main.relative")).toHaveClass(
+      "h-screen",
+      "h-[100dvh]",
+      "max-h-screen",
+      "max-h-[100dvh]",
+    );
     expect(mockUseCloudinaryTracks).toHaveBeenLastCalledWith("", { resourceType: "all" });
     expect(screen.getByRole("button", { name: "Select Cloud Track One" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Select Cloud Track Two" })).toBeInTheDocument();
@@ -150,7 +162,7 @@ describe("MusicShell", () => {
     mockGetCachedTracks.mockResolvedValue([recentTrack]);
 
     render(<MusicShell />);
-    fireEvent.click(screen.getByRole("button", { name: "Recent" }));
+    fireEvent.click(getDesktopViewButton("Recent"));
 
     expect(mockGetCachedTracks).toHaveBeenCalledWith(["cloudinary:recent-1"]);
     expect(
@@ -166,7 +178,7 @@ describe("MusicShell", () => {
 
     render(<MusicShell initialView="recent" />);
 
-    expect(screen.getByRole("button", { name: "Recent" })).toHaveAttribute(
+    expect(getDesktopViewButton("Recent")).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -347,7 +359,7 @@ describe("MusicShell", () => {
     mockGetCachedTracks.mockResolvedValue([recentTrack]);
 
     render(<MusicShell />);
-    fireEvent.click(screen.getByRole("button", { name: "Recent" }));
+    fireEvent.click(getDesktopViewButton("Recent"));
     fireEvent.click(
       await screen.findByRole("button", { name: "Select Recent Track" }),
     );
@@ -356,7 +368,7 @@ describe("MusicShell", () => {
       "Recent Track",
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    fireEvent.click(getDesktopViewButton("All"));
     await waitFor(() => {
       expect(screen.queryByTestId("track-detail-title")).not.toBeInTheDocument();
     });

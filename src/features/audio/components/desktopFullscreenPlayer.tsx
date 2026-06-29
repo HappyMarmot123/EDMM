@@ -50,7 +50,7 @@ export default function DesktopFullscreenPlayer({
     <section
       role="dialog"
       aria-label="Fullscreen player"
-      className="fixed inset-0 z-[60] min-h-dvh overflow-hidden bg-[#050306] text-white"
+      className="fixed inset-0 z-[60] min-h-screen min-h-dvh overflow-hidden bg-[#050306] text-white"
       style={albumPaletteStyle}
     >
       <div
@@ -134,7 +134,7 @@ export default function DesktopFullscreenPlayer({
         </span>
       </button>
 
-      <div className="relative z-[1] flex min-h-dvh flex-col items-center justify-center px-12 pb-[calc(130px+max(env(safe-area-inset-bottom),12px))] pt-20">
+      <div className="relative z-[1] flex min-h-screen min-h-dvh flex-col items-center justify-center px-12 pb-[calc(130px+max(env(safe-area-inset-bottom),12px))] pt-20">
         <div className="grid w-full max-w-[560px] justify-items-center">
           <div className="relative">
             <FullscreenAlbumDisc

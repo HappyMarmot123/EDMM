@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import AudioVisualizer from "@/features/audio/components/audioVisualizer";
 
 const fillRect = jest.fn();
@@ -71,5 +71,50 @@ describe("AudioVisualizer", () => {
 
     expect(window.requestAnimationFrame).not.toHaveBeenCalled();
     expect(getByteFrequencyData).not.toHaveBeenCalled();
+  });
+
+  it("syncs canvas size on window resize when ResizeObserver is unavailable", async () => {
+    const originalResizeObserver = global.ResizeObserver;
+    Object.defineProperty(global, "ResizeObserver", {
+      configurable: true,
+      writable: true,
+      value: undefined,
+    });
+    let rectWidth = 224;
+    let rectHeight = 120;
+    jest
+      .spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect")
+      .mockImplementation(
+        () =>
+          ({
+            width: rectWidth,
+            height: rectHeight,
+          }) as DOMRect,
+      );
+
+    try {
+      render(<AudioVisualizer analyser={analyser} isActive />);
+      const canvas = screen.getByTestId(
+        "audio-visualizer-canvas",
+      ) as HTMLCanvasElement;
+
+      expect(canvas.width).toBe(224);
+      expect(canvas.height).toBe(120);
+
+      rectWidth = 320;
+      rectHeight = 180;
+      window.dispatchEvent(new Event("resize"));
+
+      await waitFor(() => {
+        expect(canvas.width).toBe(320);
+        expect(canvas.height).toBe(180);
+      });
+    } finally {
+      Object.defineProperty(global, "ResizeObserver", {
+        configurable: true,
+        writable: true,
+        value: originalResizeObserver,
+      });
+    }
   });
 });

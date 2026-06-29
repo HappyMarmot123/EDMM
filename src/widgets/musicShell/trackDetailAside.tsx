@@ -2,7 +2,7 @@
 
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Disc3, Link, Music2, Pause, Play, Radio } from "lucide-react";
-import type { Track } from "@/entities/Track/model";
+import type { Track } from "@/entities/track/model";
 import { AudioVisualizer } from "@/features/audio/components/audioVisualizer";
 import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
 import { pickArtworkUrl } from "@/shared/lib/trackArtwork";
@@ -249,6 +249,7 @@ export function TrackDetailAside({
             </button>
 
             <dl className="grid gap-2">
+              {track.albumName ? <DetailLine label="Album" value={track.albumName} /> : null}
               <DetailLine label="Duration" value={formatDuration(track.durationMs)} />
               <DetailLine label="Source" value={track.source} />
               <DetailLine
