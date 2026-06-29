@@ -11,11 +11,11 @@
 
 ### 1.1 후보 접근안
 
-| 접근안 | 설명 | 장점 | 단점 | 판정 |
-| --- | --- | --- | --- | --- |
-| 리스크 매트릭스 중심 | 사용 중인 브라우저 API와 CSS 기능을 표로 정리하고 위험도를 부여한다. | 빠르게 현황을 파악할 수 있다. | 코드 수정 단위가 모호해진다. | 보조 자료로만 사용 |
-| 기능 경계 중심 | 오디오, 비주얼라이저, 레이아웃, 저장소, 인터랙션 단위로 개선한다. | 현재 코드 구조와 직접 맞물린다. 구현 계획으로 전환하기 쉽다. | 초기 문서 작성량이 조금 늘어난다. | 채택 |
-| 브라우저별 시나리오 중심 | Safari, Firefox, Edge별 사용자 흐름을 중심으로 정리한다. | QA 체크리스트로 좋다. | 코드 중복 설명이 늘고 원인 분석이 늦다. | 검증 섹션에서만 사용 |
+| 접근안                   | 설명                                                                 | 장점                                                         | 단점                                    | 판정                 |
+| ------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------- | -------------------- |
+| 리스크 매트릭스 중심     | 사용 중인 브라우저 API와 CSS 기능을 표로 정리하고 위험도를 부여한다. | 빠르게 현황을 파악할 수 있다.                                | 코드 수정 단위가 모호해진다.            | 보조 자료로만 사용   |
+| 기능 경계 중심           | 오디오, 비주얼라이저, 레이아웃, 저장소, 인터랙션 단위로 개선한다.    | 현재 코드 구조와 직접 맞물린다. 구현 계획으로 전환하기 쉽다. | 초기 문서 작성량이 조금 늘어난다.       | 채택                 |
+| 브라우저별 시나리오 중심 | Safari, Firefox, Edge별 사용자 흐름을 중심으로 정리한다.             | QA 체크리스트로 좋다.                                        | 코드 중복 설명이 늘고 원인 분석이 늦다. | 검증 섹션에서만 사용 |
 
 ### 1.2 채택 방향
 
@@ -37,12 +37,12 @@
 
 ### 2.1 지원 범위
 
-| 구분 | 기준 |
-| --- | --- |
-| 1차 지원 | 최신 안정 버전 Chrome, Edge, Firefox, Safari |
-| 모바일 확인 | iOS Safari, Android Chrome |
-| 명시적 제외 | IE 11. `package.json`의 `browserslist`도 `not IE 11`이다. |
-| 기본 전략 | polyfill 추가보다 feature detection, 안전한 fallback, Jest 테스트 보강을 우선한다. |
+| 구분        | 기준                                                                               |
+| ----------- | ---------------------------------------------------------------------------------- |
+| 1차 지원    | 최신 안정 버전 Chrome, Edge, Firefox, Safari                                       |
+| 모바일 확인 | iOS Safari, Android Chrome                                                         |
+| 명시적 제외 | IE 11. `package.json`의 `browserslist`도 `not IE 11`이다.                          |
+| 기본 전략   | polyfill 추가보다 feature detection, 안전한 fallback, Jest 테스트 보강을 우선한다. |
 
 ### 2.2 설계 원칙
 
@@ -54,14 +54,32 @@
 
 ### 2.3 기능 경계
 
-| 경계 | 주요 파일 | 호환성 관심사 |
-| --- | --- | --- |
-| Audio Engine | `src/shared/lib/audioInstance.ts`, `src/shared/providers/audioPlayerProvider.tsx`, `src/app/store/audioInstanceStore.ts` | `AudioContext`, `webkitAudioContext`, autoplay 정책, media element source, CORS 오디오 |
-| Visualizer / Canvas | `src/features/audio/components/visualizers/useCanvasAudioVisualizer.ts`, `src/features/audio/components/visualizers/albumColorPalette.ts`, `src/features/landing/ui/landingCobeOrbit.tsx` | Canvas 2D, `getImageData`, CORS taint, `ResizeObserver`, animation loop |
-| Responsive Layout | `src/widgets/musicShell/index.tsx`, `src/features/audio/ui/audioPlayer.tsx`, `src/features/audio/components/desktopFullscreenPlayer.tsx`, `src/features/audio/components/mobile/mobileFullscreenPlayer.tsx`, `src/shared/styles/global.css` | `matchMedia`, `100dvh`, safe-area inset, `backdrop-filter`, fixed overlays |
-| Browser Observers | `src/shared/hooks/useInView.ts`, `src/shared/hooks/useInfiniteScroll.ts` | `IntersectionObserver` 미지원/제한 환경 |
-| Local Storage | `src/shared/db/edmmDB.ts`, `src/shared/db/repositories/*`, `src/features/library/hooks/*` | IndexedDB/Dexie, private browsing, quota/storage denial |
-| Interaction | `src/features/audio/hooks/useAudioKeyboardShortcuts.ts`, `src/features/audio/components/mobile/mobileFullscreenPlayer.tsx` | keyboard event, pointer event, drag dismissal |
+| 경계                | 주요 파일                                                                                                                                                                                                                                   | 호환성 관심사                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Audio Engine        | `src/shared/lib/audioInstance.ts`, `src/shared/providers/audioPlayerProvider.tsx`, `src/app/store/audioInstanceStore.ts`                                                                                                                    | `AudioContext`, `webkitAudioContext`, autoplay 정책, media element source, CORS 오디오 |
+| Visualizer / Canvas | `src/features/audio/components/visualizers/useCanvasAudioVisualizer.ts`, `src/features/audio/components/visualizers/albumColorPalette.ts`, `src/features/landing/ui/landingCobeOrbit.tsx`                                                   | Canvas 2D, `getImageData`, CORS taint, `ResizeObserver`, animation loop                |
+| Responsive Layout   | `src/widgets/musicShell/index.tsx`, `src/features/audio/ui/audioPlayer.tsx`, `src/features/audio/components/desktopFullscreenPlayer.tsx`, `src/features/audio/components/mobile/mobileFullscreenPlayer.tsx`, `src/shared/styles/global.css` | `matchMedia`, `100dvh`, safe-area inset, `backdrop-filter`, fixed overlays             |
+| Browser Observers   | `src/shared/hooks/useInView.ts`, `src/shared/hooks/useInfiniteScroll.ts`                                                                                                                                                                    | `IntersectionObserver` 미지원/제한 환경                                                |
+| Local Storage       | `src/shared/db/edmmDB.ts`, `src/shared/db/repositories/*`, `src/features/library/hooks/*`                                                                                                                                                   | IndexedDB/Dexie, private browsing, quota/storage denial                                |
+| Interaction         | `src/features/audio/hooks/useAudioKeyboardShortcuts.ts`, `src/features/audio/components/mobile/mobileFullscreenPlayer.tsx`                                                                                                                  | keyboard event, pointer event, drag dismissal                                          |
+
+### 2.4 코드베이스 관찰 요약
+
+현재 코드와 테스트를 기준으로 문서 내용을 다음처럼 보정한다.
+
+- `package.json` 기준 런타임은 Next.js 16.2.9, React 19.2.7, Tailwind CSS 4.3.1, Jest 30이다. `browserslist`는 `defaults`, `not IE 11`이므로 IE 11 대응은 범위 밖이다.
+- 이미 구현된 방어 로직:
+  - `audioInstance.ts`는 `AudioContext || webkitAudioContext`를 사용한다.
+  - `albumColorPalette.ts`는 SSR, 이미지 로드 실패, canvas context 없음, `getImageData` 예외에서 fallback palette를 반환한다.
+  - `landingCobeOrbit.tsx`는 `createGlobe` 실패를 catch하고, `ResizeObserver`가 없을 때도 `window.resize` listener를 사용한다.
+  - `useAudioKeyboardShortcuts.ts`는 입력 요소, `contentEditable`, `[role='button']`, `[role='slider']` 안에서는 전역 shortcut을 막는다.
+  - `mobileFullscreenPlayer.tsx`는 `onPointerCancel`에서 drag 종료 처리를 호출한다.
+- 남은 핵심 gap:
+  - `useInView.ts`, `useInfiniteScroll.ts`는 `IntersectionObserver` 존재 여부를 확인하지 않는다.
+  - `useCanvasAudioVisualizer.ts`는 `ResizeObserver`가 없을 때 initial size만 맞추고 resize fallback은 없다.
+  - `MusicShell`과 `AudioPlayer`에 `matchMedia` 구독 로직이 중복되어 있다.
+  - Dexie repository는 실패를 도메인 기본값으로 변환하지 않는다.
+  - 테스트는 정상 흐름 중심이며, 브라우저 API 미지원 mock 케이스가 부족하다.
 
 ---
 
@@ -117,7 +135,7 @@
 
 1. `useCanvasAudioVisualizer.ts`에 `ResizeObserver`가 없을 때 window `resize` fallback을 추가한다.
 2. `albumColorPalette.ts`의 fallback 동작은 유지하고, CORS 실패 테스트를 명시적으로 보강한다.
-3. `landingCobeOrbit.tsx`는 `createGlobe` 실패 시 canvas만 비워두지 않고 CSS 배경/정적 장식 fallback이 보이도록 한다.
+3. `landingCobeOrbit.tsx`는 `createGlobe` 실패 시 현재 CSS 배경/정적 장식 fallback이 실제로 보이는지 테스트로 고정한다.
 4. animation loop는 `prefers-reduced-motion`과 inactive 상태를 더 엄격히 반영한다.
 
 검증:
@@ -212,8 +230,8 @@
 
 현재 상태:
 
-- keyboard shortcuts는 입력/버튼/링크/slider 상호작용 중에는 무시한다.
-- mobile fullscreen player는 drag-to-dismiss와 timeout 기반 close transition을 사용한다.
+- keyboard shortcuts는 입력/버튼/링크/slider/contentEditable 상호작용 중에는 무시한다.
+- mobile fullscreen player는 drag-to-dismiss, `onPointerCancel`, timeout 기반 close transition을 사용한다.
 
 리스크:
 
@@ -222,8 +240,8 @@
 
 개선 설계:
 
-1. keyboard shortcut 테스트에 `contentEditable`, `role="slider"`, range input 케이스를 추가한다.
-2. mobile fullscreen drag threshold와 click guard는 현재 구조를 유지하되, pointer cancel cleanup 테스트를 추가한다.
+1. keyboard shortcut 테스트에 이미 차단 중인 `contentEditable`, `role="slider"`, range input 케이스를 회귀 테스트로 추가한다.
+2. mobile fullscreen drag threshold와 click guard는 현재 구조를 유지하되, pointer cancel cleanup과 pointer capture 예외 방어 여부를 테스트한다.
 3. 재생 버튼은 shortcut보다 명시적 click/tap을 항상 우선한다.
 
 ---
@@ -247,7 +265,7 @@
 ### P2: 브라우저 QA 자동화/운영 보강
 
 1. 브라우저별 수동 체크리스트를 `docs/plans`에 별도 작성.
-2. 필요 시 Playwright 또는 외부 브라우저 테스트 서비스를 별도 검토한다.
+2. Playwright 또는 외부 브라우저 테스트 서비스 도입은 P0/P1 완료 후 별도 자동화 계획에서 판단한다.
 3. Safari/iOS 실기기에서 autoplay, safe-area, mobile fullscreen drag 동작을 확인한다.
 
 ---
@@ -277,21 +295,52 @@
 
 ### 5.2 수동 브라우저 체크리스트
 
-| 브라우저 | 체크 항목 |
-| --- | --- |
-| Chrome | 기준 UX 유지, regression 확인 |
-| Edge | Chrome과 동일 흐름, media/autoplay 차이 확인 |
-| Firefox | range input, scrollbar, canvas visualizer, keyboard shortcut 확인 |
-| Safari | AudioContext resume, iOS safe-area, `100dvh`, backdrop blur fallback, canvas CORS fallback 확인 |
-| Android Chrome | mobile mini player, fullscreen open/close, bottom tab safe-area 확인 |
+| 브라우저       | 체크 항목                                                                                       |
+| -------------- | ----------------------------------------------------------------------------------------------- |
+| Chrome         | 기준 UX 유지, visual/interaction regression 확인                                                |
+| Edge           | Chrome과 동일 흐름, media/autoplay 차이 확인                                                    |
+| Firefox        | range input, scrollbar, canvas visualizer, keyboard shortcut 확인                               |
+| Safari         | AudioContext resume, iOS safe-area, `100dvh`, backdrop blur fallback, canvas CORS fallback 확인 |
+| Android Chrome | mobile mini player, fullscreen open/close, bottom tab safe-area 확인                            |
 
-### 5.3 완료 기준
+### 5.3 UX 영향 QA
+
+기능 단위 테스트는 크래시와 상태 전이를 검증하지만, 이번 변경은 player, fullscreen overlay, mobile bottom navigation, visualizer, safe-area, blur fallback처럼 화면 체감이 큰 영역을 건드린다. 따라서 P0/P1 구현 후에는 “동작한다”뿐 아니라 “현재 EDMM V2 UX를 해치지 않는다”를 별도 QA 기준으로 둔다.
+
+UX 기준선:
+
+- Chrome 최신 안정 버전의 현재 `/search` UX를 기준선으로 삼는다.
+- 허용 가능한 차이는 decorative effect 축소에 한정한다. 예: blur 미지원, visualizer idle fallback, album palette fallback.
+- 허용하지 않는 차이는 핵심 정보/조작 손상이다. 예: 텍스트 겹침, fixed player가 목록을 가림, safe-area 침범, 선택 상태 혼동, fullscreen 닫기 불가, keyboard/touch 조작 충돌.
+
+필수 UX 확인 항목:
+
+| 영역             | 확인 내용                                                                                                          | 실패 기준                                                                  |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| Layout stability | 375px, 390px, 768px, 1024px, 1440px에서 `/search` list, detail aside, bottom player, bottom tab이 겹치지 않는다.   | 가로 스크롤, 잘린 버튼, fixed 영역이 콘텐츠를 가림                         |
+| Visual hierarchy | 현재 곡, 선택 곡, 재생 중 상태, disabled control이 시각적으로 구분된다.                                            | 선택/재생/disabled 상태가 같은 톤으로 보여 사용자가 상태를 판단하기 어려움 |
+| Touch UX         | 모바일 mini player, bottom tab, fullscreen controls, close bar의 터치 영역이 충분하고 오작동하지 않는다.           | 작은 hit area, tap과 drag가 충돌, 닫기 gesture가 우발적으로 실행           |
+| Keyboard UX      | Space/Arrow shortcut은 입력/slider 조작과 충돌하지 않고, 버튼 focus ring이 보인다.                                 | page scroll 충돌, focus 위치 상실, focus 표시 제거                         |
+| Motion UX        | fullscreen open/close, drag-dismiss, visualizer animation이 끊기지 않고 reduced-motion에서 과한 움직임이 줄어든다. | 500ms 이상 지연 체감, 끊김, reduced-motion 무시                            |
+| Readability      | blur/backdrop fallback이 없어도 텍스트와 icon contrast가 유지된다.                                                 | 어두운 배경 위 텍스트가 읽히지 않거나 icon이 배경에 묻힘                   |
+| Empty/error UX   | Cloudinary, IndexedDB, visualizer, album palette fallback 상태가 빈 영역이나 깨진 UI로 보이지 않는다.              | 아무 안내 없는 빈 패널, skeleton 무한 유지, 깨진 이미지 아이콘 노출        |
+
+검증 흐름:
+
+1. `/search` 기본 진입에서 목록 스크롤, 검색 입력, All/Recent 전환을 확인한다.
+2. `/search?track=<id>` 딥링크에서 상세 패널 loading, fallback, player queue 주입을 확인한다.
+3. 모바일 폭에서 row select가 즉시 재생되고, mini player에서 fullscreen 진입/닫기가 자연스러운지 확인한다.
+4. 데스크탑 폭에서 row select는 상세 선택만 수행하고, fullscreen overlay가 하단 player와 충돌하지 않는지 확인한다.
+5. `prefers-reduced-motion`, `matchMedia` 없음, `ResizeObserver` 없음, `IntersectionObserver` 없음, IndexedDB reject mock 상태에서 UI가 “기능 축소”로 보이는지 확인한다.
+
+### 5.4 완료 기준
 
 - `npm test` 통과
 - `npm run lint` 통과
 - `npm run build` 통과
 - Chrome 기준 UI가 현재와 동등하게 유지
 - 미지원 API mock 테스트에서 앱이 throw하지 않음
+- 주요 breakpoint와 fullscreen/mobile 흐름에서 UX regression이 없음
 
 ---
 
@@ -318,7 +367,15 @@
 
 이번 문서는 구현 설계까지 다룬다. 실제 코드 수정은 다음 실행 계획에서 파일 단위로 나눈다.
 
-### 7.3 주요 참조
+### 7.3 코드베이스 검토 결과
+
+- 문서의 기능 경계는 현재 FSD-ish 구조와 맞는다. `AudioPlayerProvider`, visualizer, `MusicShell`, shared hooks, Dexie repository 단위로 작업을 나누면 변경 영향이 명확하다.
+- Interaction 섹션은 초기 문안보다 범위를 줄였다. `contentEditable`, `[role='slider']`, `pointercancel` 처리는 이미 코드에 있으므로 신규 구현이 아니라 회귀 테스트와 예외 방어가 중심이다.
+- Canvas/landing 섹션도 일부 범위를 줄였다. album palette fallback과 Cobe resize fallback은 이미 있으므로, 남은 작업은 visualizer resize fallback과 fallback 시각 상태 검증이다.
+- 가장 위험한 P0는 observer 미지원과 Dexie reject다. 둘 다 사용자 데이터나 브라우저 환경에 따라 즉시 앱 오류로 번질 수 있고, 현재 테스트가 얇다.
+- `matchMedia` 통합은 기능 위험보다 유지보수 위험이 크다. P0 이후 P1로 진행한다.
+
+### 7.4 주요 참조
 
 - MDN AudioContext: https://developer.mozilla.org/en-US/docs/Web/API/AudioContext
 - MDN viewport length units: https://developer.mozilla.org/en-US/docs/Web/CSS/length
@@ -327,3 +384,235 @@
 - MDN IntersectionObserver: https://developer.mozilla.org/en-US/docs/Web/API/IntersectionObserver
 - MDN Canvas getImageData: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/getImageData
 - MDN matchMedia: https://developer.mozilla.org/en-US/docs/Web/API/Window/matchMedia
+
+---
+
+## 8. 작업 Task 분리
+
+### Task 1: Observer 미지원 방어
+
+우선순위: P0
+
+파일:
+
+- 수정: `src/shared/hooks/useInView.ts`
+- 수정: `src/shared/hooks/useInfiniteScroll.ts`
+- 테스트: `src/test/shared/hooks/useInView.test.tsx`
+- 생성: `src/test/shared/hooks/useInfiniteScroll.test.tsx`
+
+작업:
+
+1. `useInView`에서 `typeof IntersectionObserver === "undefined"`이면 `setInView(true)` 후 observer 생성을 건너뛴다.
+2. `useInfiniteScroll`에서 observer 미지원이면 `targetRef`만 반환하고 자동 `onIntersect` 호출을 하지 않는다.
+3. observer 생성은 try/catch로 감싸 옵션 오류가 렌더 오류로 전파되지 않게 한다.
+4. 테스트에서 `global.IntersectionObserver`를 임시로 `undefined`로 만들고 두 hook이 throw하지 않는지 검증한다.
+
+완료 기준:
+
+- `npm test -- src/test/shared/hooks/useInView.test.tsx src/test/shared/hooks/useInfiniteScroll.test.tsx` 통과
+- observer 미지원 환경에서 lazy reveal 콘텐츠가 숨겨진 채 남지 않음
+
+### Task 2: Visualizer resize fallback 보강
+
+우선순위: P0
+
+파일:
+
+- 수정: `src/features/audio/components/visualizers/useCanvasAudioVisualizer.ts`
+- 테스트: `src/test/features/audio/audioVisualizer.test.tsx`
+
+작업:
+
+1. `ResizeObserver`가 없으면 `window.addEventListener("resize", sync)` fallback을 등록한다.
+2. cleanup에서 observer와 window listener를 동일하게 정리한다.
+3. canvas context가 `null`이면 animation frame을 예약하지 않는 현재 동작을 회귀 테스트로 고정한다.
+4. `ResizeObserver` 미지원 테스트에서 resize event를 dispatch하고 canvas size sync가 다시 호출되는지 확인한다.
+
+완료 기준:
+
+- `npm test -- src/test/features/audio/audioVisualizer.test.tsx` 통과
+- `ResizeObserver` 없는 환경에서도 visualizer hook이 throw하지 않음
+
+### Task 3: Dexie repository safe wrapper
+
+우선순위: P0
+
+파일:
+
+- 수정: `src/shared/db/repositories/trackCacheRepo.ts`
+- 수정: `src/shared/db/repositories/recentPlaysRepo.ts`
+- 테스트: `src/shared/db/repositories/__tests__/trackCacheRepo.test.ts`
+- 테스트: `src/shared/db/repositories/__tests__/recentPlaysRepo.test.ts`
+- 영향 확인: `src/widgets/musicShell/index.tsx`, `src/shared/providers/audioPlayerProvider.tsx`
+
+작업:
+
+1. `getCachedTrack` 실패는 `undefined`로 반환한다.
+2. `getCachedTracks` 실패는 `[]`로 반환한다.
+3. `cacheTrack` 실패는 throw하지 않고 개발 환경에서만 warning을 남긴다.
+4. `getRecentPlays` 실패는 `[]`로 반환한다.
+5. `addRecentPlay` 실패는 throw하지 않고 개발 환경에서만 warning을 남긴다.
+6. repository 테스트에서 Dexie table method를 reject하도록 mock/spy 처리하고 각 기본값을 검증한다.
+
+완료 기준:
+
+- `npm test -- src/shared/db/repositories/__tests__/trackCacheRepo.test.ts src/shared/db/repositories/__tests__/recentPlaysRepo.test.ts` 통과
+- IndexedDB 실패가 `/search` 렌더링과 player control 렌더링을 막지 않음
+
+### Task 4: Audio capability 상태 분리
+
+우선순위: P0
+
+파일:
+
+- 수정: `src/shared/lib/audioInstance.ts`
+- 수정: `src/app/store/audioInstanceStore.ts`
+- 수정: `src/shared/types/dataType.ts`
+- 테스트: `src/test/shared/providers/audioPlayerProvider.test.tsx`
+
+작업:
+
+1. audio singleton 결과에 capability 객체를 추가한다.
+2. capability 최소 필드는 `audioElementAvailable`, `audioContextAvailable`, `analyserAvailable`, `initializationError`로 둔다.
+3. `audioInstanceStore`에서 capability를 provider가 읽을 수 있게 노출한다.
+4. `AudioContext`가 없거나 analyser 생성이 실패하는 mock에서도 provider가 렌더링되는지 테스트한다.
+
+완료 기준:
+
+- `npm test -- src/test/shared/providers/audioPlayerProvider.test.tsx` 통과
+- analyser가 없어도 재생 UI는 렌더링되고 visualizer만 idle 상태로 남음
+
+### Task 5: 재생 실패 상태 보관
+
+우선순위: P0
+
+파일:
+
+- 수정: `src/shared/providers/audioPlayerProvider.tsx`
+- 수정: `src/shared/types/dataType.ts`
+- 테스트: `src/test/shared/providers/audioPlayerProvider.test.tsx`
+
+작업:
+
+1. provider 상태에 `playbackError`를 추가한다.
+2. `audioContext.resume()` 실패는 `unsupported-audio-context` 또는 `autoplay-blocked`로 분류한다.
+3. `audio.play()` reject는 `autoplay-blocked` 또는 `source-load-failed`로 분류하고 `isPlaying=false`로 복구한다.
+4. 성공적인 재생 시 `playbackError=null`로 초기화한다.
+5. 테스트에서 `audio.play` reject와 `audioContext.resume` reject를 각각 검증한다.
+
+완료 기준:
+
+- `npm test -- src/test/shared/providers/audioPlayerProvider.test.tsx` 통과
+- 재생 실패 후 UI 상태가 “재생 중”으로 남지 않음
+
+### Task 6: `matchMedia` 공통 hook 도입
+
+우선순위: P1
+
+파일:
+
+- 생성: `src/shared/hooks/useMediaQuery.ts`
+- 수정: `src/widgets/musicShell/index.tsx`
+- 수정: `src/features/audio/ui/audioPlayer.tsx`
+- 테스트: `src/test/widgets/musicShell.test.tsx`
+- 테스트: `src/test/features/audio/audioPlayer.test.tsx`
+
+작업:
+
+1. `useMediaQuery(query, defaultValue)` hook을 만든다.
+2. `window.matchMedia`가 없으면 `defaultValue`를 유지한다.
+3. `addEventListener/removeEventListener`가 있으면 우선 사용하고, 없으면 legacy `addListener/removeListener`를 사용한다.
+4. `MusicShell`의 row select 재생 분기와 `AudioPlayer`의 fullscreen viewport 분기를 새 hook으로 교체한다.
+5. `window.matchMedia`가 없는 테스트를 추가해 기본 레이아웃이 렌더링되는지 검증한다.
+
+완료 기준:
+
+- `npm test -- src/test/widgets/musicShell.test.tsx src/test/features/audio/audioPlayer.test.tsx` 통과
+- 767px/768px 경계 동작이 기존과 동일함
+
+### Task 7: Dynamic viewport와 blur fallback 점검
+
+우선순위: P1
+
+파일:
+
+- 수정: `src/widgets/musicShell/index.tsx`
+- 수정: `src/features/audio/components/desktopFullscreenPlayer.tsx`
+- 수정: `src/shared/styles/global.css`
+- 테스트: `src/test/widgets/musicShell.test.tsx`
+- 테스트: `src/test/features/audio/audioPlayer.test.tsx`
+
+작업:
+
+1. `h-[100dvh]`, `max-h-[100dvh]`, `min-h-dvh` 사용 위치에 `h-screen`, `max-h-screen`, `min-h-screen` fallback을 additive class로 추가한다.
+2. `backdrop-blur-*` 사용 위치의 배경색 alpha가 blur 없이도 텍스트를 읽을 수 있는지 점검하고 필요한 경우 더 불투명한 fallback 배경을 적용한다.
+3. class 존재 중심의 Jest 테스트를 보강한다.
+
+완료 기준:
+
+- `npm test -- src/test/widgets/musicShell.test.tsx src/test/features/audio/audioPlayer.test.tsx` 통과
+- blur 미지원에서도 버튼/텍스트 대비가 유지됨
+
+### Task 8: Landing Cobe fallback 회귀 테스트
+
+우선순위: P1
+
+파일:
+
+- 수정: `src/test/features/landing/landingCobeOrbit.test.tsx`
+- 검토: `src/features/landing/ui/landingCobeOrbit.tsx`
+
+작업:
+
+1. `createGlobe`가 throw하는 테스트를 추가한다.
+2. 실패해도 `.rose-cobe-orbit__halo`, canvas, label이 렌더링되는지 검증한다.
+3. `prefers-reduced-motion: reduce`일 때 `requestAnimationFrame`이 호출되지 않는 테스트를 추가한다.
+
+완료 기준:
+
+- `npm test -- src/test/features/landing/landingCobeOrbit.test.tsx` 통과
+- Cobe/WebGL 실패가 landing hero의 빈 영역으로 보이지 않음
+
+### Task 9: Interaction 회귀 테스트 보강
+
+우선순위: P1
+
+파일:
+
+- 수정: `src/test/features/audio/audioKeyboardShortcuts.test.tsx`
+- 수정: `src/test/features/audio/audioPlayer.test.tsx`
+- 검토: `src/features/audio/components/mobile/mobileFullscreenPlayer.tsx`
+
+작업:
+
+1. `contentEditable`, `[role='slider']`, range input focused 상태에서 Space/Arrow shortcut이 실행되지 않는지 검증한다.
+2. 모바일 fullscreen에서 `pointercancel`이 발생하면 drag 상태가 정리되는지 검증한다.
+3. `setPointerCapture` 또는 `releasePointerCapture`가 없는 환경을 mock해 예외가 필요하면 guard를 추가한다.
+
+완료 기준:
+
+- `npm test -- src/test/features/audio/audioKeyboardShortcuts.test.tsx src/test/features/audio/audioPlayer.test.tsx` 통과
+- 명시적 click/tap 재생 버튼은 shortcut 차단과 무관하게 동작함
+
+### Task 10: 브라우저 QA 체크리스트 작성
+
+우선순위: P2
+
+파일:
+
+- 생성: `docs/plans/2026-06-29-browser-compatibility-qa-checklist.md`
+
+작업:
+
+1. Chrome, Edge, Firefox, Safari, iOS Safari, Android Chrome별 수동 확인 항목을 작성한다.
+2. `/search`, `/search?track=<id>`, Recent view, desktop fullscreen, mobile fullscreen, visualizer fallback, IndexedDB 실패 관찰 항목을 포함한다.
+3. 375px, 390px, 768px, 1024px, 1440px viewport별 UX 확인 항목을 포함한다.
+4. layout overlap, horizontal scroll, fixed player 침범, safe-area, touch target, focus ring, reduced-motion, text/icon contrast를 체크 항목으로 둔다.
+5. Chrome 기준 screenshot과 비교해 허용 가능한 decorative 차이와 허용하지 않는 UX regression을 분리한다.
+6. P0/P1 완료 후 실행할 명령 `npm test`, `npm run lint`, `npm run build`를 체크리스트에 넣는다.
+
+완료 기준:
+
+- QA 체크리스트가 브라우저별 기대 결과와 실패 시 확인할 코드 경로를 포함함
+- QA 체크리스트가 기능 결과와 UX 영향 결과를 분리해 기록할 수 있음
+- P0/P1 구현 후 수동 검증에 바로 사용할 수 있음
