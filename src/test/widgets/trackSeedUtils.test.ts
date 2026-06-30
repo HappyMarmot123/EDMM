@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 import { resolveInitialSeedTrack, resolveRecentSeedTrack, dedupeIds } from "@/widgets/musicShell/trackSeedUtils";
-import type { Track } from "@/entities/Track/model";
+import type { Track } from "@/entities/track/model";
 
 const createTrack = (id: string, playable = true): Track => ({
   id,

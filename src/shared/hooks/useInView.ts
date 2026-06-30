@@ -12,12 +12,24 @@ export function useInView<T extends Element>(
     const element = ref.current;
     if (!element) return;
 
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry?.isIntersecting) {
-        setInView(true);
-        observer.disconnect();
-      }
-    }, options);
+    if (typeof IntersectionObserver === "undefined") {
+      setInView(true);
+      return;
+    }
+
+    let observer: IntersectionObserver;
+
+    try {
+      observer = new IntersectionObserver(([entry]) => {
+        if (entry?.isIntersecting) {
+          setInView(true);
+          observer.disconnect();
+        }
+      }, options);
+    } catch {
+      setInView(true);
+      return;
+    }
 
     observer.observe(element);
     return () => observer.disconnect();

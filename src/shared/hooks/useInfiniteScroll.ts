@@ -23,15 +23,24 @@ export const useInfiniteScroll = ({
     const element = targetRef.current;
     if (!element) return;
 
-    const observer = new IntersectionObserver(handleObserver, {
-      rootMargin,
-      threshold,
-    });
+    if (typeof IntersectionObserver === "undefined") return;
+
+    let observer: IntersectionObserver;
+
+    try {
+      observer = new IntersectionObserver(handleObserver, {
+        rootMargin,
+        threshold,
+      });
+    } catch {
+      return;
+    }
 
     observer.observe(element);
 
     return () => {
       observer.unobserve(element);
+      observer.disconnect();
     };
   }, [handleObserver, rootMargin, threshold]);
 

@@ -1,4 +1,4 @@
-import { isPlayable, type Track } from "@/entities/Track/model";
+import { isPlayable, type Track } from "@/entities/track/model";
 
 export const dedupeIds = (ids: Iterable<string>) => [...new Set(ids)];
 

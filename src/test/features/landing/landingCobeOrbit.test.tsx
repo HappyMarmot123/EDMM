@@ -36,6 +36,8 @@ const runAnimationFrame = () => {
 };
 
 describe("LandingCobeOrbit", () => {
+  const originalMatchMedia = window.matchMedia;
+
   beforeEach(() => {
     animationFrames = [];
     frameId = 0;
@@ -50,6 +52,7 @@ describe("LandingCobeOrbit", () => {
   });
 
   afterEach(() => {
+    window.matchMedia = originalMatchMedia;
     mockedCreateGlobe.mockReset();
     jest.restoreAllMocks();
   });
@@ -83,5 +86,35 @@ describe("LandingCobeOrbit", () => {
     await getCobeOptions();
 
     expect(canvas).not.toHaveAttribute("data-dragging");
+  });
+
+  it("keeps static orbit fallback elements when Cobe initialization fails", () => {
+    mockedCreateGlobe.mockImplementation(() => {
+      throw new Error("WebGL unavailable");
+    });
+
+    render(<LandingCobeOrbit />);
+
+    expect(screen.getByTestId("rose-cobe-orbit")).toBeInTheDocument();
+    expect(screen.getByTestId("rose-cobe-canvas")).toBeInTheDocument();
+    expect(screen.getByText("PLUM BLOSSOM")).toBeInTheDocument();
+  });
+
+  it("does not request animation frames when reduced motion is preferred", async () => {
+    window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+      matches: query === "(prefers-reduced-motion: reduce)",
+      media: query,
+      onchange: null,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    }));
+
+    render(<LandingCobeOrbit />);
+
+    await getCobeOptions();
+    expect(window.requestAnimationFrame).not.toHaveBeenCalled();
   });
 });

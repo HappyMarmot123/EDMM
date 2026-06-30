@@ -56,16 +56,39 @@ export default function MobileFullscreenPlayer({
     window.setTimeout(onClose, 180);
   };
 
+  const getSafeClientY = (event: PointerEvent<HTMLButtonElement>) =>
+    Number.isFinite(event.clientY) ? event.clientY : dragStartYRef.current;
+
+  const setPointerCaptureSafely = (event: PointerEvent<HTMLButtonElement>) => {
+    if (typeof event.currentTarget.setPointerCapture !== "function") return;
+
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Some embedded browsers expose the API but reject capture for synthetic or inactive pointers.
+    }
+  };
+
+  const releasePointerCaptureSafely = (event: PointerEvent<HTMLButtonElement>) => {
+    if (typeof event.currentTarget.releasePointerCapture !== "function") return;
+
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // Capture may already be released after cancellation or viewport gesture interruption.
+    }
+  };
+
   const handleDragStart = (event: PointerEvent<HTMLButtonElement>) => {
-    dragStartYRef.current = event.clientY;
+    dragStartYRef.current = Number.isFinite(event.clientY) ? event.clientY : 0;
     dragStartTimeRef.current = performance.now();
     setIsDragging(true);
-    event.currentTarget.setPointerCapture(event.pointerId);
+    setPointerCaptureSafely(event);
   };
 
   const handleDragMove = (event: PointerEvent<HTMLButtonElement>) => {
     if (!isDragging) return;
-    setDragY(Math.max(0, event.clientY - dragStartYRef.current));
+    setDragY(Math.max(0, getSafeClientY(event) - dragStartYRef.current));
   };
 
   const handleDragEnd = (event: PointerEvent<HTMLButtonElement>) => {
@@ -76,13 +99,21 @@ export default function MobileFullscreenPlayer({
     const shouldClose = dragY > 120 || (dragY > 48 && velocity > 0.8);
 
     setIsDragging(false);
-    event.currentTarget.releasePointerCapture(event.pointerId);
+    releasePointerCaptureSafely(event);
 
     if (shouldClose) {
       closeWithSlide();
       return;
     }
 
+    setDragY(0);
+  };
+
+  const handleDragCancel = (event: PointerEvent<HTMLButtonElement>) => {
+    if (!isDragging) return;
+
+    setIsDragging(false);
+    releasePointerCaptureSafely(event);
     setDragY(0);
   };
 
@@ -108,7 +139,7 @@ export default function MobileFullscreenPlayer({
         onPointerDown={handleDragStart}
         onPointerMove={handleDragMove}
         onPointerUp={handleDragEnd}
-        onPointerCancel={handleDragEnd}
+        onPointerCancel={handleDragCancel}
         aria-label="Close fullscreen player"
       >
         <ChevronDown size={28} strokeWidth={2.2} aria-hidden="true" />

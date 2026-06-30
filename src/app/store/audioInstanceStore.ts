@@ -4,6 +4,7 @@ import {
   getAudioInstance,
   getAudioContext,
   getAnalyser,
+  getAudioCapabilities,
   cleanupAudioInstance,
 } from "@/shared/lib/audioInstance";
 import { AudioInstanceState } from "@/shared/types/dataType";
@@ -18,6 +19,12 @@ const useAudioInstanceStore = create<AudioInstanceState>()(
         audioInstance: null,
         audioContext: null,
         audioAnalyser: null,
+        audioCapabilities: {
+          audioElementAvailable: false,
+          audioContextAvailable: false,
+          analyserAvailable: false,
+          initializationError: "Not in a browser environment",
+        },
         cleanAudioInstance: () => {},
       };
     }
@@ -29,6 +36,7 @@ const useAudioInstanceStore = create<AudioInstanceState>()(
       audioInstance,
       audioContext,
       audioAnalyser: getAnalyser(),
+      audioCapabilities: getAudioCapabilities(),
       cleanAudioInstance: cleanupAudioInstance,
     };
   })

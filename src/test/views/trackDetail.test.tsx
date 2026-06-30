@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import type { Track } from "@/entities/Track/model";
+import type { Track } from "@/entities/track/model";
 import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
 import TrackDetailAside from "@/widgets/musicShell/trackDetailAside";
 import { decodeTrackId } from "@/app/track/[id]/trackId";

@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { fireEvent } from "@testing-library/react";
 import AudioPlayer from "@/features/audio/ui/audioPlayer";
 import MobileAudioPlayer from "@/features/audio/ui/mobileAudioPlayer";
@@ -80,6 +80,13 @@ describe("AudioPlayer", () => {
   beforeEach(() => {
     mockRouterReplace.mockClear();
     mockFullscreenViewport(true);
+    jest
+      .spyOn(HTMLCanvasElement.prototype, "getContext")
+      .mockReturnValue({
+        clearRect: jest.fn(),
+        fillRect: jest.fn(),
+        fillStyle: "",
+      } as unknown as CanvasRenderingContext2D);
     mockAudioPlayerState = {
       currentTrack: track,
       isPlaying: false,
@@ -97,6 +104,10 @@ describe("AudioPlayer", () => {
       toggleMute: jest.fn(),
       audioAnalyser: null,
     };
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it("pins the desktop player to the bottom and renders player controls", () => {
@@ -198,7 +209,11 @@ describe("AudioPlayer", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Toggle fullscreen view" }));
 
-    expect(screen.getByRole("dialog", { name: "Fullscreen player" })).toBeInTheDocument();
+    const fullscreenDialog = screen.getByRole("dialog", {
+      name: "Fullscreen player",
+    });
+    expect(fullscreenDialog).toBeInTheDocument();
+    expect(fullscreenDialog).toHaveClass("min-h-screen", "min-h-dvh");
     expect(screen.getByAltText("Track One fullscreen artwork")).toBeInTheDocument();
     expect(screen.getByTestId("fullscreen-audio-visualizer-canvas")).toHaveAttribute(
       "data-visualizer-renderer",
@@ -208,7 +223,11 @@ describe("AudioPlayer", () => {
     expect(screen.queryByRole("heading", { name: "Track One" })).not.toBeInTheDocument();
     expect(mockAudioPlayerState.togglePlayPause).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: "Exit fullscreen view" }));
+    fireEvent.click(
+      within(fullscreenDialog).getByRole("button", {
+        name: "Exit fullscreen view",
+      }),
+    );
 
     expect(
       screen.queryByRole("dialog", { name: "Fullscreen player" }),
@@ -241,5 +260,53 @@ describe("AudioPlayer", () => {
     );
     expect(screen.getByText("No track selected")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
+  });
+
+  it("keeps mobile fullscreen drag stable when pointer capture APIs are unavailable", async () => {
+    const originalSetPointerCapture = Element.prototype.setPointerCapture;
+    const originalReleasePointerCapture = Element.prototype.releasePointerCapture;
+    Object.defineProperty(Element.prototype, "setPointerCapture", {
+      configurable: true,
+      writable: true,
+      value: undefined,
+    });
+    Object.defineProperty(Element.prototype, "releasePointerCapture", {
+      configurable: true,
+      writable: true,
+      value: undefined,
+    });
+
+    try {
+      render(<MobileAudioPlayer />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Open fullscreen player" }));
+      const dialog = screen.getByRole("dialog", {
+        name: "Mobile fullscreen player",
+      });
+      const closeButton = within(dialog).getByRole("button", {
+        name: "Close fullscreen player",
+      });
+
+      expect(() => {
+        fireEvent.pointerDown(closeButton, { pointerId: 1, clientY: 12 });
+      }).not.toThrow();
+      fireEvent.pointerMove(closeButton, { pointerId: 1, clientY: 92 });
+      fireEvent.pointerCancel(closeButton, { pointerId: 1, clientY: 92 });
+
+      await waitFor(() => {
+        expect(dialog).toHaveStyle({ transform: "translateY(0px)" });
+      });
+    } finally {
+      Object.defineProperty(Element.prototype, "setPointerCapture", {
+        configurable: true,
+        writable: true,
+        value: originalSetPointerCapture,
+      });
+      Object.defineProperty(Element.prototype, "releasePointerCapture", {
+        configurable: true,
+        writable: true,
+        value: originalReleasePointerCapture,
+      });
+    }
   });
 });

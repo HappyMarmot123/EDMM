@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import type { Track } from "@/entities/Track/model";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import type { Track } from "@/entities/track/model";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
 import {
@@ -18,6 +18,21 @@ jest.mock("@/shared/providers/audioPlayerProvider", () => ({
 jest.mock("@/features/audio/components/audioVisualizer", () => ({
   AudioVisualizer: () => <div>Audio visualizer</div>,
 }));
+jest.mock("react-virtuoso", () => ({
+  Virtuoso: ({
+    data,
+    itemContent,
+  }: {
+    data: Track[];
+    itemContent: (index: number, item: Track) => JSX.Element;
+  }) => (
+    <div>
+      {data.map((item, index) => (
+        <div key={item.id}>{itemContent(index, item)}</div>
+      ))}
+    </div>
+  ),
+}), { virtual: true });
 
 const mockUseCloudinaryTracks = useCloudinaryTracks as jest.Mock;
 const mockUseRecentPlays = useRecentPlays as jest.Mock;
@@ -30,6 +45,12 @@ const mockGetCachedTrack = getCachedTrack as jest.MockedFunction<
 const mockUseAudioPlayer = useAudioPlayer as jest.MockedFunction<
   typeof useAudioPlayer
 >;
+
+const getDesktopViewButton = (name: string) =>
+  within(screen.getByRole("navigation", { name: "Music views" })).getByRole(
+    "button",
+    { name },
+  );
 
 const wrapperTrack: Track = {
   id: "cloudinary:search-wrapper",
@@ -68,6 +89,13 @@ describe("SearchView", () => {
       volume: 1,
       isMuted: false,
       queue: [],
+      audioCapabilities: {
+        audioElementAvailable: true,
+        audioContextAvailable: true,
+        analyserAvailable: true,
+        initializationError: null,
+      },
+      playbackError: null,
       audioInstance: null,
       audioContext: null,
       audioAnalyser: null,
@@ -101,21 +129,30 @@ describe("SearchView", () => {
     );
   });
 
-  it("renders the unified music shell heading", () => {
+  it("renders the unified music shell heading", async () => {
     render(<SearchView />);
 
     expect(
       screen.getByRole("heading", { name: "EDMM" }),
     ).toBeInTheDocument();
+    expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
+      "Wrapper Track",
+    );
   });
 
-  it("passes play events through the shell", () => {
+  it("passes play events through the shell", async () => {
     const onPlay = jest.fn();
 
     render(<SearchView onPlay={onPlay} />);
-    fireEvent.click(screen.getByRole("button", { name: "Play Wrapper Track" }));
+    fireEvent.click(
+      within(
+        screen.getByRole("region", { name: "Track list section" }),
+      ).getByRole("button", { name: "Play Wrapper Track" }),
+    );
 
-    expect(onPlay).toHaveBeenCalledWith(wrapperTrack, [wrapperTrack], true);
+    await waitFor(() => {
+      expect(onPlay).toHaveBeenCalledWith(wrapperTrack, [wrapperTrack], true);
+    });
   });
 
   it("starts on the Recent view from prop", async () => {
@@ -126,11 +163,15 @@ describe("SearchView", () => {
 
     render(<SearchView initialView="recent" />);
 
-    expect(screen.getByRole("button", { name: "Recent" })).toHaveAttribute(
+    expect(getDesktopViewButton("Recent")).toHaveAttribute(
       "aria-pressed",
       "true",
     );
-    expect(await screen.findByText("Search Recent Track")).toBeInTheDocument();
+    expect(
+      await within(
+        screen.getByRole("region", { name: "Track list section" }),
+      ).findByText("Search Recent Track"),
+    ).toBeInTheDocument();
   });
 
   it("opens cached track details from initialTrackId", async () => {

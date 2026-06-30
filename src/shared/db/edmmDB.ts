@@ -1,5 +1,5 @@
 import Dexie, { type Table } from "dexie";
-import type { Track } from "@/entities/Track/model";
+import type { Track } from "@/entities/track/model";
 
 export interface FavoriteRow {
   id?: number;

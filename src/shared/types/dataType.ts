@@ -1,4 +1,4 @@
-import type { Track } from "@/entities/Track/model";
+import type { Track } from "@/entities/track/model";
 import type { Method } from "axios";
 import type { LucideProps } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
@@ -10,6 +10,19 @@ export interface TrackInfo {
   artworkId: string;
   url: string;
   producer: string;
+}
+
+export type PlaybackError =
+  | "autoplay-blocked"
+  | "unsupported-audio-context"
+  | "source-load-failed"
+  | null;
+
+export interface AudioCapabilities {
+  audioElementAvailable: boolean;
+  audioContextAvailable: boolean;
+  analyserAvailable: boolean;
+  initializationError: string | null;
 }
 
 export interface PlayerTrackDetailsProps {
@@ -51,6 +64,7 @@ export interface AudioPlayerState {
   volume: number;
   isMuted: boolean;
   isShuffleEnabled: boolean;
+  playbackError: PlaybackError;
   setTrack: (track: TrackInfo, playImmediately?: boolean) => void;
   playTrack: (
     track: Track,
@@ -72,6 +86,7 @@ export interface AudioInstanceState {
   audioInstance: HTMLAudioElement | null;
   audioContext: AudioContext | null;
   audioAnalyser: AnalyserNode | null;
+  audioCapabilities: AudioCapabilities;
   cleanAudioInstance: () => void;
 }
 

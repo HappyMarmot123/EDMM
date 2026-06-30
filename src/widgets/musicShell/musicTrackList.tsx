@@ -9,8 +9,8 @@ import {
   useRef,
 } from "react";
 import { type VirtuosoHandle, Virtuoso } from "react-virtuoso";
-import type { Track } from "@/entities/Track/model";
-import { isPlayable } from "@/entities/Track/model";
+import type { Track } from "@/entities/track/model";
+import { isPlayable } from "@/entities/track/model";
 
 type MusicTrackListProps = {
   tracks: Track[];
@@ -43,8 +43,9 @@ const trackScrollerComponents = {
   Scroller: (
     props: ComponentPropsWithoutRef<"div"> & { stateChanged?: unknown },
   ) => {
-    const { stateChanged: _stateChanged, className, ...htmlProps } = props;
+    const { stateChanged, className, ...htmlProps } = props;
     const mergedClassName = `scrollbar-hide ${className ?? ""}`.trim();
+    void stateChanged;
 
     return <div {...htmlProps} className={mergedClassName} />;
   },

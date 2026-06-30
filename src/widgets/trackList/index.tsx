@@ -1,7 +1,7 @@
 "use client";
 
 import { useFavorites } from "@/features/library/hooks/useFavorites";
-import { Track } from "@/entities/Track/model";
+import { Track } from "@/entities/track/model";
 import { TrackRow } from "./trackRow";
 
 export interface TrackListProps {

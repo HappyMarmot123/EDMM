@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { isPlayable, type Track } from "@/entities/Track/model";
+import { isPlayable, type Track } from "@/entities/track/model";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
 import { getCachedTracks } from "@/shared/db/repositories/trackCacheRepo";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { normalizeArtworkUrl } from "@/shared/lib/trackArtwork";
+import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import MusicShellHeader, { type MusicView } from "./musicShellHeader";
 import MusicTrackList from "./musicTrackList";
 import TrackDetailAside from "./trackDetailAside";
@@ -42,31 +43,7 @@ const isMusicView = (view: MusicView | undefined): view is MusicView =>
   view === "all" || view === "recent";
 
 function useTrackSelectPlaybackMode() {
-  const [shouldPlayOnSelect, setShouldPlayOnSelect] = useState(false);
-
-  useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      typeof window.matchMedia !== "function"
-    ) {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia(TRACK_SELECT_PLAYBACK_MEDIA_QUERY);
-    const handleChange = () => setShouldPlayOnSelect(mediaQuery.matches);
-
-    handleChange();
-
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", handleChange);
-      return () => mediaQuery.removeEventListener("change", handleChange);
-    }
-
-    mediaQuery.addListener(handleChange);
-    return () => mediaQuery.removeListener(handleChange);
-  }, []);
-
-  return shouldPlayOnSelect;
+  return useMediaQuery(TRACK_SELECT_PLAYBACK_MEDIA_QUERY, false);
 }
 
 function useCachedTrackList(ids: string[]): CachedTrackState {
@@ -386,10 +363,10 @@ export function MusicShell({
       : "No tracks in this view.";
   return (
     <main
-      className="relative flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[#050306] px-4 pb-[calc(148px+max(env(safe-area-inset-bottom),10px))] pt-5 text-white sm:px-6 sm:pb-[calc(156px+max(env(safe-area-inset-bottom),12px))] md:pb-[calc(96px+max(env(safe-area-inset-bottom),12px))] lg:px-8"
+      className="relative flex h-screen h-[100dvh] max-h-screen max-h-[100dvh] flex-col overflow-hidden bg-[#050306] px-4 pb-[calc(148px+max(env(safe-area-inset-bottom),10px))] pt-5 text-white sm:px-6 sm:pb-[calc(156px+max(env(safe-area-inset-bottom),12px))] md:pb-[calc(96px+max(env(safe-area-inset-bottom),12px))] lg:px-8"
     >
       <section
-        className={`music-shell-grid mx-auto grid min-h-0 w-full flex-1 gap-5 ${
+        className={`music-shell-grid mx-auto grid min-h-0 w-full flex-1 gap-5 max-w-7xl ${
           isTrackDetailOpen
             ? "music-shell-grid--aside-open"
             : "music-shell-grid--aside-closed"

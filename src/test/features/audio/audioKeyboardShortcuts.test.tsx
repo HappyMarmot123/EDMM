@@ -12,6 +12,12 @@ const mockUseAudioPlayer = useAudioPlayer as jest.MockedFunction<
 
 const createAudioState = () => ({
   audioAnalyser: null,
+  audioCapabilities: {
+    audioElementAvailable: false,
+    audioContextAvailable: false,
+    analyserAvailable: false,
+    initializationError: null,
+  },
   audioContext: null,
   audioInstance: null,
   cleanAudioInstance: jest.fn(),
@@ -30,6 +36,7 @@ const createAudioState = () => ({
   isMuted: false,
   isPlaying: false,
   isShuffleEnabled: false,
+  playbackError: null,
   nextTrack: jest.fn(),
   playTrack: jest.fn(),
   prevTrack: jest.fn(),
@@ -51,7 +58,14 @@ const createAudioState = () => ({
 function KeyboardShortcutHarness() {
   useAudioKeyboardShortcuts();
 
-  return <input aria-label="Search catalog" />;
+  return (
+    <div>
+      <input aria-label="Search catalog" />
+      <div contentEditable role="textbox" aria-label="Editable title" />
+      <div role="slider" aria-label="Custom progress" tabIndex={0} />
+      <input type="range" aria-label="Native progress" />
+    </div>
+  );
 }
 
 describe("useAudioKeyboardShortcuts", () => {
@@ -106,5 +120,25 @@ describe("useAudioKeyboardShortcuts", () => {
     });
 
     expect(audioState.togglePlayPause).not.toHaveBeenCalled();
+  });
+
+  it("ignores shortcuts from editable and slider controls", () => {
+    const audioState = createAudioState();
+    mockUseAudioPlayer.mockReturnValue(audioState);
+
+    render(<KeyboardShortcutHarness />);
+
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "Editable title" }), {
+      code: "Space",
+    });
+    fireEvent.keyDown(screen.getByRole("slider", { name: "Custom progress" }), {
+      code: "ArrowRight",
+    });
+    fireEvent.keyDown(screen.getByRole("slider", { name: "Native progress" }), {
+      code: "ArrowLeft",
+    });
+
+    expect(audioState.togglePlayPause).not.toHaveBeenCalled();
+    expect(audioState.seek).not.toHaveBeenCalled();
   });
 });
