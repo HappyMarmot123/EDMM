@@ -5,6 +5,7 @@ import { isPlayable, type Track } from "@/entities/track/model";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
 import { getCachedTracks } from "@/shared/db/repositories/trackCacheRepo";
+import { addEdmmEventListener, EDMM_EVENTS } from "@/shared/lib/edmmEvents";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { normalizeArtworkUrl } from "@/shared/lib/trackArtwork";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
@@ -125,10 +126,11 @@ export function MusicShell({
   }, [normalizedInitialView]);
 
   useEffect(() => {
-    const handleTrackZoneSelect = (event: Event) => {
-      const trackId = (
-        event as CustomEvent<{ trackId?: string }>
-      ).detail?.trackId?.trim();
+    const cleanup = addEdmmEventListener(
+      window,
+      EDMM_EVENTS.playerTrackZoneSelect,
+      (event) => {
+      const trackId = event.detail.trackId.trim();
       if (!trackId) {
         return;
       }
@@ -140,19 +142,10 @@ export function MusicShell({
         requestId:
           current?.trackId === trackId ? current.requestId + 1 : 1,
       }));
-    };
-
-    window.addEventListener(
-      "edmm:player-track-zone-select",
-      handleTrackZoneSelect,
+      },
     );
 
-    return () => {
-      window.removeEventListener(
-        "edmm:player-track-zone-select",
-        handleTrackZoneSelect,
-      );
-    };
+    return cleanup;
   }, []);
 
   const normalizedQuery = query.trim();

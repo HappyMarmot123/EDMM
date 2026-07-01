@@ -6,6 +6,7 @@ import type { Track } from "@/entities/track/model";
 import { AudioVisualizer } from "@/features/audio/components/audioVisualizer";
 import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
+import { dispatchEdmmEvent, EDMM_EVENTS } from "@/shared/lib/edmmEvents";
 import { pickArtworkUrl } from "@/shared/lib/trackArtwork";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 
@@ -157,11 +158,7 @@ export function TrackDetailAside({
       return;
     }
 
-    window.dispatchEvent(
-      new CustomEvent("edmm:open-player-fullscreen", {
-        detail: { track },
-      }),
-    );
+    dispatchEdmmEvent(window, EDMM_EVENTS.openPlayerFullscreen, { track });
   };
 
   return (

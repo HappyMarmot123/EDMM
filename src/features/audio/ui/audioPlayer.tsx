@@ -12,6 +12,11 @@ import PlayerControlsSection, {
 import AlbumArtwork from "@/features/audio/components/albumArtwork";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
+import {
+  addEdmmEventListener,
+  dispatchEdmmEvent,
+  EDMM_EVENTS,
+} from "@/shared/lib/edmmEvents";
 import type { Track } from "@/entities/track/model";
 
 const FULLSCREEN_VIEWPORT_QUERY = "(min-width: 768px)";
@@ -64,28 +69,21 @@ export default function AudioPlayer() {
   }, [canUseFullscreen]);
 
   useEffect(() => {
-    const handleOpenPlayerFullscreen = (event: Event) => {
+    const cleanup = addEdmmEventListener(
+      window,
+      EDMM_EVENTS.openPlayerFullscreen,
+      (event) => {
       if (!canUseFullscreen) {
         return;
       }
 
-      const nextTrack =
-        (event as CustomEvent<{ track?: Track }>).detail?.track ?? null;
+      const nextTrack = event.detail.track ?? null;
       setFullscreenTrackOverride(nextTrack);
       setIsFullscreenOpen(true);
-    };
-
-    window.addEventListener(
-      "edmm:open-player-fullscreen",
-      handleOpenPlayerFullscreen,
+      },
     );
 
-    return () => {
-      window.removeEventListener(
-        "edmm:open-player-fullscreen",
-        handleOpenPlayerFullscreen,
-      );
-    };
+    return cleanup;
   }, [canUseFullscreen]);
 
   const handleTrackZoneClick = () => {
@@ -104,11 +102,9 @@ export default function AudioPlayer() {
 
     router.replace(nextPath, { scroll: false });
     if (typeof window !== "undefined") {
-      window.dispatchEvent(
-        new CustomEvent("edmm:player-track-zone-select", {
-          detail: { trackId: currentTrackId },
-        }),
-      );
+      dispatchEdmmEvent(window, EDMM_EVENTS.playerTrackZoneSelect, {
+        trackId: currentTrackId,
+      });
     }
   };
 
