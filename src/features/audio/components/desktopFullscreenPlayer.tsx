@@ -1,11 +1,10 @@
-/* eslint-disable @next/next/no-img-element -- Fullscreen artwork receives dynamic CDN hosts. */
 import { type CSSProperties, useEffect } from "react";
-import Image from "next/image";
-import { Minimize2, Music2 } from "lucide-react";
-import { shouldUnoptimizeArtworkImage } from "@/features/audio/components/artworkImage";
-import FullscreenAlbumDisc from "@/features/audio/components/fullscreenAlbumDisc";
+import { Minimize2 } from "lucide-react";
+import FullscreenArtworkStage from "@/features/audio/components/fullscreenArtworkStage";
 import FullscreenAudioVisualizer from "@/features/audio/components/fullscreenAudioVisualizer";
+import FullscreenBackdrop from "@/features/audio/components/fullscreenBackdrop";
 import { useAlbumColorPalette } from "@/features/audio/components/visualizers/albumColorPalette";
+import { useArtworkCrossfade } from "@/features/audio/hooks/useArtworkCrossfade";
 import type { Track } from "@/entities/track";
 
 type DesktopFullscreenPlayerProps = {
@@ -15,6 +14,8 @@ type DesktopFullscreenPlayerProps = {
   onClose: () => void;
 };
 
+const FADE_MS = 450;
+
 export default function DesktopFullscreenPlayer({
   currentTrackInfo,
   analyser,
@@ -23,12 +24,18 @@ export default function DesktopFullscreenPlayer({
 }: DesktopFullscreenPlayerProps) {
   const artworkSrc = currentTrackInfo?.artworkUrl?.trim() ?? "";
   const trackTitle = currentTrackInfo?.title ?? "No track selected";
-  const hasArtwork = Boolean(artworkSrc);
-  const { palette: albumPalette } = useAlbumColorPalette(artworkSrc);
+  const { palette, resolvedSrc } = useAlbumColorPalette(artworkSrc);
+  const { layers, topPalette, activateLayer, completeLayer } = useArtworkCrossfade({
+    artworkSrc,
+    palette,
+    resolvedSrc,
+    fadeDurationMs: FADE_MS,
+  });
+
   const albumPaletteStyle = {
-    "--album-primary-rgb": albumPalette.primary,
-    "--album-secondary-rgb": albumPalette.secondary,
-    "--album-accent-rgb": albumPalette.accent,
+    "--album-primary-rgb": topPalette.primary,
+    "--album-secondary-rgb": topPalette.secondary,
+    "--album-accent-rgb": topPalette.accent,
   } as CSSProperties;
 
   useEffect(() => {
@@ -36,17 +43,18 @@ export default function DesktopFullscreenPlayer({
       if (event.key !== "Escape") {
         return;
       }
-
       event.preventDefault();
       onClose();
     };
 
     window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
+
+  const fadeStyle = (opacity: number): CSSProperties => ({
+    opacity,
+    transition: `opacity ${FADE_MS}ms ease-out`,
+  });
 
   return (
     <section
@@ -55,55 +63,28 @@ export default function DesktopFullscreenPlayer({
       className="fixed inset-0 z-[60] min-h-screen min-h-dvh overflow-hidden bg-[#050306] text-white"
       style={albumPaletteStyle}
     >
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-[#050306]"
-      />
-      {hasArtwork ? (
-        <>
-          <img
-            src={artworkSrc}
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-[-18%] h-[136%] w-[136%] scale-105 object-cover opacity-42 blur-[72px] saturate-[1.28]"
-            draggable={false}
-          />
-          <img
-            src={artworkSrc}
-            alt=""
-            aria-hidden="true"
-            className="absolute left-1/2 top-[43%] h-[56vmin] w-[56vmin] -translate-x-1/2 -translate-y-1/2 rounded-full object-cover opacity-24 blur-[92px] saturate-[1.55]"
-            draggable={false}
-          />
-        </>
-      ) : (
-        <div
-          aria-hidden="true"
-          className="absolute left-1/2 top-[43%] h-[56vmin] w-[56vmin] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fd6d94]/20 blur-[100px]"
-          style={{
-            background: `rgba(${albumPalette.primary}, 0.20)`,
-          }}
-        />
-      )}
+      <div aria-hidden="true" className="absolute inset-0 bg-[#050306]" />
 
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-[radial-gradient(circle_at_50%_34%,rgba(255,255,255,0.14),rgba(8,8,8,0.42)_30%,rgba(5,3,6,0.90)_74%,rgba(0,0,0,0.98)_100%)]"
-        style={{
-          backgroundImage: `radial-gradient(circle at 50% 34%, rgba(${albumPalette.accent}, 0.16), rgba(${albumPalette.primary}, 0.12) 26%, rgba(5, 3, 6, 0.90) 74%, rgba(0, 0, 0, 0.98) 100%)`,
-        }}
-      />
+      {layers.map((layer) => (
+        <div
+          key={layer.key}
+          aria-hidden="true"
+          className="absolute inset-0"
+          style={fadeStyle(layer.opacity)}
+        >
+          <FullscreenBackdrop
+            artworkSrc={layer.artworkSrc}
+            hasArtwork={layer.hasArtwork}
+            palette={layer.palette}
+          />
+        </div>
+      ))}
+
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.20),rgba(0,0,0,0.50)_54%,rgba(0,0,0,0.82))]"
       />
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-[9vw] bottom-[calc(122px+max(env(safe-area-inset-bottom),12px))] h-36 rounded-full bg-[linear-gradient(90deg,transparent,rgba(253,109,148,0.13),rgba(255,255,255,0.10),rgba(253,109,148,0.12),transparent)] opacity-70 blur-3xl"
-        style={{
-          backgroundImage: `linear-gradient(90deg, transparent, rgba(${albumPalette.secondary}, 0.12), rgba(${albumPalette.accent}, 0.16), rgba(${albumPalette.primary}, 0.12), transparent)`,
-        }}
-      />
+
       <div
         aria-hidden="true"
         aria-label="liquid-glass-panel"
@@ -114,14 +95,10 @@ export default function DesktopFullscreenPlayer({
             analyser={analyser}
             isActive={isPlaying}
             isCurrentTrack={Boolean(currentTrackInfo)}
-            palette={albumPalette}
+            palette={topPalette}
           />
         </div>
       </div>
-      {/* <div
-        aria-hidden="true"
-        className="absolute inset-0 opacity-[0.10] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:88px_88px]"
-      /> */}
 
       <button
         type="button"
@@ -139,39 +116,33 @@ export default function DesktopFullscreenPlayer({
       <div className="relative z-[1] flex min-h-screen min-h-dvh flex-col items-center justify-center px-12 pb-[calc(130px+max(env(safe-area-inset-bottom),12px))] pt-20">
         <div className="grid w-full max-w-[560px] justify-items-center">
           <div className="relative">
-            <FullscreenAlbumDisc
-              artworkSrc={artworkSrc}
-              trackTitle={trackTitle}
-              isPlaying={isPlaying}
-            />
-            <div
-              className="relative z-[1] aspect-square w-[min(42vw,400px)] overflow-hidden rounded-xl bg-white/8 shadow-[0_40px_120px_rgba(0,0,0,0.58)] ring-1 ring-white/12"
-              style={{
-                clipPath: "polygon(0 0, 100% 0, 100% 0, 60% 50%, 100% 100%, 100% 100%, 0 100%)",
-              }}
-            >
-            {hasArtwork ? (
-              <Image
-                src={artworkSrc}
-                alt={`${trackTitle} fullscreen artwork`}
-                fill
-                sizes="(min-width: 1024px) 400px, 42vw"
-                unoptimized={shouldUnoptimizeArtworkImage(artworkSrc)}
-                className="object-cover"
-                draggable={false}
-              />
-            ) : (
-              <div
-                className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(253,109,148,0.22),rgba(255,255,255,0.06))] text-[#fd6d94]"
-                style={{
-                  backgroundImage: `linear-gradient(135deg, rgba(${albumPalette.primary}, 0.22), rgba(255, 255, 255, 0.06))`,
-                  color: `rgb(${albumPalette.accent})`,
-                }}
-              >
-                <Music2 size={96} strokeWidth={1.4} aria-hidden="true" />
-              </div>
-            )}
-            </div>
+            {layers.map((layer, index) => {
+              const isTop = index === layers.length - 1;
+              return (
+                <div
+                  key={layer.key}
+                  className={isTop ? "" : "absolute inset-0"}
+                  style={fadeStyle(layer.opacity)}
+                  onTransitionEnd={(event) => {
+                    if (
+                      event.propertyName === "opacity" &&
+                      event.target === event.currentTarget
+                    ) {
+                      completeLayer(layer.key);
+                    }
+                  }}
+                >
+                  <FullscreenArtworkStage
+                    artworkSrc={layer.artworkSrc}
+                    trackTitle={trackTitle}
+                    hasArtwork={layer.hasArtwork}
+                    isPlaying={isPlaying}
+                    palette={layer.palette}
+                    onArtworkLoad={() => activateLayer(layer.key)}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
