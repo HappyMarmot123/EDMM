@@ -116,6 +116,34 @@ describe("useArtworkCrossfade", () => {
     expect(top(result.current.layers).hasArtwork).toBe(false);
   });
 
+  it("activates a cached artwork layer via the timer fallback when onLoad never fires", () => {
+    jest.useFakeTimers();
+    try {
+      const { result, rerender } = renderHook(
+        ({ artworkSrc, palette, resolvedSrc }) =>
+          useArtworkCrossfade({ artworkSrc, palette, resolvedSrc }),
+        { initialProps: { artworkSrc: "a.jpg", palette: paletteA, resolvedSrc: "a.jpg" } },
+      );
+
+      // New track's palette resolves -> incoming layer pushed at opacity 0.
+      rerender({ artworkSrc: "b.jpg", palette: paletteB, resolvedSrc: "b.jpg" });
+      const incoming = top(result.current.layers);
+      expect(incoming.artworkSrc).toBe("b.jpg");
+      expect(incoming.opacity).toBe(0);
+
+      // Simulate a cached next/image whose onLoad never fires: do NOT call
+      // activateLayer. The timer fallback must still fade the layer in.
+      act(() => {
+        jest.advanceTimersByTime(120);
+      });
+
+      expect(top(result.current.layers).opacity).toBe(1);
+      expect(top(result.current.layers).artworkSrc).toBe("b.jpg");
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it("prunes the outgoing layer automatically after the fade duration", () => {
     jest.useFakeTimers();
     try {

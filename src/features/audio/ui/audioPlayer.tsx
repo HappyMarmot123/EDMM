@@ -68,6 +68,20 @@ export default function AudioPlayer() {
     }
   }, [canUseFullscreen]);
 
+  const previousCurrentTrackIdRef = useRef(currentTrackId);
+  useEffect(() => {
+    if (previousCurrentTrackIdRef.current === currentTrackId) {
+      return;
+    }
+    previousCurrentTrackIdRef.current = currentTrackId;
+    // Playback moved to a different track (prev/next, autoplay) while fullscreen
+    // is open. Stop pinning to the previewed override track: otherwise the
+    // fullscreen keeps showing the old artwork/palette and, because the shown
+    // track no longer matches the playing one, the analyser is nulled and the
+    // visualizer freezes. Following the current track re-syncs all three.
+    setFullscreenTrackOverride(null);
+  }, [currentTrackId]);
+
   useEffect(() => {
     const cleanup = addEdmmEventListener(
       window,

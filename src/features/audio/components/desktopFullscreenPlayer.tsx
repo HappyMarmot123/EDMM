@@ -35,7 +35,7 @@ export default function DesktopFullscreenPlayer({
   const artworkSrc = currentTrackInfo?.artworkUrl?.trim() ?? "";
   const trackTitle = currentTrackInfo?.title ?? "No track selected";
   const { palette, resolvedSrc } = useAlbumColorPalette(artworkSrc);
-  const { layers, topPalette, activateLayer, completeLayer } = useArtworkCrossfade({
+  const { layers, topPalette, completeLayer } = useArtworkCrossfade({
     artworkSrc,
     palette,
     resolvedSrc,
@@ -246,7 +246,6 @@ export default function DesktopFullscreenPlayer({
                     hasArtwork={layer.hasArtwork}
                     isPlaying={isPlaying}
                     palette={layer.palette}
-                    onArtworkLoad={() => activateLayer(layer.key)}
                   />
                 </div>
               );

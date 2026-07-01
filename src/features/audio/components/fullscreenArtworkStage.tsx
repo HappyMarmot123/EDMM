@@ -1,6 +1,5 @@
-import Image from "next/image";
+/* eslint-disable @next/next/no-img-element -- Fullscreen artwork is a fixed size that changes on every track; next/image's optimization/caching add no value here, and its onLoad is unreliable for already-cached images. A raw <img> shares the same cache entry as the backdrop and palette extractor. */
 import { Music2 } from "lucide-react";
-import { shouldUnoptimizeArtworkImage } from "@/features/audio/components/artworkImage";
 import FullscreenAlbumDisc from "@/features/audio/components/fullscreenAlbumDisc";
 import type { AlbumColorPalette } from "@/features/audio/components/visualizers/albumColorPalette";
 
@@ -10,7 +9,6 @@ type FullscreenArtworkStageProps = {
   hasArtwork: boolean;
   isPlaying: boolean;
   palette: AlbumColorPalette;
-  onArtworkLoad?: () => void;
 };
 
 export default function FullscreenArtworkStage({
@@ -19,7 +17,6 @@ export default function FullscreenArtworkStage({
   hasArtwork,
   isPlaying,
   palette,
-  onArtworkLoad,
 }: FullscreenArtworkStageProps) {
   return (
     <div className="relative">
@@ -36,15 +33,11 @@ export default function FullscreenArtworkStage({
         }}
       >
         {hasArtwork ? (
-          <Image
+          <img
             src={artworkSrc}
             alt={`${trackTitle} fullscreen artwork`}
-            fill
-            sizes="(min-width: 1024px) 400px, 42vw"
-            unoptimized={shouldUnoptimizeArtworkImage(artworkSrc)}
-            className="object-cover"
+            className="absolute inset-0 h-full w-full object-cover"
             draggable={false}
-            onLoad={() => onArtworkLoad?.()}
           />
         ) : (
           <div

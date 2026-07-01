@@ -100,12 +100,21 @@ export function useArtworkCrossfade({
     });
   }, [artworkSrc, palette, resolvedSrc]);
 
-  // Fallback (no artwork) layers have no image onLoad, so fade them in here.
+  // Single activation path: fade the top layer in on a short timer. We can't
+  // rely on the artwork's image `onLoad` because a cached image often loads
+  // before the handler attaches, so the event never fires and the layer would
+  // stay invisible forever. The image is already decoded by the time a layer is
+  // committed (a layer is only pushed once its palette resolved, which loads the
+  // same URL), so the timer reveals a fully-rendered image with no blank flash.
   useEffect(() => {
     const topLayer = layers[layers.length - 1];
-    if (topLayer && !topLayer.hasArtwork && topLayer.opacity === 0) {
-      activateLayer(topLayer.key);
+    if (!topLayer || topLayer.opacity !== 0) {
+      return;
     }
+    // The delay also lets the opacity:0 frame paint first so the fade animates.
+    const delay = topLayer.hasArtwork ? 120 : 0;
+    const timer = setTimeout(() => activateLayer(topLayer.key), delay);
+    return () => clearTimeout(timer);
   }, [layers, activateLayer]);
 
   // Timeout backup in case transitionend never fires.
