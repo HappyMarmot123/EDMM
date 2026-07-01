@@ -1,6 +1,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import { fireEvent } from "@testing-library/react";
 import { AudioPlayer, MobileAudioPlayer } from "@/features/audio";
+import AudioPlayerWidget from "@/widgets/audioPlayer";
 import type { Track } from "@/entities/track";
 
 const track: Track = {
@@ -286,7 +287,7 @@ describe("AudioPlayer", () => {
     expect(screen.getByText("N")).toBeInTheDocument();
     expect(screen.getByText("Next track")).toBeInTheDocument();
     expect(screen.getByText("Esc")).toBeInTheDocument();
-    expect(screen.getByText("Exit fullscreen")).toBeInTheDocument();
+    expect(screen.getByText("Close shortcuts / exit fullscreen")).toBeInTheDocument();
     expect(screen.getByText(/Tab is locked/i)).toBeInTheDocument();
     expect(
       within(fullscreenDialog).getByRole("button", {
@@ -301,6 +302,82 @@ describe("AudioPlayer", () => {
     );
 
     expect(screen.queryByText("Keyboard controls")).not.toBeInTheDocument();
+  });
+
+  it("keeps playback shortcuts active after opening fullscreen keyboard guidance", async () => {
+    render(<AudioPlayerWidget />);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Toggle fullscreen view" }),
+    );
+
+    const fullscreenDialog = screen.getByRole("dialog", {
+      name: "Fullscreen player",
+    });
+    const shortcutButton = within(fullscreenDialog).getByRole("button", {
+      name: "Show fullscreen shortcuts",
+    });
+
+    shortcutButton.focus();
+    fireEvent.click(shortcutButton);
+
+    await waitFor(() => expect(fullscreenDialog).toHaveFocus());
+
+    fireEvent.keyDown(document.activeElement ?? fullscreenDialog, {
+      code: "KeyN",
+    });
+
+    expect(mockAudioPlayerState.nextTrack).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes fullscreen keyboard guidance when clicking outside it", () => {
+    render(<AudioPlayer />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Toggle fullscreen view" }));
+
+    const fullscreenDialog = screen.getByRole("dialog", {
+      name: "Fullscreen player",
+    });
+    fireEvent.click(
+      within(fullscreenDialog).getByRole("button", {
+        name: "Show fullscreen shortcuts",
+      }),
+    );
+
+    expect(screen.getByText("Keyboard controls")).toBeInTheDocument();
+
+    fireEvent.mouseDown(fullscreenDialog);
+
+    expect(screen.queryByText("Keyboard controls")).not.toBeInTheDocument();
+    expect(fullscreenDialog).toBeInTheDocument();
+  });
+
+  it("closes fullscreen keyboard guidance before closing fullscreen with Escape", () => {
+    render(<AudioPlayer />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Toggle fullscreen view" }));
+
+    const fullscreenDialog = screen.getByRole("dialog", {
+      name: "Fullscreen player",
+    });
+    fireEvent.click(
+      within(fullscreenDialog).getByRole("button", {
+        name: "Show fullscreen shortcuts",
+      }),
+    );
+
+    expect(screen.getByText("Keyboard controls")).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(screen.queryByText("Keyboard controls")).not.toBeInTheDocument();
+    expect(fullscreenDialog).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(
+      screen.queryByRole("dialog", { name: "Fullscreen player" }),
+    ).not.toBeInTheDocument();
   });
 
   it("does not expose fullscreen controls below the 768px viewport", () => {

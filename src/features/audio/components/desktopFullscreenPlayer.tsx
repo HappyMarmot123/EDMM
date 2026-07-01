@@ -1,4 +1,10 @@
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Keyboard } from "lucide-react";
 import FullscreenArtworkStage from "@/features/audio/components/fullscreenArtworkStage";
 import FullscreenAudioVisualizer from "@/features/audio/components/fullscreenAudioVisualizer";
@@ -23,6 +29,8 @@ export default function DesktopFullscreenPlayer({
   onClose,
 }: DesktopFullscreenPlayerProps) {
   const dialogRef = useRef<HTMLElement>(null);
+  const shortcutButtonRef = useRef<HTMLButtonElement>(null);
+  const shortcutHintRef = useRef<HTMLElement>(null);
   const [showShortcutHint, setShowShortcutHint] = useState(false);
   const artworkSrc = currentTrackInfo?.artworkUrl?.trim() ?? "";
   const trackTitle = currentTrackInfo?.title ?? "No track selected";
@@ -40,13 +48,17 @@ export default function DesktopFullscreenPlayer({
     "--album-accent-rgb": topPalette.accent,
   } as CSSProperties;
 
-  useEffect(() => {
+  const focusDialog = useCallback(() => {
     dialogRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  useEffect(() => {
+    focusDialog();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Tab") {
         event.preventDefault();
-        dialogRef.current?.focus({ preventScroll: true });
+        focusDialog();
         return;
       }
 
@@ -54,12 +66,45 @@ export default function DesktopFullscreenPlayer({
         return;
       }
       event.preventDefault();
+      if (showShortcutHint) {
+        setShowShortcutHint(false);
+        focusDialog();
+        return;
+      }
+
       onClose();
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  }, [focusDialog, onClose, showShortcutHint]);
+
+  useEffect(() => {
+    if (!showShortcutHint) {
+      return;
+    }
+
+    const handleMouseDown = (event: MouseEvent) => {
+      const target = event.target;
+
+      if (!(target instanceof Node)) {
+        return;
+      }
+
+      if (
+        shortcutButtonRef.current?.contains(target) ||
+        shortcutHintRef.current?.contains(target)
+      ) {
+        return;
+      }
+
+      setShowShortcutHint(false);
+      focusDialog();
+    };
+
+    window.addEventListener("mousedown", handleMouseDown);
+    return () => window.removeEventListener("mousedown", handleMouseDown);
+  }, [focusDialog, showShortcutHint]);
 
   const fadeStyle = (opacity: number): CSSProperties => ({
     opacity,
@@ -115,8 +160,12 @@ export default function DesktopFullscreenPlayer({
       </div>
 
       <button
+        ref={shortcutButtonRef}
         type="button"
-        onClick={() => setShowShortcutHint((isVisible) => !isVisible)}
+        onClick={() => {
+          setShowShortcutHint((isVisible) => !isVisible);
+          focusDialog();
+        }}
         aria-label={
           showShortcutHint
             ? "Hide fullscreen shortcuts"
@@ -131,6 +180,7 @@ export default function DesktopFullscreenPlayer({
 
       {showShortcutHint ? (
         <aside
+          ref={shortcutHintRef}
           id="fullscreen-keyboard-hint"
           role="status"
           aria-live="polite"
@@ -163,7 +213,7 @@ export default function DesktopFullscreenPlayer({
             <kbd className="rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white">
               Esc
             </kbd>
-            <span>Exit fullscreen</span>
+            <span>Close shortcuts / exit fullscreen</span>
           </div>
           <p className="mt-2 text-xs font-semibold text-white/62">
             Tab is locked while fullscreen is open.
