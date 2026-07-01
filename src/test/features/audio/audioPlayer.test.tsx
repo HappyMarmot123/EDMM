@@ -152,6 +152,7 @@ describe("AudioPlayer", () => {
     expect(seekSlider).toHaveAttribute("aria-valuemax", "180");
     expect(volumeZone).toHaveClass("flex");
     expect(volumeSlider).toHaveValue("0.7");
+    expect(within(volumeZone).queryByText("EQ Presets")).not.toBeInTheDocument();
   });
 
   it("fires previous and next actions from desktop controls", () => {
