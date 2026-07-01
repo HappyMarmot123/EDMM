@@ -1,16 +1,17 @@
 import fs from "fs";
 import path from "path";
 
-const providerSource = fs.readFileSync(
-  path.join(process.cwd(), "src/shared/providers/audioPlayerProvider.tsx"),
+const elementSyncSource = fs.readFileSync(
+  path.join(process.cwd(), "src/shared/providers/useAudioElementSync.ts"),
   "utf8",
 );
 
 describe("AudioPlayerProvider source ownership", () => {
   it("assigns audio.src only from the playback synchronization effect", () => {
-    const directSrcAssignments = providerSource.match(/\baudio\.src\s*=/g) ?? [];
+    const directSrcAssignments =
+      elementSyncSource.match(/\baudio\.src\s*=/g) ?? [];
 
     expect(directSrcAssignments).toHaveLength(1);
-    expect(providerSource).toContain("const trackUrl = currentTrack?.streamUrl");
+    expect(elementSyncSource).toContain("const trackUrl = currentTrack?.streamUrl");
   });
 });

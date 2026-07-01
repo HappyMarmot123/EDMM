@@ -3,16 +3,18 @@
 import type { Track } from "@/entities/track";
 import { isPlayable } from "@/entities/track";
 import useAudioInstanceStore from "@/app/store/audioInstanceStore";
-import { cacheTrack, getCachedTrack } from "@/shared/db";
+import { cacheTrack } from "@/shared/db";
 import { addRecentPlay } from "@/shared/db";
 import { CLAMP_VOLUME } from "@/shared/lib/util";
 import { logger } from "@/shared/lib/logger";
-import { normalizeArtworkUrl, resolveArtworkUrlWithCache } from "@/shared/lib/trackArtwork";
-import { setupAudioEventListeners } from "@/shared/lib/audioEventManager";
+import { normalizeArtworkUrl } from "@/shared/lib/trackArtwork";
+import { classifyPlaybackError } from "./audioPlaybackErrors";
 import type {
   AudioPlayerLogicReturnType,
   PlaybackError,
 } from "./audioPlayerTypes";
+import { useAudioArtworkRecovery } from "./useAudioArtworkRecovery";
+import { useAudioElementSync } from "./useAudioElementSync";
 import {
   createContext,
   useCallback,
@@ -27,22 +29,6 @@ const AudioPlayerContext = createContext<
   AudioPlayerLogicReturnType | undefined
 >(undefined);
 
-const classifyPlaybackError = (
-  error: unknown,
-  fallback: NonNullable<PlaybackError>,
-): NonNullable<PlaybackError> => {
-  if (error instanceof DOMException) {
-    if (error.name === "NotAllowedError") {
-      return "autoplay-blocked";
-    }
-    if (error.name === "NotSupportedError") {
-      return "source-load-failed";
-    }
-  }
-
-  return fallback;
-};
-
 function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
   const audio = useAudioInstanceStore((state) => state.audioInstance);
   const audioContext = useAudioInstanceStore((state) => state.audioContext);
@@ -54,10 +40,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
     (state) => state.cleanAudioInstance
   );
   const currentTrackRef = useRef<Track | null>(null);
-  const trackArtworkCacheRef = useRef(new Map<string, string>());
   const playTrackRequestRef = useRef(0);
-  const artworkRecoveryAttemptRef = useRef(new Map<string, number>());
-  const artworkRecoveryRunningRef = useRef(new Set<string>());
 
   const isSeekingRef = useRef(false);
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
@@ -131,109 +114,17 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
     [],
   );
 
-  const cacheArtwork = useCallback((track: Track) => {
-    const artworkUrl = normalizeArtworkUrl(track.artworkUrl);
-    if (artworkUrl) {
-      trackArtworkCacheRef.current.set(track.id, artworkUrl);
-    }
-  }, []);
-
-  const resolveTrackArtwork = useCallback(
-    async (track: Track, fallbackArtworkId = ""): Promise<Track> => {
-      const directArtwork = normalizeArtworkUrl(track.artworkUrl);
-      if (directArtwork) {
-        const trackWithArtwork = { ...track, artworkUrl: directArtwork };
-        cacheArtwork(trackWithArtwork);
-        return trackWithArtwork;
-      }
-
-      const normalizedFallback = normalizeArtworkUrl(fallbackArtworkId);
-      if (normalizedFallback) {
-        return { ...track, artworkUrl: normalizedFallback };
-      }
-
-      const rememberedArtwork = normalizeArtworkUrl(
-        trackArtworkCacheRef.current.get(track.id),
-      );
-      if (rememberedArtwork) {
-        return { ...track, artworkUrl: rememberedArtwork };
-      }
-
-      const resolvedArtwork = normalizeArtworkUrl(
-        await resolveArtworkUrlWithCache(track),
-      );
-      if (resolvedArtwork) {
-        cacheArtwork({ ...track, artworkUrl: resolvedArtwork });
-      }
-
-      return { ...track, artworkUrl: resolvedArtwork };
-    },
-    [cacheArtwork],
-  );
-
-  const recoverArtworkForCurrentTrack = useCallback(async (assetId: string) => {
-    if (!assetId) return;
-
-    const normalizedId = assetId;
-    if (artworkRecoveryRunningRef.current.has(normalizedId)) return;
-
-    const previousAttempts = artworkRecoveryAttemptRef.current.get(normalizedId) ?? 0;
-    if (previousAttempts >= 4) return;
-
-    artworkRecoveryRunningRef.current.add(normalizedId);
-    try {
-      for (let attempt = previousAttempts; attempt < 4; attempt++) {
-        if (currentTrackRef.current?.id !== normalizedId) {
-          break;
-        }
-
-        const cachedTrack = await getCachedTrack(normalizedId).catch(() => undefined);
-        const resolvedArtwork = normalizeArtworkUrl(cachedTrack?.artworkUrl);
-
-        if (resolvedArtwork) {
-          setCurrentTrack((previousTrack) => {
-            if (!previousTrack || previousTrack.id !== normalizedId) {
-              return previousTrack;
-            }
-
-            if (previousTrack.artworkUrl) {
-              return previousTrack;
-            }
-
-            const patchedTrack = { ...previousTrack, artworkUrl: resolvedArtwork };
-            cacheArtwork(patchedTrack);
-            return patchedTrack;
-          });
-
-          setQueue((previousQueue) => {
-            if (previousQueue.every((item) => item.id !== normalizedId)) {
-              return previousQueue;
-            }
-
-            return previousQueue.map((item) =>
-              item.id === normalizedId ? { ...item, artworkUrl: resolvedArtwork } : item,
-            );
-          });
-          trackArtworkCacheRef.current.set(normalizedId, resolvedArtwork);
-          artworkRecoveryAttemptRef.current.delete(normalizedId);
-          return;
-        }
-
-        if (attempt < 3) {
-          artworkRecoveryAttemptRef.current.set(normalizedId, attempt + 1);
-          await new Promise<void>((resolve) =>
-            setTimeout(() => {
-              resolve();
-            }, 250 * (attempt + 1)),
-          );
-        } else {
-          artworkRecoveryAttemptRef.current.set(normalizedId, attempt + 1);
-        }
-      }
-    } finally {
-      artworkRecoveryRunningRef.current.delete(normalizedId);
-    }
-  }, [cacheArtwork]);
+  const {
+    cacheArtwork,
+    clearArtworkRecovery,
+    getRememberedArtwork,
+    recoverArtworkForCurrentTrack,
+    resolveTrackArtwork,
+  } = useAudioArtworkRecovery({
+    currentTrackRef,
+    setCurrentTrack,
+    setQueue,
+  });
 
   const setLiveVolume = useCallback(
     (nextVolume: number) => {
@@ -285,15 +176,14 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       const fallbackArtwork = normalizeArtworkUrl(
         currentTrackRef.current?.id === track.id
           ? currentTrackRef.current.artworkUrl
-          : trackArtworkCacheRef.current.get(track.id),
+          : getRememberedArtwork(track.id),
       );
       const resolvedTrack = await resolveTrackArtwork(track, fallbackArtwork);
       const resolvedForCurrentTrack = mergeTrack(
         currentTrackRef.current,
         resolvedTrack,
       );
-      artworkRecoveryAttemptRef.current.delete(resolvedForCurrentTrack.id);
-      artworkRecoveryRunningRef.current.delete(resolvedForCurrentTrack.id);
+      clearArtworkRecovery(resolvedForCurrentTrack.id);
 
       if (requestId !== playTrackRequestRef.current) {
         const currentTrackForRequest = currentTrackRef.current;
@@ -406,6 +296,8 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       audioContext,
       cacheArtwork,
       buildShuffleQueue,
+      clearArtworkRecovery,
+      getRememberedArtwork,
       isShuffleEnabled,
       mergeTrack,
       recoverArtworkForCurrentTrack,
@@ -527,78 +419,21 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
     [audio, currentTrack]
   );
 
-  useEffect(() => {
-    if (!audio) return;
-    const trackUrl = currentTrack?.streamUrl;
-
-    if (trackUrl) {
-      if (audio.src !== trackUrl) {
-        audio.src = trackUrl;
-        setCurrentTime(0);
-        audio.load();
-      }
-    } else {
-      setIsBuffering(false);
-      audio.pause();
-      return;
-    }
-
-    if (!isPlaying) {
-      audio.pause();
-      return;
-    }
-
-    if (audioContext?.state === "suspended") {
-      audioContext
-        .resume()
-        .catch((error) => {
-          setPlaybackError(
-            classifyPlaybackError(error, "unsupported-audio-context"),
-          );
-          logger.warn("Error resuming audio context:", error);
-        })
-        .finally(() => {
-          void audio
-            .play()
-            .then(() => setPlaybackError(null))
-            .catch((error) => {
-              setPlaybackError(
-                classifyPlaybackError(error, "source-load-failed"),
-              );
-              logger.warn("Error playing audio:", error);
-              setIsPlaying(false);
-            });
-        });
-      return;
-    }
-
-    void audio.play().then(() => setPlaybackError(null)).catch((error) => {
-      setPlaybackError(classifyPlaybackError(error, "source-load-failed"));
-      logger.warn("Error playing audio:", error);
-      setIsPlaying(false);
-    });
-  }, [audio, audioContext, isPlaying, currentTrack]);
-
-  useEffect(() => {
-    if (audio) {
-      audio.volume = isMuted ? 0 : volume;
-    }
-  }, [audio, isMuted, volume]);
-
-  useEffect(() => {
-    if (!audio) return;
-
-    return setupAudioEventListeners({
-      state: {
-        audio,
-        storeSetCurrentTime: setCurrentTime,
-        storeSetDuration: setDuration,
-        storeSetIsBuffering: setIsBuffering,
-      },
-      isSeekingRef,
-      nextTrack,
-    });
-  }, [audio, nextTrack]);
+  useAudioElementSync({
+    audio,
+    audioContext,
+    currentTrack,
+    isPlaying,
+    isMuted,
+    volume,
+    isSeekingRef,
+    nextTrack,
+    setCurrentTime,
+    setDuration,
+    setIsBuffering,
+    setIsPlaying,
+    setPlaybackError,
+  });
 
   return useMemo(
     () => ({
