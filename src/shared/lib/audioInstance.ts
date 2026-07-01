@@ -73,7 +73,7 @@ class AudioSingletonInstance {
   private activeSlotIndex = 0;
   private masterVolume = 1;
   private pendingTransition = 0;
-  private pendingFadePauseTimer: ReturnType<typeof setTimeout> | null = null;
+  private pendingFadePauseTimer: ReturnType<typeof window.setTimeout> | number | NodeJS.Timeout | null = null;
 
   private constructor() {
     this.fallbackAudio = this.createAudioElement("A");
@@ -128,7 +128,7 @@ class AudioSingletonInstance {
   }
 
   private createSlot(
-    context: BaseAudioContext,
+    context: AudioContext,
     slotId: CrossfadingSlotId,
   ): AudioSlot {
     const audio = this.createAudioElement(slotId);
@@ -177,13 +177,14 @@ class AudioSingletonInstance {
     if (!this.analyser || this.audioSlots.length < 1) {
       return;
     }
+    const analyser = this.analyser;
 
     this.equalizerFilters.forEach((filter) => filter.disconnect());
     this.audioSlots.forEach((slot) => slot.gain.disconnect());
 
     if (this.equalizerFilters.length === 0) {
       this.audioSlots.forEach((slot) => {
-        slot.gain.connect(this.analyser);
+        slot.gain.connect(analyser);
       });
       return;
     }
@@ -207,7 +208,7 @@ class AudioSingletonInstance {
 
     const lastFilter = this.equalizerFilters[this.equalizerFilters.length - 1];
     if (lastFilter) {
-      lastFilter.connect(this.analyser);
+      lastFilter.connect(analyser);
     }
   }
 
@@ -452,11 +453,12 @@ class AudioSingletonInstance {
 
     const activeSlot = this.activeSlot;
     const activeTrack = this.normalizeTrackSource(activeSlot.audio);
+    const audioCurrentTime = this.audioContext?.currentTime ?? 0;
 
     if (!shouldPlay) {
       this.setTrackOnSlot(activeSlot, trackUrl);
-      this.setSlotGain(activeSlot, MAX_GAIN, this.audioContext.currentTime);
-      this.setSlotGain(this.inactiveSlot, MIN_GAIN, this.audioContext.currentTime);
+      this.setSlotGain(activeSlot, MAX_GAIN, audioCurrentTime);
+      this.setSlotGain(this.inactiveSlot, MIN_GAIN, audioCurrentTime);
       activeSlot.audio.pause();
       activeSlot.audio.currentTime = 0;
       return activeSlot.audio;
@@ -464,8 +466,8 @@ class AudioSingletonInstance {
 
     if (trackUrl === activeTrack) {
       await this.ensureContextResumed();
-      this.setSlotGain(activeSlot, MAX_GAIN, this.audioContext.currentTime);
-      this.setSlotGain(this.inactiveSlot, MIN_GAIN, this.audioContext.currentTime);
+      this.setSlotGain(activeSlot, MAX_GAIN, audioCurrentTime);
+      this.setSlotGain(this.inactiveSlot, MIN_GAIN, audioCurrentTime);
       await activeSlot.audio.play();
       return activeSlot.audio;
     }
