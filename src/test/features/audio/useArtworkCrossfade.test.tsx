@@ -103,19 +103,16 @@ describe("useArtworkCrossfade", () => {
     expect(top(result.current.layers).opacity).toBe(1);
   });
 
-  it("auto-activates a fallback artwork layer without calling activateLayer", async () => {
-    const { result } = renderHook(() =>
-      useArtworkCrossfade({
-        artworkSrc: "",
-        palette: FALLBACK_ALBUM_PALETTE,
-        resolvedSrc: "",
-      }),
+  it("auto-activates a fallback layer with no artwork after a track change", async () => {
+    const { result, rerender } = renderHook(
+      ({ artworkSrc, palette, resolvedSrc }) =>
+        useArtworkCrossfade({ artworkSrc, palette, resolvedSrc }),
+      { initialProps: { artworkSrc: "a.jpg", palette: paletteA, resolvedSrc: "a.jpg" } },
     );
 
-    await waitFor(() => {
-      expect(top(result.current.layers).opacity).toBe(1);
-    });
-    expect(result.current.layers).toHaveLength(1);
+    rerender({ artworkSrc: "", palette: FALLBACK_ALBUM_PALETTE, resolvedSrc: "" });
+
+    await waitFor(() => expect(top(result.current.layers).opacity).toBe(1));
     expect(top(result.current.layers).hasArtwork).toBe(false);
   });
 
