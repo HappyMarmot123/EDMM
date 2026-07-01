@@ -86,7 +86,8 @@ Keyboard shortcuts are registered once at the global audio widget boundary and a
 | `ArrowUp` | Volume up |
 | `ArrowDown` | Volume down |
 
-The current architecture document is maintained at: docs/architecture/README.md
+The current architecture document is maintained at: <a href="">[https://github.com/HappyMarmot123/EDMM/issues](https://github.com/HappyMarmot123/EDMM/issues/54)</a>
+
 
 ## V1 Deprecated - Original README
 
