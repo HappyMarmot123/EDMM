@@ -1,8 +1,9 @@
-/* eslint-disable @next/next/no-img-element -- Player artwork receives dynamic CDN hosts. */
 import React from "react";
+import Image from "next/image";
 import clsx from "clsx";
 import { Music2 } from "lucide-react";
 import type { Track } from "@/entities/track";
+import { shouldUnoptimizeArtworkImage } from "./artworkImage";
 
 interface AlbumArtworkProps {
   isPlaying: boolean;
@@ -56,15 +57,15 @@ const AlbumArtwork: React.FC<AlbumArtworkProps> = ({
           <Music2 width={26} height={26} aria-hidden="true" />
         </span>
       ) : shouldRenderArtwork ? (
-        <img
+        <Image
           key={`${artworkSrc}-${errorRetryCount}`}
           src={artworkSrc}
           alt={currentTrackInfo.albumName ?? currentTrackInfo.source}
-          className="absolute inset-0 z-[1] block h-full w-full object-cover opacity-100 select-none"
+          fill
+          sizes="92px"
+          unoptimized={shouldUnoptimizeArtworkImage(artworkSrc)}
+          className="z-[1] object-cover opacity-100 select-none"
           draggable={false}
-          width={92}
-          height={92}
-          loading="lazy"
           onError={() =>
             setErrorRetryCount((retryCount) => {
               if (retryCount >= 1) {

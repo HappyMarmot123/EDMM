@@ -1,6 +1,8 @@
 /* eslint-disable @next/next/no-img-element -- Fullscreen artwork receives dynamic CDN hosts. */
 import { type CSSProperties, useEffect } from "react";
+import Image from "next/image";
 import { Minimize2, Music2 } from "lucide-react";
+import { shouldUnoptimizeArtworkImage } from "@/features/audio/components/artworkImage";
 import FullscreenAlbumDisc from "@/features/audio/components/fullscreenAlbumDisc";
 import FullscreenAudioVisualizer from "@/features/audio/components/fullscreenAudioVisualizer";
 import { useAlbumColorPalette } from "@/features/audio/components/visualizers/albumColorPalette";
@@ -149,10 +151,13 @@ export default function DesktopFullscreenPlayer({
               }}
             >
             {hasArtwork ? (
-              <img
+              <Image
                 src={artworkSrc}
                 alt={`${trackTitle} fullscreen artwork`}
-                className="h-full w-full object-cover"
+                fill
+                sizes="(min-width: 1024px) 400px, 42vw"
+                unoptimized={shouldUnoptimizeArtworkImage(artworkSrc)}
+                className="object-cover"
                 draggable={false}
               />
             ) : (

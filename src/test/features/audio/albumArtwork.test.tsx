@@ -1,12 +1,29 @@
 import { render, screen } from "@testing-library/react";
+import * as React from "react";
 import AlbumArtwork from "@/features/audio/components/albumArtwork";
 import MAlbumArtwork from "@/features/audio/components/mobile/m_albumArtwork";
 import type { Track } from "@/entities/track";
 
 jest.mock("next/image", () => ({
   __esModule: true,
-  default: () => {
-    throw new Error("Player artwork must not use next/image for dynamic CDN URLs");
+  default: ({
+    src,
+    alt,
+    fill,
+    unoptimized,
+    ...props
+  }: React.ImgHTMLAttributes<HTMLImageElement> & {
+    fill?: boolean;
+    unoptimized?: boolean;
+  }) => {
+    return React.createElement("img", {
+      ...props,
+      src: String(src),
+      alt: alt ?? "",
+      "data-fill": String(Boolean(fill)),
+      "data-next-image": "true",
+      "data-unoptimized": String(Boolean(unoptimized)),
+    });
   },
 }));
 
@@ -25,7 +42,7 @@ const track: Track = {
 };
 
 describe("AlbumArtwork", () => {
-  it("renders dynamic Cloudinary artwork with a native image on desktop", () => {
+  it("renders dynamic Cloudinary artwork with next/image on desktop", () => {
     render(
       <AlbumArtwork
         isPlaying={false}
@@ -34,13 +51,15 @@ describe("AlbumArtwork", () => {
       />
     );
 
-    expect(screen.getByRole("img", { name: "Album One" })).toHaveAttribute(
-      "src",
-      track.artworkUrl
-    );
+    const image = screen.getByRole("img", { name: "Album One" });
+
+    expect(image).toHaveAttribute("src", track.artworkUrl);
+    expect(image).toHaveAttribute("data-next-image", "true");
+    expect(image).toHaveAttribute("data-fill", "true");
+    expect(image).toHaveAttribute("data-unoptimized", "false");
   });
 
-  it("renders dynamic Cloudinary artwork with a native image on mobile", () => {
+  it("renders dynamic Cloudinary artwork with next/image on mobile", () => {
     render(
       <MAlbumArtwork
         isPlaying={false}
@@ -49,9 +68,29 @@ describe("AlbumArtwork", () => {
       />
     );
 
+    const image = screen.getByRole("img", { name: "Album One" });
+
+    expect(image).toHaveAttribute("src", track.artworkUrl);
+    expect(image).toHaveAttribute("data-next-image", "true");
+    expect(image).toHaveAttribute("data-fill", "true");
+    expect(image).toHaveAttribute("data-unoptimized", "false");
+  });
+
+  it("falls back to unoptimized next/image for unregistered artwork hosts", () => {
+    render(
+      <AlbumArtwork
+        isPlaying={false}
+        isBuffering={false}
+        currentTrackInfo={{
+          ...track,
+          artworkUrl: "https://example.com/art.jpg",
+        }}
+      />
+    );
+
     expect(screen.getByRole("img", { name: "Album One" })).toHaveAttribute(
-      "src",
-      track.artworkUrl
+      "data-unoptimized",
+      "true",
     );
   });
 });

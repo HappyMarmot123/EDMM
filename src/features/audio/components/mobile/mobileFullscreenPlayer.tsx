@@ -1,7 +1,7 @@
-/* eslint-disable @next/next/no-img-element -- Player artwork receives dynamic CDN hosts. */
 "use client";
 
 import { useRef, useState, type MouseEvent, type PointerEvent } from "react";
+import Image from "next/image";
 import {
   ChevronDown,
   Music2,
@@ -11,6 +11,7 @@ import {
   SkipBack,
   SkipForward,
 } from "lucide-react";
+import { shouldUnoptimizeArtworkImage } from "@/features/audio/components/artworkImage";
 import type { Track } from "@/entities/track";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { IconToggleButton } from "@/shared/components/iconToggleButton";
@@ -146,14 +147,15 @@ export default function MobileFullscreenPlayer({
       </button>
 
       <div className="flex min-h-0 flex-1 flex-col justify-center px-6 pb-[calc(28px+max(env(safe-area-inset-bottom),12px))]">
-        <div className="mx-auto aspect-square w-full max-w-[300px] overflow-hidden rounded-lg bg-white/10 shadow-[0_34px_90px_rgba(0,0,0,0.5)]">
+        <div className="relative mx-auto aspect-square w-full max-w-[300px] overflow-hidden rounded-lg bg-white/10 shadow-[0_34px_90px_rgba(0,0,0,0.5)]">
           {artworkSrc && currentTrackInfo ? (
-            <img
+            <Image
               src={artworkSrc}
               alt={currentTrackInfo.albumName ?? currentTrackInfo.source}
-              width={300}
-              height={300}
-              className="h-full w-full object-cover"
+              fill
+              sizes="300px"
+              unoptimized={shouldUnoptimizeArtworkImage(artworkSrc)}
+              className="object-cover"
               draggable={false}
             />
           ) : (
