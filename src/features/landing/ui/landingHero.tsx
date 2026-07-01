@@ -1,8 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import LandingCobeOrbit from "./landingCobeOrbit";
+import dynamic from "next/dynamic";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
+
+const LandingCobeOrbit = dynamic(() => import("./landingCobeOrbit"), {
+  ssr: false,
+  loading: () => (
+    <div className="rose-cobe-orbit" aria-hidden="true">
+      <span className="rose-cobe-orbit__halo" />
+      <span className="rose-cobe-orbit__label">PLUM BLOSSOM</span>
+    </div>
+  ),
+});
 
 export default function Hero() {
   const currentTrackId = useAudioPlayer().currentTrack?.id ?? "";

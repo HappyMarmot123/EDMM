@@ -20,7 +20,7 @@ jest.mock("@/shared/providers/audioPlayerProvider", () => ({
 }));
 
 describe("Landing", () => {
-  it("renders the Rose Orbit landing without old visual clutter", () => {
+  it("renders the Rose Orbit landing without old visual clutter", async () => {
     const { container } = render(<Landing />);
 
     expect(screen.getByRole("main")).toHaveClass("rose-landing", "my-gradient");
@@ -32,8 +32,8 @@ describe("Landing", () => {
     expect(screen.getByText("Tech House")).toBeInTheDocument();
     expect(screen.getByText("Bass House")).toBeInTheDocument();
     expect(screen.getByText("Future House")).toBeInTheDocument();
-    expect(screen.getByTestId("rose-cobe-orbit")).toBeInTheDocument();
-    expect(screen.getByTestId("rose-cobe-canvas")).toBeInTheDocument();
+    expect(await screen.findByTestId("rose-cobe-orbit")).toBeInTheDocument();
+    expect(await screen.findByTestId("rose-cobe-canvas")).toBeInTheDocument();
     expect(screen.queryByTestId("rose-hero-orbit")).not.toBeInTheDocument();
     expect(screen.queryAllByTestId("rose-orbit-tracer")).toHaveLength(0);
     expect(screen.queryByTestId("rose-orbit-core")).not.toBeInTheDocument();
