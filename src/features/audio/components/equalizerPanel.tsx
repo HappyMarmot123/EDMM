@@ -86,7 +86,6 @@ export default function EqualizerPanel() {
                 aria-label={label}
                 aria-describedby={descriptionId}
                 aria-pressed={currentPreset === preset}
-                title={helpText}
               >
                 {label}
                 <span id={descriptionId} className="sr-only">

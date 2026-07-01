@@ -78,9 +78,8 @@ describe("EqualizerPanel", () => {
   it("explains each preset with tooltip help text", () => {
     render(<EqualizerPanel />);
 
-    expect(screen.getByRole("button", { name: "Flat" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Flat" })).not.toHaveAttribute(
       "title",
-      "Keeps the original balance without EQ boosts.",
     );
     expect(screen.getByRole("button", { name: "EDM" })).toHaveAccessibleDescription(
       "Boosts bass, presence, and air for energetic electronic tracks.",

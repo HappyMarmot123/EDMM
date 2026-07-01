@@ -292,7 +292,6 @@ export function TrackDetailAside({
               <EqualizerPanel />
 
               <dl className="grid gap-2">
-                {track.albumName ? <DetailLine label="Album" value={track.albumName} /> : null}
                 <DetailLine label="Duration" value={formatDuration(track.durationMs)} />
                 <DetailLine label="Source" value={track.source} />
                 <DetailLine

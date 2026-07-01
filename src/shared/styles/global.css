@@ -861,29 +861,51 @@ h1 {
 }
 */
 
-/* Radix UI Tooltip Custom Gradient Theme */
-.radix-tooltip-content-gradient {
-  /* New gradient: Soft Violet to Light Pinkish-Purple */
-  background-image: linear-gradient(to right, #a78bfa, #f472b6);
-  color: white;
-  font-weight: 600; /* Slightly bolder for better readability on lighter gradient */
-  padding: 8px 12px;
-  border-radius: 6px; /* Slightly more rounded */
-  font-size: 0.875rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Softer shadow */
-  z-index: 50;
+/* Radix UI Tooltip EDMM Theme */
+.radix-tooltip-content-edmm {
+  max-width: min(240px, calc(100vw - 32px));
+  padding: 9px 11px;
+  border: 1px solid rgba(255, 152, 162, 0.55);
+  outline: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(43, 17, 28, 0.98);
+  color: rgba(255, 247, 250, 0.94);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0;
+  text-align: left;
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.54),
+    0 0 30px rgba(253, 109, 148, 0.26);
+  backdrop-filter: blur(16px);
+  z-index: 100;
   transform-origin: var(--radix-tooltip-content-transform-origin);
-  animation: scaleIn 0.1s ease-out forwards, fadeIn 0.1s ease-out forwards;
+  animation: edmmTooltipIn 160ms ease-out forwards;
+  will-change: opacity, transform;
 }
 
-.radix-tooltip-arrow-gradient {
-  fill: #a78bfa; /* Match the start of the new gradient */
+.radix-tooltip-content-edmm[data-state="closed"] {
+  animation: edmmTooltipOut 110ms ease-in forwards;
 }
 
-@keyframes scaleIn {
+.radix-tooltip-arrow-edmm {
+  fill: rgba(43, 17, 28, 0.98);
+  filter:
+    drop-shadow(0 1px 0 rgba(255, 152, 162, 0.3))
+    drop-shadow(0 3px 8px rgba(0, 0, 0, 0.35));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .radix-tooltip-content-edmm {
+    animation: none;
+  }
+}
+
+@keyframes edmmTooltipIn {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.96) translateY(2px);
   }
   to {
     opacity: 1;
@@ -891,12 +913,14 @@ h1 {
   }
 }
 
-@keyframes fadeIn {
+@keyframes edmmTooltipOut {
   from {
-    opacity: 0;
+    opacity: 1;
+    transform: scale(1);
   }
   to {
-    opacity: 1;
+    opacity: 0;
+    transform: scale(0.98) translateY(1px);
   }
 }
 

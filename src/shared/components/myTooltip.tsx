@@ -14,7 +14,7 @@ const MyTooltip: React.FC<MyTooltipProps> = ({
   tooltipText,
   showTooltip = true,
   delayDuration = 200,
-  sideOffset = 5,
+  sideOffset = 8,
 }) => {
   if (!tooltipText) {
     return <>{children}</>;
@@ -28,10 +28,11 @@ const MyTooltip: React.FC<MyTooltipProps> = ({
           <Tooltip.Portal>
             <Tooltip.Content
               sideOffset={sideOffset}
-              className="radix-tooltip-content-gradient"
+              collisionPadding={12}
+              className="radix-tooltip-content-edmm"
             >
               {tooltipText}
-              <Tooltip.Arrow className="radix-tooltip-arrow-gradient" />
+              <Tooltip.Arrow className="radix-tooltip-arrow-edmm" />
             </Tooltip.Content>
           </Tooltip.Portal>
         )}
