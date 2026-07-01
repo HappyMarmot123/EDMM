@@ -121,7 +121,7 @@ export default function DesktopFullscreenPlayer({
               return (
                 <div
                   key={layer.key}
-                  className={isTop ? "" : "absolute inset-0"}
+                  className={isTop ? "relative z-[1]" : "absolute inset-0"}
                   style={fadeStyle(layer.opacity)}
                   onTransitionEnd={(event) => {
                     if (
