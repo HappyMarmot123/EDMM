@@ -9,6 +9,7 @@ import { CLAMP_VOLUME } from "@/shared/lib/util";
 import { logger } from "@/shared/lib/logger";
 import { normalizeArtworkUrl } from "@/shared/lib/trackArtwork";
 import { classifyPlaybackError } from "./audioPlaybackErrors";
+import { useMediaSession } from "../hooks/useMediaSession";
 import type {
   AudioPlayerLogicReturnType,
   PlaybackError,
@@ -433,6 +434,17 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
     setIsBuffering,
     setIsPlaying,
     setPlaybackError,
+  });
+
+  useMediaSession({
+    isPlaying,
+    currentTrack,
+    currentTime,
+    duration,
+    togglePlayPause,
+    nextTrack,
+    prevTrack,
+    seekTo: seek,
   });
 
   return useMemo(
