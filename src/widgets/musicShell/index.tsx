@@ -167,8 +167,9 @@ export function MusicShell({
   const { recentIds } = useRecentPlays();
 
   const recentTrackIds = useMemo(() => dedupeIds(recentIds), [recentIds]);
-  const mobileRecentTrackIds = isMobileView ? [] : recentTrackIds;
-  const recentState = useCachedTrackList(recentTrackIds);
+  const recentTrackIdsForState = isMobileView ? [] : recentTrackIds;
+  const recentTrackIdsForSeed = isMobileView ? [] : recentTrackIds;
+  const recentState = useCachedTrackList(recentTrackIdsForState);
 
   const visibleTracks = useMemo(() => {
     if (activeView === "recent") return recentState.tracks;
@@ -337,7 +338,7 @@ export function MusicShell({
     selectedTrackId,
     selectedTrack,
     visibleTracks,
-    recentTrackIds: mobileRecentTrackIds,
+    recentTrackIds: recentTrackIdsForSeed,
     queueForTrack,
     activateTrackInPlayer,
     fallbackToFirstPlayable,
