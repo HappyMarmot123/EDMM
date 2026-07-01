@@ -32,7 +32,7 @@ export async function GET(request: Request) {
   const filterPlayable = parseFilterPlayable(
     requestUrl.searchParams.get("filterPlayable"),
   );
-  const cachePolicy = getCloudinaryTrackCachePolicy(resourceType, filterPlayable ?? false);
+  const cachePolicy = getCloudinaryTrackCachePolicy(resourceType);
   const fetchOptions: { resourceType: ResourceTypeFilter; filterPlayable?: boolean } =
     {
       resourceType,

@@ -5,6 +5,10 @@ import {
   getCloudinaryTrackCachePolicy,
 } from "@/shared/api/cloudinary/cloudinaryClient";
 
+jest.mock("next/cache", () => ({
+  revalidateTag: jest.fn(),
+}));
+
 jest.mock("@/shared/api/cloudinary/cloudinaryClient", () => {
   const actual = jest.requireActual(
     "@/shared/api/cloudinary/cloudinaryClient",

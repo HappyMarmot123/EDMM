@@ -8,7 +8,7 @@ import {
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const query = requestUrl.searchParams.get("q") ?? "";
-  const cachePolicy = getCloudinaryTrackCachePolicy("image", false);
+  const cachePolicy = getCloudinaryTrackCachePolicy("image");
 
   try {
     const tracks = await fetchCloudinaryTracks(query, {
