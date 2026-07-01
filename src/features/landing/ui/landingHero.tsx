@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import DeprecatedRoseHeroOrbit from "./deprecatedRoseHeroOrbit";
 import LandingCobeOrbit from "./landingCobeOrbit";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 
@@ -40,7 +39,6 @@ export default function Hero() {
         </div>
 
         <LandingCobeOrbit />
-        <DeprecatedRoseHeroOrbit />
       </div>
     </section>
   );

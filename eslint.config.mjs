@@ -16,7 +16,6 @@ const eslintConfig = [
       ".tmp-*",
       "node_modules/**",
       "coverage/**",
-      "drizzle/**",
       "next-env.d.ts",
       "eslint.config.mjs",
       "src/shared/config/eslint.config.mjs",

@@ -47,13 +47,16 @@ describe("Rose Orbit landing styles", () => {
     expect(hasRule(".rose-star::after")).toBe(false);
   });
 
-  it("uses visible orbit tracers to make hero orbit motion readable", () => {
-    const tracerRule = extractRule(".rose-hero__orbit-tracer");
-    const markerRule = extractRule(".rose-hero__orbit-marker");
-
-    expect(tracerRule).toContain("animation: rose-orbit-marker");
-    expect(markerRule).toContain("box-shadow");
-    expect(hasKeyframes("rose-orbit-marker")).toBe(true);
+  it("removes the deprecated static hero orbit styles", () => {
+    expect(hasRule(".rose-hero__orbit")).toBe(false);
+    expect(hasRule(".rose-hero__orbit-tracer")).toBe(false);
+    expect(hasRule(".rose-hero__orbit-marker")).toBe(false);
+    expect(hasRule(".rose-hero__orbit-core")).toBe(false);
+    expect(hasRule(".rose-hero__orbit-core-pulse")).toBe(false);
+    expect(hasKeyframes("rose-orbit-spin")).toBe(false);
+    expect(hasKeyframes("rose-orbit-marker")).toBe(false);
+    expect(hasKeyframes("rose-core-breathe")).toBe(false);
+    expect(hasKeyframes("rose-core-pulse")).toBe(false);
   });
 
   it("does not keep static orbit satellite styles", () => {
@@ -62,17 +65,7 @@ describe("Rose Orbit landing styles", () => {
     expect(hasRule(".rose-hero__orbit-satellite--two")).toBe(false);
   });
 
-  it("animates the orbit core with visible pulse layers", () => {
-    const coreRule = extractRule(".rose-hero__orbit-core");
-    const pulseRule = extractRule(".rose-hero__orbit-core-pulse");
-
-    expect(coreRule).toContain("animation: rose-core-breathe");
-    expect(pulseRule).toContain("animation: rose-core-pulse");
-    expect(hasKeyframes("rose-core-breathe")).toBe(true);
-    expect(hasKeyframes("rose-core-pulse")).toBe(true);
-  });
-
-  it("styles the Cobe hero replacement without removing the deprecated orbit rules", () => {
+  it("styles the Cobe hero replacement without retaining the deprecated orbit rules", () => {
     const cobeRule = extractRule(".rose-cobe-orbit");
     const canvasRule = extractRule(".rose-cobe-orbit__canvas");
 
@@ -80,7 +73,7 @@ describe("Rose Orbit landing styles", () => {
     expect(cobeRule).toContain("pointer-events: none");
     expect(canvasRule).toContain("display: block");
     expect(canvasRule).not.toContain("cursor");
-    expect(hasRule(".rose-hero__orbit")).toBe(true);
+    expect(hasRule(".rose-hero__orbit")).toBe(false);
   });
 
   it("replaces followup link strips with a restrained footer", () => {
