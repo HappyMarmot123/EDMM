@@ -456,11 +456,12 @@ class AudioSingletonInstance {
     const audioCurrentTime = this.audioContext?.currentTime ?? 0;
 
     if (!shouldPlay) {
-      this.setTrackOnSlot(activeSlot, trackUrl);
+      if (activeTrack !== trackUrl) {
+        this.setTrackOnSlot(activeSlot, trackUrl);
+      }
       this.setSlotGain(activeSlot, MAX_GAIN, audioCurrentTime);
       this.setSlotGain(this.inactiveSlot, MIN_GAIN, audioCurrentTime);
       activeSlot.audio.pause();
-      activeSlot.audio.currentTime = 0;
       return activeSlot.audio;
     }
 
