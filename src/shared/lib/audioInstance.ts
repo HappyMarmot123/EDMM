@@ -43,6 +43,8 @@ const DEFAULT_AUDIO_CAPABILITIES: AudioCapabilities = {
 };
 
 const DEFAULT_CROSSFADE_DURATION_SEC = 0;
+const DEFAULT_PAUSE_FADE_DURATION_SEC = 0.22;
+const DEFAULT_RESUME_FADE_DURATION_SEC = 0.16;
 const MIN_GAIN = 0;
 const MAX_GAIN = 1;
 
@@ -323,6 +325,28 @@ class AudioSingletonInstance {
     gainNode.gain.setValueAtTime(nextGain, time);
   }
 
+  private rampSlotGain(
+    slot: AudioSlot,
+    gain: number,
+    time: number,
+    durationSec: number,
+  ) {
+    const gainParam = slot.gain.gain;
+    const nextGain = clampTrackToGain(gain);
+    const duration = clampCrossfadeDuration(durationSec);
+    const currentGain = clampTrackToGain(gainParam.value);
+
+    gainParam.cancelScheduledValues(time);
+
+    if (duration <= 0) {
+      gainParam.setValueAtTime(nextGain, time);
+      return;
+    }
+
+    gainParam.setValueAtTime(currentGain, time);
+    gainParam.linearRampToValueAtTime(nextGain, time + duration);
+  }
+
   private async applyTrackWithCrossfade(
     targetTrack: string,
     transitionId: number,
@@ -458,16 +482,37 @@ class AudioSingletonInstance {
     if (!shouldPlay) {
       if (activeTrack !== trackUrl) {
         this.setTrackOnSlot(activeSlot, trackUrl);
+        this.setSlotGain(activeSlot, MAX_GAIN, audioCurrentTime);
+        this.setSlotGain(this.inactiveSlot, MIN_GAIN, audioCurrentTime);
+        activeSlot.audio.pause();
+        return activeSlot.audio;
       }
-      this.setSlotGain(activeSlot, MAX_GAIN, audioCurrentTime);
+
+      this.rampSlotGain(
+        activeSlot,
+        MIN_GAIN,
+        audioCurrentTime,
+        DEFAULT_PAUSE_FADE_DURATION_SEC,
+      );
       this.setSlotGain(this.inactiveSlot, MIN_GAIN, audioCurrentTime);
-      activeSlot.audio.pause();
+      this.pendingTransition = transitionId;
+      this.schedulePauseAfterTransition(
+        activeSlot.audio,
+        transitionId,
+        DEFAULT_PAUSE_FADE_DURATION_SEC,
+      );
       return activeSlot.audio;
     }
 
     if (trackUrl === activeTrack) {
       await this.ensureContextResumed();
-      this.setSlotGain(activeSlot, MAX_GAIN, audioCurrentTime);
+      this.clearActivePauseTimer();
+      this.rampSlotGain(
+        activeSlot,
+        MAX_GAIN,
+        audioCurrentTime,
+        DEFAULT_RESUME_FADE_DURATION_SEC,
+      );
       this.setSlotGain(this.inactiveSlot, MIN_GAIN, audioCurrentTime);
       await activeSlot.audio.play();
       return activeSlot.audio;

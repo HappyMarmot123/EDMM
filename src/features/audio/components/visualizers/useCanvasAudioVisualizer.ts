@@ -1,4 +1,4 @@
-import { type RefObject, useEffect, useRef } from "react";
+import { type RefObject, useEffect, useRef, useState } from "react";
 
 export type VisualizerRenderFrameParams = {
   context: CanvasRenderingContext2D;
@@ -16,10 +16,13 @@ export type VisualizerRenderIdleParams = {
 type UseCanvasAudioVisualizerOptions = {
   analyser: AnalyserNode | null;
   isActive: boolean;
+  inactiveDecayMs?: number;
   smoothingTimeConstant?: number;
   renderFrame: (params: VisualizerRenderFrameParams) => void;
   renderIdle?: (params: VisualizerRenderIdleParams) => void;
 };
+
+const DEFAULT_INACTIVE_DECAY_MS = 280;
 
 function getCanvasContext(canvas: HTMLCanvasElement) {
   try {
@@ -46,12 +49,29 @@ function syncCanvasSize(canvas: HTMLCanvasElement) {
 export function useCanvasAudioVisualizer({
   analyser,
   isActive,
+  inactiveDecayMs = DEFAULT_INACTIVE_DECAY_MS,
   smoothingTimeConstant = 0.72,
   renderFrame,
   renderIdle,
 }: UseCanvasAudioVisualizerOptions): RefObject<HTMLCanvasElement | null> {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameIdRef = useRef<number | null>(null);
+  const [shouldRenderLive, setShouldRenderLive] = useState(isActive);
+
+  useEffect(() => {
+    if (isActive) {
+      setShouldRenderLive(true);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setShouldRenderLive(false);
+    }, Math.max(0, inactiveDecayMs));
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [inactiveDecayMs, isActive]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -84,7 +104,7 @@ export function useCanvasAudioVisualizer({
 
     context.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (!analyser || !isActive) {
+    if (!analyser || !shouldRenderLive) {
       renderIdle?.({
         context,
         canvas,
@@ -124,7 +144,7 @@ export function useCanvasAudioVisualizer({
         animationFrameIdRef.current = null;
       }
     };
-  }, [analyser, isActive, renderFrame, renderIdle, smoothingTimeConstant]);
+  }, [analyser, shouldRenderLive, renderFrame, renderIdle, smoothingTimeConstant]);
 
   return canvasRef;
 }

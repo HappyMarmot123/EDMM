@@ -105,7 +105,7 @@ export default function FullscreenAudioVisualizer({
 
   return (
     <section
-      className="pointer-events-none absolute inset-0 bg-transparent"
+      className="pointer-events-none absolute inset-0 bg-transparent transition-opacity duration-200 ease-out"
       aria-hidden="true"
       style={style}
     >
