@@ -1,7 +1,9 @@
 import type { Track } from "@/entities/track/model";
+import type { AudioCapabilities } from "@/shared/lib/audioInstance";
 import type { Method } from "axios";
 import type { LucideProps } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
+export type { AudioCapabilities } from "@/shared/lib/audioInstance";
 
 export interface TrackInfo {
   assetId: string;
@@ -17,13 +19,6 @@ export type PlaybackError =
   | "unsupported-audio-context"
   | "source-load-failed"
   | null;
-
-export interface AudioCapabilities {
-  audioElementAvailable: boolean;
-  audioContextAvailable: boolean;
-  analyserAvailable: boolean;
-  initializationError: string | null;
-}
 
 export interface PlayerTrackDetailsProps {
   isPlaying: boolean;
