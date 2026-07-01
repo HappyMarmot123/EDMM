@@ -1,12 +1,7 @@
 import { db, type RecentPlayRow } from "@/shared/db/edmmDB";
+import { logger } from "@/shared/lib/logger";
 
 const RECENT_PLAYS_LIMIT = 10;
-
-const warnInDevelopment = (message: string, error: unknown) => {
-  if (process.env.NODE_ENV !== "production") {
-    console.warn(message, error);
-  }
-};
 
 export async function addRecentPlay(trackId: string): Promise<void> {
   try {
@@ -28,7 +23,7 @@ export async function addRecentPlay(trackId: string): Promise<void> {
       }
     });
   } catch (error) {
-    warnInDevelopment("Failed to record recent play:", error);
+    logger.debug("Failed to record recent play:", error);
   }
 }
 

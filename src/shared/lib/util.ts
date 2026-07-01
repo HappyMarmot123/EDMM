@@ -1,5 +1,6 @@
 import { SetStateAction } from "react";
 import { Dispatch, MouseEvent, RefObject } from "react";
+import { logger } from "@/shared/lib/logger";
 
 export function formatTime(seconds: number): string {
   if (isNaN(seconds) || seconds < 0) {
@@ -83,7 +84,7 @@ export const handleMouseMove = (
   duration: number | undefined
 ) => {
   if (!seekBarContainerRef.current || !seekTimeTooltipRef.current || !duration)
-    return console.warn(
+    return logger.warn(
       "seekBarContainerRef, seekTimeTooltipRef, duration is required"
     );
 

@@ -6,6 +6,7 @@ import useAudioInstanceStore from "@/app/store/audioInstanceStore";
 import { cacheTrack, getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
 import { addRecentPlay } from "@/shared/db/repositories/recentPlaysRepo";
 import { CLAMP_VOLUME } from "@/shared/lib/util";
+import { logger } from "@/shared/lib/logger";
 import { normalizeArtworkUrl, resolveArtworkUrlWithCache } from "@/shared/lib/trackArtwork";
 import { setupAudioEventListeners } from "@/shared/lib/audioEventManager";
 import {
@@ -383,7 +384,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
             setPlaybackError(
               classifyPlaybackError(error, "unsupported-audio-context"),
             );
-            console.warn("Error resuming audio context:", error);
+            logger.warn("Error resuming audio context:", error);
           }
         }
       }
@@ -392,11 +393,11 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
         ...track,
         artworkUrl: primaryTrackInfo.artworkUrl || track.artworkUrl,
       }).catch((error) => {
-        console.warn("Failed to cache track:", error);
+        logger.warn("Failed to cache track:", error);
       });
       if (shouldAutoPlay) {
         addRecentPlay(track.id).catch((error) => {
-          console.warn("Failed to record recent play:", error);
+          logger.warn("Failed to record recent play:", error);
         });
       }
     },
@@ -554,7 +555,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
           setPlaybackError(
             classifyPlaybackError(error, "unsupported-audio-context"),
           );
-          console.warn("Error resuming audio context:", error);
+          logger.warn("Error resuming audio context:", error);
         })
         .finally(() => {
           void audio
@@ -564,7 +565,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
               setPlaybackError(
                 classifyPlaybackError(error, "source-load-failed"),
               );
-              console.warn("Error playing audio:", error);
+              logger.warn("Error playing audio:", error);
               setIsPlaying(false);
             });
         });
@@ -573,7 +574,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
 
     void audio.play().then(() => setPlaybackError(null)).catch((error) => {
       setPlaybackError(classifyPlaybackError(error, "source-load-failed"));
-      console.warn("Error playing audio:", error);
+      logger.warn("Error playing audio:", error);
       setIsPlaying(false);
     });
   }, [audio, audioContext, isPlaying, currentTrack]);

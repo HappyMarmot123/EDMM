@@ -1,3 +1,5 @@
+import { logger } from "@/shared/lib/logger";
+
 /*
   TODO:
     Web Audio API 는 웹에서 오디오에 이펙트를 추가하거나, 파형을 시각화 하는등 다양한 기능을 구현할 수 있도록 도와준다.
@@ -44,7 +46,7 @@ class AudioSingletonInstance {
       this.audio.src = "";
       this.audio.loop = false;
       this.audioCapabilities.audioElementAvailable = true;
-      console.log("HTMLAudioElement instance created");
+      logger.debug("HTMLAudioElement instance created");
 
       const Globalwindow = window as WindowWithWebKitAudioContext;
       const AudioContextConstructor =
@@ -57,7 +59,7 @@ class AudioSingletonInstance {
         } catch (error) {
           this.audioCapabilities.initializationError =
             error instanceof Error ? error.message : "AudioContext initialization failed";
-          console.error(
+          logger.error(
             "AudioSingletonInstance: AudioContext failed to initialize.",
             error,
           );
@@ -72,30 +74,30 @@ class AudioSingletonInstance {
             this.analyser.fftSize = 512;
             this.audioCapabilities.analyserAvailable = true;
 
-            console.log("Web Audio API components initialized");
+            logger.debug("Web Audio API components initialized");
           } catch (error) {
             this.analyser = null;
             this.source = null;
             this.audioCapabilities.analyserAvailable = false;
             this.audioCapabilities.initializationError =
               error instanceof Error ? error.message : "Audio analyser initialization failed";
-            console.error(
+            logger.error(
               "AudioSingletonInstance: Web Audio analyser failed to initialize.",
               error,
             );
           }
         } else {
-          console.error("HTMLAudioElement failed to initialize");
+          logger.error("HTMLAudioElement failed to initialize");
         }
       } else {
         this.audioCapabilities.initializationError = "AudioContext not supported";
-        console.error(
+        logger.error(
           "AudioSingletonInstance: AudioContext not supported in this environment."
         );
       }
     } else {
       this.audioCapabilities.initializationError = "Not in a browser environment";
-      console.error("AudioSingletonInstance: not in a browser environment.");
+      logger.error("AudioSingletonInstance: not in a browser environment.");
     }
   }
 
@@ -124,12 +126,12 @@ class AudioSingletonInstance {
         instance.audioContext
           .close()
           .then(() =>
-            console.log(
+            logger.debug(
               "AudioSingletonInstance: AudioContext closed successfully."
             )
           )
           .catch((err) =>
-            console.error(
+            logger.error(
               "AudioSingletonInstance: Error closing AudioContext:",
               err
             )
@@ -137,7 +139,7 @@ class AudioSingletonInstance {
       }
 
       AudioSingletonInstance.instance = null;
-      console.log("AudioSingletonInstance: Instance cleaned up and reset.");
+      logger.debug("AudioSingletonInstance: Instance cleaned up and reset.");
     }
   }
 }

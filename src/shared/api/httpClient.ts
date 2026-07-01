@@ -1,6 +1,7 @@
 import axios, { AxiosError, AxiosRequestConfig } from "axios";
 import { axiosInstance } from "./axiosInstance";
 import { HttpClientRequestConfig, HttpClientResponse } from "../types/dataType";
+import { logger } from "@/shared/lib/logger";
 
 /*
   TODO:
@@ -47,11 +48,11 @@ class HttpClient {
         } catch (err) {
           lastError = err;
           if (axios.isCancel(err)) {
-            console.log("Request canceled:", (err as AxiosError).message);
+            logger.debug("Request canceled:", (err as AxiosError).message);
             break;
           }
           if (i < RETRY_COUNT) {
-            console.log(
+            logger.debug(
               `Request failed, retrying... (${i + 1}/${RETRY_COUNT})`
             );
           }

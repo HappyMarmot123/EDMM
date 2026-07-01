@@ -80,13 +80,13 @@ describe("trackCacheRepo", () => {
   });
 
   it("does not reject when writing a cached track fails", async () => {
-    jest.spyOn(console, "warn").mockImplementation(() => {});
+    jest.spyOn(console, "debug").mockImplementation(() => {});
     jest
       .spyOn(db.trackCache, "put")
       .mockRejectedValueOnce(new Error("Quota exceeded"));
 
     await expect(cacheTrack(makeTrack())).resolves.toBeUndefined();
-    expect(console.warn).toHaveBeenCalledWith(
+    expect(console.debug).toHaveBeenCalledWith(
       "Failed to cache track:",
       expect.any(Error),
     );
