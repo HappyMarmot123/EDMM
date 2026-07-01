@@ -12,6 +12,7 @@ type SegmentedBarRenderOptions = {
   markerColor?: string;
   maxHeightRatio?: number;
   drive?: number;
+  lowFrequencyBoost?: number;
 };
 
 const BAR_WIDTH_RATIO = 2.5;
@@ -25,6 +26,7 @@ const HIGH_FREQUENCY_BOOST = 0.55;
 const DEFAULT_VISUALIZER_DRIVE = 1.22;
 const VISUALIZER_BASE_RATIO = 0.01;
 const PEAK_COMPENSATION_POWER = 0.55;
+const LOW_FREQUENCY_BOOST_BAND = 0.24;
 
 export function clampChannel(value: number) {
   return Math.max(0, Math.min(255, Math.round(value)));
@@ -38,6 +40,7 @@ function getPumpedBarHeight(
   frameGain: number,
   maxHeightRatio: number,
   drive: number,
+  lowFrequencyBoost: number,
 ) {
   const normalizedIndex =
     bufferLength > 1 ? index / Math.max(1, bufferLength - 1) : 0;
@@ -51,7 +54,17 @@ function getPumpedBarHeight(
     + (1 - VISUALIZER_BASE_RATIO) * Math.pow(rawValue, SPECTRUM_GAMMA);
   const maxBarHeight = Math.max(1, canvasHeight * maxHeightRatio);
   const normalizedGain = Math.min(1.35, Math.max(0.72, frameGain));
-  const rawHeight = normalizedValue * maxBarHeight * bandWeight * drive * normalizedGain;
+  const lowBandMultiplier =
+    normalizedIndex <= LOW_FREQUENCY_BOOST_BAND
+      ? 1 + lowFrequencyBoost * (1 - normalizedIndex / LOW_FREQUENCY_BOOST_BAND)
+      : 1;
+  const rawHeight =
+    normalizedValue *
+    maxBarHeight *
+    bandWeight *
+    lowBandMultiplier *
+    drive *
+    normalizedGain;
 
   return Math.min(maxBarHeight, Math.max(0, Math.round(rawHeight)));
 }
@@ -96,6 +109,7 @@ export function drawSegmentedBars(
     markerColor = "rgba(255, 184, 192, 0.045)",
     maxHeightRatio = DEFAULT_BAR_HEIGHT_SAFE_RATIO,
     drive = DEFAULT_VISUALIZER_DRIVE,
+    lowFrequencyBoost = 0,
   }: SegmentedBarRenderOptions,
 ) {
   const bufferLength = dataArray.length;
@@ -123,6 +137,7 @@ export function drawSegmentedBars(
     0.72 + 0.28 * (1 - Math.pow(framePeak / 255, PEAK_COMPENSATION_POWER));
 
   for (let index = 0; index < bufferLength; index += 1) {
+    const safeLowFrequencyBoost = Math.max(0, Math.min(1, lowFrequencyBoost));
     const barHeight = getPumpedBarHeight(
       dataArray[index],
       index,
@@ -131,6 +146,7 @@ export function drawSegmentedBars(
       frameGain,
       maxHeightRatio,
       drive,
+      safeLowFrequencyBoost,
     );
     context.fillStyle = getColor(dataArray[index], index, bufferLength);
 
