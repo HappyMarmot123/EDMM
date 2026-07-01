@@ -1,4 +1,5 @@
 import { isPlayable, type Track } from "@/entities/track/model";
+import { normalizeArtworkUrl } from "@/shared/lib/trackArtwork";
 
 export const dedupeIds = (ids: Iterable<string>) => [...new Set(ids)];
 
@@ -18,6 +19,14 @@ export const buildRecentSeedKey = (
   latestRecentId
     ? `recent:${latestRecentId}:first:${firstVisibleTrackId ?? "none"}`
     : `first:${firstVisibleTrackId}`;
+
+export const buildTrackSeedFingerprint = (track: Track, queue: Track[]) => {
+  const queueFingerprint = queue.map((queueTrack) => queueTrack.id).join(",");
+  return `${track.id}|${normalizeArtworkUrl(track.artworkUrl)}|${queueFingerprint}`;
+};
+
+export const buildVisibleTrackFingerprint = (track: Track | null) =>
+  track ? `${track.id}|${normalizeArtworkUrl(track.artworkUrl)}` : "none";
 
 export const resolveInitialSeedTrack = ({
   selectedTrackId,

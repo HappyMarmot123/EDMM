@@ -7,13 +7,13 @@ import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
 import { getCachedTracks } from "@/shared/db/repositories/trackCacheRepo";
 import { addEdmmEventListener, EDMM_EVENTS } from "@/shared/lib/edmmEvents";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
-import { normalizeArtworkUrl } from "@/shared/lib/trackArtwork";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import MusicShellHeader, { type MusicView } from "./musicShellHeader";
 import MusicTrackList from "./musicTrackList";
 import TrackDetailAside from "./trackDetailAside";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
+  buildTrackSeedFingerprint,
   dedupeIds,
   findTrackById,
   firstPlayableTrack,
@@ -278,11 +278,6 @@ export function MusicShell({
     [visibleTracks],
   );
 
-  const buildTrackSeedFingerprint = useCallback((track: Track, queue: Track[]) => {
-    const queueFingerprint = queue.map((queuedTrack) => queuedTrack.id).join(",");
-    return `${track.id}|${normalizeArtworkUrl(track.artworkUrl)}|${queueFingerprint}`;
-  }, []);
-
   const activateTrackInPlayer = useCallback(
     (
       track: Track,
@@ -301,7 +296,7 @@ export function MusicShell({
       setSelectedTrackId(track.id);
       setSelectionSource(source);
     },
-    [buildTrackSeedFingerprint, onPlay, queueForTrack],
+    [onPlay, queueForTrack],
   );
 
   const handleSelect = (track: Track) => {

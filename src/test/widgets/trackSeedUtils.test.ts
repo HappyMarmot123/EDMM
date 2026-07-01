@@ -1,5 +1,11 @@
 import { describe, expect, it } from "@jest/globals";
-import { resolveInitialSeedTrack, resolveRecentSeedTrack, dedupeIds } from "@/widgets/musicShell/trackSeedUtils";
+import {
+  buildTrackSeedFingerprint,
+  buildVisibleTrackFingerprint,
+  resolveInitialSeedTrack,
+  resolveRecentSeedTrack,
+  dedupeIds,
+} from "@/widgets/musicShell/trackSeedUtils";
 import type { Track } from "@/entities/track/model";
 
 const createTrack = (id: string, playable = true): Track => ({
@@ -18,6 +24,22 @@ const createTrack = (id: string, playable = true): Track => ({
 describe("trackSeedUtils", () => {
   it("dedupeIds removes duplicates while preserving order", () => {
     expect(dedupeIds(["a", "b", "a", "c", "b"])).toEqual(["a", "b", "c"]);
+  });
+
+  it("buildTrackSeedFingerprint includes normalized artwork and queue ids", () => {
+    const track = createTrack("selected", true);
+    const queue = [createTrack("selected"), createTrack("next")];
+
+    expect(buildTrackSeedFingerprint(track, queue)).toBe(
+      "selected|https://example.com/artwork.jpg|selected,next",
+    );
+  });
+
+  it("buildVisibleTrackFingerprint returns none for missing visible tracks", () => {
+    expect(buildVisibleTrackFingerprint(null)).toBe("none");
+    expect(buildVisibleTrackFingerprint(createTrack("visible"))).toBe(
+      "visible|https://example.com/artwork.jpg",
+    );
   });
 
   it("resolveInitialSeedTrack prefers visible selected track when selected is already visible", () => {

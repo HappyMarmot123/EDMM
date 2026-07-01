@@ -2,7 +2,11 @@ import { useCallback, useEffect, useRef } from "react";
 import type { Track } from "@/entities/track/model";
 import { isPlayable } from "@/entities/track/model";
 import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
-import { buildRecentSeedKey, firstPlayableTrack } from "./trackSeedUtils";
+import {
+  buildRecentSeedKey,
+  buildVisibleTrackFingerprint,
+  firstPlayableTrack,
+} from "./trackSeedUtils";
 import {
   resolveInitialSeedTrackWithCache,
   resolveRecentSeedTrackWithCache,
@@ -31,9 +35,6 @@ const loadCachedTrack = async (trackId: string): Promise<Track | null> => {
   return track ?? null;
 };
 
-const normalizeArtworkForFingerprint = (track: Track | null) =>
-  track?.artworkUrl?.trim() ?? "";
-
 export const useMusicShellTrackSeed = ({
   selectionSource,
   selectedTrackId,
@@ -61,7 +62,7 @@ export const useMusicShellTrackSeed = ({
     }
 
     const selectedTrackFingerprint = selectedTrack
-      ? `${selectedTrack.id}|${normalizeArtworkForFingerprint(selectedTrack)}`
+      ? buildVisibleTrackFingerprint(selectedTrack)
       : `${selectedTrackId}|visible:${visibleTracks.length > 0 ? "ready" : "waiting"}`;
 
     if (resolvedInitialTrackRef.current === selectedTrackFingerprint) {
@@ -123,9 +124,7 @@ export const useMusicShellTrackSeed = ({
       return;
     }
 
-    const visibleTrackFingerprint = firstVisibleTrack
-      ? `${firstVisibleTrack.id}|${normalizeArtworkForFingerprint(firstVisibleTrack)}`
-      : "none";
+    const visibleTrackFingerprint = buildVisibleTrackFingerprint(firstVisibleTrack);
     const dedupeKey = `${buildRecentSeedKey(latestRecentId, firstVisibleTrackId)}:${visibleTrackFingerprint}`;
     if (resolvedRecentTrackRef.current === dedupeKey) {
       return;
