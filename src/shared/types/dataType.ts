@@ -5,15 +5,6 @@ import type { LucideProps } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 export type { AudioCapabilities } from "@/shared/lib/audioInstance";
 
-export interface TrackInfo {
-  assetId: string;
-  album: string;
-  name: string;
-  artworkId: string;
-  url: string;
-  producer: string;
-}
-
 export type PlaybackError =
   | "autoplay-blocked"
   | "unsupported-audio-context"
@@ -28,17 +19,17 @@ export interface PlayerTrackDetailsProps {
   seekBarContainerRef: RefObject<HTMLDivElement | null>;
   seek: (time: number) => void;
   isMobile?: boolean;
-  currentTrackInfo?: TrackInfo | null;
+  currentTrackInfo?: Track | null;
 }
 
 export interface AlbumArtworkProps {
   isPlaying: boolean;
   isBuffering: boolean;
-  currentTrackInfo: TrackInfo | null;
+  currentTrackInfo: Track | null;
 }
 
 export interface PlayerControlsSectionProps {
-  currentTrackInfo: TrackInfo | null;
+  currentTrackInfo: Track | null;
   isMobile?: boolean;
   onFullscreenOpen?: () => void;
   canOpenFullscreen?: boolean;
@@ -46,12 +37,12 @@ export interface PlayerControlsSectionProps {
 }
 
 export type ExtendedAlbumArtworkProps = AlbumArtworkProps & {
-  currentTrackInfo: TrackInfo | null;
+  currentTrackInfo: Track | null;
   isMobile?: boolean;
 };
 
 export interface AudioPlayerState {
-  currentTrack: TrackInfo | null;
+  currentTrack: Track | null;
   isPlaying: boolean;
   currentTime: number;
   duration: number;
@@ -60,12 +51,12 @@ export interface AudioPlayerState {
   isMuted: boolean;
   isShuffleEnabled: boolean;
   playbackError: PlaybackError;
-  setTrack: (track: TrackInfo, playImmediately?: boolean) => void;
+  setTrack: (track: Track, playImmediately?: boolean) => void;
   playTrack: (
     track: Track,
     queue?: Track[],
     playImmediately?: boolean,
-  ) => void;
+  ) => Promise<void>;
   toggleShuffle: () => void;
   togglePlayPause: () => void | Promise<void>;
   setIsPlaying: (playing: boolean) => void;

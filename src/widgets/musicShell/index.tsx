@@ -104,7 +104,7 @@ export function MusicShell({
   ] = useState<{ trackId: string; requestId: number } | null>(null);
   const [isTrackDetailOpen, setIsTrackDetailOpen] = useState(true);
   const { currentTrack, isPlaying } = useAudioPlayer();
-  const currentTrackId = currentTrack?.assetId ?? null;
+  const currentTrackId = currentTrack?.id ?? null;
   const appliedInitialTrackIdRef = useRef<string | null>(
     normalizedInitialTrackId,
   );

@@ -5,7 +5,7 @@ import LandingCobeOrbit from "./landingCobeOrbit";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 
 export default function Hero() {
-  const currentTrackId = useAudioPlayer().currentTrack?.assetId ?? "";
+  const currentTrackId = useAudioPlayer().currentTrack?.id ?? "";
   const searchHref = currentTrackId
     ? `/search?track=${encodeURIComponent(currentTrackId)}`
     : "/search";

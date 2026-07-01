@@ -11,14 +11,14 @@ import {
   SkipBack,
   SkipForward,
 } from "lucide-react";
-import type { TrackInfo } from "@/shared/types/dataType";
+import type { Track } from "@/entities/track/model";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { IconToggleButton } from "@/shared/components/iconToggleButton";
 import { PlayerControlButton } from "@/shared/components/playerControlBtn";
 import { formatTime } from "@/shared/lib/util";
 
 type MobileFullscreenPlayerProps = {
-  currentTrackInfo: TrackInfo | null;
+  currentTrackInfo: Track | null;
   currentProgress: number;
   duration: number;
   seek: (time: number) => void;
@@ -40,8 +40,8 @@ export default function MobileFullscreenPlayer({
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  const hasPlayableTrack = Boolean(currentTrackInfo?.url);
-  const artworkSrc = currentTrackInfo?.artworkId?.trim() ?? "";
+  const hasPlayableTrack = Boolean(currentTrackInfo?.streamUrl);
+  const artworkSrc = currentTrackInfo?.artworkUrl?.trim() ?? "";
 
   const handleSeek = (event: MouseEvent<HTMLDivElement>) => {
     if (!seekBarRef.current || !duration) return;
@@ -150,7 +150,7 @@ export default function MobileFullscreenPlayer({
           {artworkSrc && currentTrackInfo ? (
             <img
               src={artworkSrc}
-              alt={currentTrackInfo.album}
+              alt={currentTrackInfo.albumName ?? currentTrackInfo.source}
               width={300}
               height={300}
               className="h-full w-full object-cover"
@@ -165,10 +165,10 @@ export default function MobileFullscreenPlayer({
 
         <div className="mt-8 min-w-0">
           <h2 className="truncate text-2xl font-black tracking-tight text-white">
-            {currentTrackInfo?.name ?? "No track selected"}
+            {currentTrackInfo?.title ?? "No track selected"}
           </h2>
           <p className="mt-1 truncate text-base font-semibold text-white/62">
-            {currentTrackInfo?.producer ?? "Choose a song to start playback"}
+            {currentTrackInfo?.artistName ?? "Choose a song to start playback"}
           </p>
         </div>
 
@@ -192,7 +192,7 @@ export default function MobileFullscreenPlayer({
 
         <section
           className="mt-4 flex items-center justify-center gap-5"
-          aria-label={`${currentTrackInfo?.name ?? "Current track"} fullscreen controls`}
+          aria-label={`${currentTrackInfo?.title ?? "Current track"} fullscreen controls`}
         >
           <PlayerControlButton
             id="mobile-fullscreen-shuffle"

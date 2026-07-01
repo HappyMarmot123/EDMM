@@ -191,7 +191,7 @@ export function TrackDetailView({ trackId, onPlay }: TrackDetailViewProps) {
   }
 
   const canPlay = Boolean(onPlay) && isPlayable(track);
-  const isCurrentTrack = currentTrack?.assetId === track.id;
+  const isCurrentTrack = currentTrack?.id === track.id;
   const isVisualizerActive = isCurrentTrack && isPlaying;
   const albumLabel = track.albumName || "Single";
 

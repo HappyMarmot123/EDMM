@@ -219,14 +219,7 @@ describe("MusicShell", () => {
 
     mockUseAudioPlayer.mockReturnValue({
       ...mockAudioState,
-      currentTrack: {
-        assetId: cloudTracks[1].id,
-        album: cloudTracks[1].albumName,
-        name: cloudTracks[1].title,
-        artworkId: cloudTracks[1].artworkUrl,
-        url: cloudTracks[1].streamUrl ?? "",
-        producer: cloudTracks[1].artistName,
-      },
+      currentTrack: cloudTracks[1],
     });
 
     rerender(<MusicShell initialTrackId="cloudinary:hidden-1" />);
@@ -467,14 +460,7 @@ describe("MusicShell", () => {
 
     mockUseAudioPlayer.mockReturnValue({
       ...mockAudioState,
-      currentTrack: {
-        assetId: recentTrack.id,
-        album: recentTrack.albumName,
-        name: recentTrack.title,
-        artworkId: recentTrack.artworkUrl,
-        url: recentTrack.streamUrl ?? "",
-        producer: recentTrack.artistName,
-      },
+      currentTrack: recentTrack,
     });
     rerender(<MusicShell onPlay={onPlay} />);
 

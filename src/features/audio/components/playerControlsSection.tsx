@@ -78,8 +78,8 @@ const PlayerControlsSection: React.FC<
   } = useAudioPlayer();
 
   const playPauseLabel = isPlaying ? "Pause" : "Play";
-  const hasPlayableTrack = Boolean(currentTrackInfo?.url);
-  const hasPlayableQueue = Boolean(currentTrackInfo?.assetId);
+  const hasPlayableTrack = Boolean(currentTrackInfo?.streamUrl);
+  const hasPlayableQueue = Boolean(currentTrackInfo?.id);
   const handleFullscreenClick = () => onFullscreenOpen?.();
   const FullscreenIcon = isFullscreenOpen ? Minimize2 : Maximize2;
   const fullscreenLabel = isFullscreenOpen
@@ -91,7 +91,7 @@ const PlayerControlsSection: React.FC<
     <section
       id="player-controls"
       className="flex w-full flex-col items-center gap-2"
-      aria-label={`${currentTrackInfo?.name ?? "Current track"} controls`}
+      aria-label={`${currentTrackInfo?.title ?? "Current track"} controls`}
     >
       <div className="flex w-full justify-center gap-2">
         <div className="flex items-center gap-2">

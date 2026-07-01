@@ -4,10 +4,10 @@ import { Minimize2, Music2 } from "lucide-react";
 import FullscreenAlbumDisc from "@/features/audio/components/fullscreenAlbumDisc";
 import FullscreenAudioVisualizer from "@/features/audio/components/fullscreenAudioVisualizer";
 import { useAlbumColorPalette } from "@/features/audio/components/visualizers/albumColorPalette";
-import type { TrackInfo } from "@/shared/types/dataType";
+import type { Track } from "@/entities/track/model";
 
 type DesktopFullscreenPlayerProps = {
-  currentTrackInfo: TrackInfo | null;
+  currentTrackInfo: Track | null;
   analyser: AnalyserNode | null;
   isPlaying: boolean;
   onClose: () => void;
@@ -19,8 +19,8 @@ export default function DesktopFullscreenPlayer({
   isPlaying,
   onClose,
 }: DesktopFullscreenPlayerProps) {
-  const artworkSrc = currentTrackInfo?.artworkId?.trim() ?? "";
-  const trackTitle = currentTrackInfo?.name ?? "No track selected";
+  const artworkSrc = currentTrackInfo?.artworkUrl?.trim() ?? "";
+  const trackTitle = currentTrackInfo?.title ?? "No track selected";
   const hasArtwork = Boolean(artworkSrc);
   const albumPalette = useAlbumColorPalette(artworkSrc);
   const albumPaletteStyle = {

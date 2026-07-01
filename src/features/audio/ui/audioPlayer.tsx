@@ -12,7 +12,7 @@ import PlayerControlsSection, {
 import AlbumArtwork from "@/features/audio/components/albumArtwork";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
-import type { TrackInfo } from "@/shared/types/dataType";
+import type { Track } from "@/entities/track/model";
 
 const FULLSCREEN_VIEWPORT_QUERY = "(min-width: 768px)";
 
@@ -36,14 +36,14 @@ export default function AudioPlayer() {
     useAudioPlayer();
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
   const [fullscreenTrackOverride, setFullscreenTrackOverride] =
-    useState<TrackInfo | null>(null);
+    useState<Track | null>(null);
   const canUseFullscreen = useCanUseFullscreenViewport();
   const seekBarContainerRef = useRef<HTMLDivElement>(null);
   const currentProgress = duration > 0 ? (currentTime / duration) * 100 : 0;
-  const currentTrackId = currentTrack?.assetId;
+  const currentTrackId = currentTrack?.id;
   const fullscreenTrackInfo = fullscreenTrackOverride ?? currentTrack;
   const isFullscreenTrackCurrent =
-    !fullscreenTrackOverride || fullscreenTrackOverride.assetId === currentTrackId;
+    !fullscreenTrackOverride || fullscreenTrackOverride.id === currentTrackId;
 
   const toggleFullscreen = useCallback(() => {
     if (canUseFullscreen) {
@@ -70,7 +70,7 @@ export default function AudioPlayer() {
       }
 
       const nextTrack =
-        (event as CustomEvent<{ track?: TrackInfo }>).detail?.track ?? null;
+        (event as CustomEvent<{ track?: Track }>).detail?.track ?? null;
       setFullscreenTrackOverride(nextTrack);
       setIsFullscreenOpen(true);
     };

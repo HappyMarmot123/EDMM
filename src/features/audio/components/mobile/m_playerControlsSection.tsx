@@ -11,13 +11,13 @@ const MPlayerControlsSection = ({
 }: Pick<PlayerControlsSectionProps, "currentTrackInfo">) => {
   const { isPlaying, togglePlayPause } = useAudioPlayer();
   const playPauseLabel = isPlaying ? "Pause" : "Play";
-  const hasPlayableTrack = Boolean(currentTrackInfo?.url);
+  const hasPlayableTrack = Boolean(currentTrackInfo?.streamUrl);
 
   return (
     <section
       id="player-controls-mobile"
       className="flex flex-none items-center justify-end"
-      aria-label={`${currentTrackInfo?.name ?? "Current track"} controls`}
+      aria-label={`${currentTrackInfo?.title ?? "Current track"} controls`}
     >
       <IconToggleButton
         id="play-pause-mobile"

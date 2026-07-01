@@ -109,6 +109,27 @@ function PlaybackErrorConsumer() {
   );
 }
 
+function CurrentTrackConsumer() {
+  const player = useAudioPlayer();
+
+  return (
+    <div>
+      <span data-testid="current-track-id">{player.currentTrack?.id ?? "none"}</span>
+      <span data-testid="current-track-title">
+        {player.currentTrack?.title ?? "none"}
+      </span>
+      <button
+        type="button"
+        onClick={() => {
+          void player.playTrack(playableTrack, [playableTrack], false);
+        }}
+      >
+        Queue track
+      </button>
+    </div>
+  );
+}
+
 describe("AudioPlayerProvider", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -188,5 +209,20 @@ describe("AudioPlayerProvider", () => {
       "Error playing audio:",
       expect.any(DOMException),
     );
+  });
+
+  it("keeps Track as the exposed current track model", async () => {
+    render(
+      <AudioPlayerProvider>
+        <CurrentTrackConsumer />
+      </AudioPlayerProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Queue track" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("current-track-id")).toHaveTextContent("track-1");
+      expect(screen.getByTestId("current-track-title")).toHaveTextContent("Track One");
+    });
   });
 });

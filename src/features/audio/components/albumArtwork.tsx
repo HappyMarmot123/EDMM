@@ -9,7 +9,7 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
   isBuffering,
   currentTrackInfo,
 }) => {
-  const artworkSrc = currentTrackInfo?.artworkId?.trim() ?? "";
+  const artworkSrc = currentTrackInfo?.artworkUrl?.trim() ?? "";
   const [hasArtworkError, setHasArtworkError] = React.useState(false);
   const [errorRetryCount, setErrorRetryCount] = React.useState(0);
 
@@ -40,7 +40,7 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
       className={finalClassName}
       aria-label={
         currentTrackInfo
-          ? `Open details for ${currentTrackInfo.name}`
+          ? `Open details for ${currentTrackInfo.title}`
         : "No track artwork"
       }
       disabled={!currentTrackInfo}
@@ -53,7 +53,7 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
         <img
           key={`${artworkSrc}-${errorRetryCount}`}
           src={artworkSrc}
-          alt={currentTrackInfo.album}
+          alt={currentTrackInfo.albumName ?? currentTrackInfo.source}
           className="absolute inset-0 z-[1] block h-full w-full object-cover opacity-100 select-none"
           draggable={false}
           width={92}

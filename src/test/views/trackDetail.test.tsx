@@ -32,16 +32,10 @@ const track: Track = {
 };
 
 const mockAudioState = {
-  currentTrack: {
-    assetId: track.id,
-    album: "Cached Album",
-    name: "Cached Track",
-    artworkId: "https://example.com/artwork.png",
-    url: "https://example.com/stream.mp3",
-    producer: "Cached Artist",
-  },
+  currentTrack: track,
   isPlaying: false,
   audioAnalyser: null,
+  duration: 240,
 };
 
 describe("TrackDetailAside", () => {
