@@ -2,9 +2,9 @@ import type { PropsWithChildren } from "react";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
-import { cacheTrack } from "@/shared/db/repositories/trackCacheRepo";
+import { cacheTrack } from "@/shared/db";
 
-jest.mock("@/shared/db/repositories/trackCacheRepo", () => ({
+jest.mock("@/shared/db", () => ({
   cacheTrack: jest.fn(async () => undefined),
 }));
 

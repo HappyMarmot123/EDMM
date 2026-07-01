@@ -2,9 +2,9 @@
 
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Disc3, Link, Maximize2, Music2, Pause, Play, Radio } from "lucide-react";
-import type { Track } from "@/entities/track/model";
-import { AudioVisualizer } from "@/features/audio/components/audioVisualizer";
-import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
+import type { Track } from "@/entities/track";
+import { AudioVisualizer } from "@/features/audio";
+import { getCachedTrack } from "@/shared/db";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import { dispatchEdmmEvent, EDMM_EVENTS } from "@/shared/lib/edmmEvents";
 import { pickArtworkUrl } from "@/shared/lib/trackArtwork";

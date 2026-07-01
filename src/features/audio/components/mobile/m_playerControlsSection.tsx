@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { Play, Pause } from "lucide-react";
 import { IconToggleButton } from "@/shared/components/iconToggleButton";

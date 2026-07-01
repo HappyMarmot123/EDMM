@@ -2,7 +2,7 @@
 import React from "react";
 import clsx from "clsx";
 import { Music2 } from "lucide-react";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 
 interface AlbumArtworkProps {
   isPlaying: boolean;

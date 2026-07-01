@@ -1,15 +1,15 @@
 import type { PropsWithChildren } from "react";
 import { act, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { Track } from "@/entities/track/model";
-import { getCachedTracks } from "@/shared/db/repositories/trackCacheRepo";
-import { useFavorites } from "@/features/library/hooks/useFavorites";
-import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
+import type { Track } from "@/entities/track";
+import { getCachedTracks } from "@/shared/db";
+import { useFavorites } from "@/features/library";
+import { useRecentPlays } from "@/features/library";
 import { LibraryView } from "@/views/library";
 
-jest.mock("@/features/library/hooks/useFavorites");
-jest.mock("@/features/library/hooks/useRecentPlays");
-jest.mock("@/shared/db/repositories/trackCacheRepo");
+jest.mock("@/features/library");
+jest.mock("@/features/library");
+jest.mock("@/shared/db");
 
 const mockUseFavorites = useFavorites as jest.Mock;
 const mockUseRecentPlays = useRecentPlays as jest.Mock;

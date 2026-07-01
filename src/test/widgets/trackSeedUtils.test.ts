@@ -6,7 +6,7 @@ import {
   resolveRecentSeedTrack,
   dedupeIds,
 } from "@/widgets/musicShell/trackSeedUtils";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 
 const createTrack = (id: string, playable = true): Track => ({
   id,

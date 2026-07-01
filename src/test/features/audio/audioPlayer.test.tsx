@@ -1,8 +1,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import { fireEvent } from "@testing-library/react";
-import AudioPlayer from "@/features/audio/ui/audioPlayer";
-import MobileAudioPlayer from "@/features/audio/ui/mobileAudioPlayer";
-import type { Track } from "@/entities/track/model";
+import { AudioPlayer, MobileAudioPlayer } from "@/features/audio";
+import type { Track } from "@/entities/track";
 
 const track: Track = {
   id: "track-1",

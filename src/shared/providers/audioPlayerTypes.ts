@@ -1,4 +1,4 @@
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 import type { AudioCapabilities } from "@/shared/lib/audioInstance";
 
 export type PlaybackError =

@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import AlbumArtwork from "@/features/audio/components/albumArtwork";
 import MAlbumArtwork from "@/features/audio/components/mobile/m_albumArtwork";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 
 jest.mock("next/image", () => ({
   __esModule: true,

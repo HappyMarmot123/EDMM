@@ -1,10 +1,10 @@
 "use client";
 
-import type { Track } from "@/entities/track/model";
-import { isPlayable } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
+import { isPlayable } from "@/entities/track";
 import useAudioInstanceStore from "@/app/store/audioInstanceStore";
-import { cacheTrack, getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
-import { addRecentPlay } from "@/shared/db/repositories/recentPlaysRepo";
+import { cacheTrack, getCachedTrack } from "@/shared/db";
+import { addRecentPlay } from "@/shared/db";
 import { CLAMP_VOLUME } from "@/shared/lib/util";
 import { logger } from "@/shared/lib/logger";
 import { normalizeArtworkUrl, resolveArtworkUrlWithCache } from "@/shared/lib/trackArtwork";

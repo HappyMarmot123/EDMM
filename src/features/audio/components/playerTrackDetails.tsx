@@ -1,5 +1,5 @@
 import React from "react";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 import { formatTime, handleMouseMove, handleMouseOut } from "@/shared/lib/util";
 
 interface PlayerTrackDetailsProps {

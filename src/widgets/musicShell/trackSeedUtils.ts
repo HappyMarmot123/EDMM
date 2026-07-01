@@ -1,4 +1,4 @@
-import { isPlayable, type Track } from "@/entities/track/model";
+import { isPlayable, type Track } from "@/entities/track";
 import { normalizeArtworkUrl } from "@/shared/lib/trackArtwork";
 
 export const dedupeIds = (ids: Iterable<string>) => [...new Set(ids)];

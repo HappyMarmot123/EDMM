@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
-import type { Track } from "@/entities/track/model";
-import { isPlayable } from "@/entities/track/model";
-import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
+import type { Track } from "@/entities/track";
+import { isPlayable } from "@/entities/track";
+import { getCachedTrack } from "@/shared/db";
 import {
   buildRecentSeedKey,
   buildVisibleTrackFingerprint,

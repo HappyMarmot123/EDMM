@@ -1,4 +1,4 @@
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 
 export const EDMM_EVENTS = {
   openPlayerFullscreen: "edmm:open-player-fullscreen",

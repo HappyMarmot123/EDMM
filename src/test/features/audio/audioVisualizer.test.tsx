@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
-import AudioVisualizer from "@/features/audio/components/audioVisualizer";
+import { AudioVisualizer } from "@/features/audio";
 
 const fillRect = jest.fn();
 const clearRect = jest.fn();

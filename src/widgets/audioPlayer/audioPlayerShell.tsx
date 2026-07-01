@@ -1,6 +1,6 @@
 "use client";
 
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import type { ReactNode } from "react";
 

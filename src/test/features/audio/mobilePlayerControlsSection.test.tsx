@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import MPlayerControlsSection from "@/features/audio/components/mobile/m_playerControlsSection";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 
 jest.mock("@/shared/providers/audioPlayerProvider", () => ({
   useAudioPlayer: () => ({

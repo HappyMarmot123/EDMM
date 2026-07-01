@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { useAudioKeyboardShortcuts } from "@/features/audio/hooks/useAudioKeyboardShortcuts";
+import { useAudioKeyboardShortcuts } from "@/features/audio";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 
 jest.mock("@/shared/providers/audioPlayerProvider", () => ({

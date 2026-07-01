@@ -1,8 +1,10 @@
 "use client";
 
-import AudioPlayer from "@/features/audio/ui/audioPlayer";
-import MobileAudioPlayer from "@/features/audio/ui/mobileAudioPlayer";
-import { useAudioKeyboardShortcuts } from "@/features/audio/hooks/useAudioKeyboardShortcuts";
+import {
+  AudioPlayer,
+  MobileAudioPlayer,
+  useAudioKeyboardShortcuts,
+} from "@/features/audio";
 
 export default function AudioPlayerWidget() {
   useAudioKeyboardShortcuts();

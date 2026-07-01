@@ -4,7 +4,7 @@ import {
   useAudioPlayer,
 } from "@/shared/providers/audioPlayerProvider";
 import { setupAudioEventListeners } from "@/shared/lib/audioEventManager";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 
 const mockDetachAudioListeners = jest.fn();
 const mockCleanAudioInstance = jest.fn();
@@ -40,13 +40,10 @@ jest.mock("@/shared/lib/audioEventManager", () => ({
   setupAudioEventListeners: jest.fn(() => mockDetachAudioListeners),
 }));
 
-jest.mock("@/shared/db/repositories/trackCacheRepo", () => ({
+jest.mock("@/shared/db", () => ({
+  addRecentPlay: jest.fn(async () => undefined),
   cacheTrack: jest.fn(async () => undefined),
   getCachedTrack: jest.fn(async () => undefined),
-}));
-
-jest.mock("@/shared/db/repositories/recentPlaysRepo", () => ({
-  addRecentPlay: jest.fn(async () => undefined),
 }));
 
 function AudioConsumer() {

@@ -1,12 +1,12 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
-import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
+import { useRecentPlays } from "@/features/library";
 import {
   getCachedTrack,
   getCachedTracks,
-} from "@/shared/db/repositories/trackCacheRepo";
+} from "@/shared/db";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import MusicShell from "@/widgets/musicShell";
 
@@ -29,12 +29,12 @@ jest.mock("react-virtuoso", () => ({
 }), { virtual: true });
 
 jest.mock("@/features/cloudinary/hooks/useCloudinaryTracks");
-jest.mock("@/features/library/hooks/useRecentPlays");
-jest.mock("@/shared/db/repositories/trackCacheRepo");
+jest.mock("@/features/library");
+jest.mock("@/shared/db");
 jest.mock("@/shared/providers/audioPlayerProvider", () => ({
   useAudioPlayer: jest.fn(),
 }));
-jest.mock("@/features/audio/components/audioVisualizer", () => ({
+jest.mock("@/features/audio", () => ({
   AudioVisualizer: () => <div>Audio visualizer</div>,
 }));
 

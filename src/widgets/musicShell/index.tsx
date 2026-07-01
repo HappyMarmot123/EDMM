@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { isPlayable, type Track } from "@/entities/track/model";
+import { isPlayable, type Track } from "@/entities/track";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
-import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
-import { getCachedTracks } from "@/shared/db/repositories/trackCacheRepo";
+import { useRecentPlays } from "@/features/library";
+import { getCachedTracks } from "@/shared/db";
 import { addEdmmEventListener, EDMM_EVENTS } from "@/shared/lib/edmmEvents";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";

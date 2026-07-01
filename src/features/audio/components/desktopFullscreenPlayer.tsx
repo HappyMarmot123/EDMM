@@ -4,7 +4,7 @@ import { Minimize2, Music2 } from "lucide-react";
 import FullscreenAlbumDisc from "@/features/audio/components/fullscreenAlbumDisc";
 import FullscreenAudioVisualizer from "@/features/audio/components/fullscreenAudioVisualizer";
 import { useAlbumColorPalette } from "@/features/audio/components/visualizers/albumColorPalette";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 
 type DesktopFullscreenPlayerProps = {
   currentTrackInfo: Track | null;

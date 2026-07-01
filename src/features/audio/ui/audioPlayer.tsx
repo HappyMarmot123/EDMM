@@ -17,7 +17,7 @@ import {
   dispatchEdmmEvent,
   EDMM_EVENTS,
 } from "@/shared/lib/edmmEvents";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 
 const FULLSCREEN_VIEWPORT_QUERY = "(min-width: 768px)";
 
