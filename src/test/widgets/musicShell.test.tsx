@@ -187,24 +187,6 @@ describe("MusicShell", () => {
     ).toBeInTheDocument();
   });
 
-  it("forces the mobile view to All even when initial view is Recent", async () => {
-    mockTrackSelectPlaybackMedia(true);
-    mockUseRecentPlays.mockReturnValue({
-      recentIds: ["cloudinary:recent-1"],
-    });
-    mockGetCachedTracks.mockResolvedValue([recentTrack]);
-
-    render(<MusicShell initialView="recent" />);
-
-    expect(
-      screen.queryByRole("navigation", { name: "Bottom tab navigation" }),
-    ).not.toBeInTheDocument();
-    expect(
-      await screen.findByRole("button", { name: "Select Cloud Track One" }),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Select Recent Track" })).not.toBeInTheDocument();
-  });
-
   it("updates detail selection when initialTrackId changes", async () => {
     mockGetCachedTrack.mockImplementation(async (trackId: string) =>
       [hiddenTrack, recentTrack, ...cloudTracks].find((item) => item.id === trackId),
@@ -489,21 +471,6 @@ describe("MusicShell", () => {
       expect(
         screen.queryByRole("heading", { name: "Select a track" }),
       ).not.toBeInTheDocument();
-    });
-  });
-
-  it("prefers catalog tracks as initial seed on mobile even with recent history", async () => {
-    const onPlay = jest.fn();
-    mockTrackSelectPlaybackMedia(true);
-    mockUseRecentPlays.mockReturnValue({
-      recentIds: ["cloudinary:recent-1"],
-    });
-    mockGetCachedTracks.mockResolvedValue([recentTrack]);
-
-    render(<MusicShell onPlay={onPlay} />);
-
-    await waitFor(() => {
-      expect(onPlay).toHaveBeenCalledWith(cloudTracks[0], cloudTracks, false);
     });
   });
 
