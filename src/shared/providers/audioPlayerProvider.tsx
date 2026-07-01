@@ -152,7 +152,10 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       cacheArtwork(mergedTrack);
       setCurrentTrack(mergedTrack);
       setCurrentTime(0);
-      setIsBuffering(playImmediately && isPlayable(mergedTrack));
+      // Don't force a buffering flash on every play-mode selection. Genuine
+      // buffering is reported by the audio element's `waiting` event; here we
+      // only clear any stale buffering state from the previous track.
+      setIsBuffering(false);
       setIsPlaying(playImmediately && isPlayable(mergedTrack));
     },
     [cacheArtwork, mergeTrack],
