@@ -10,6 +10,7 @@ import { logger } from "@/shared/lib/logger";
 import { normalizeArtworkUrl } from "@/shared/lib/trackArtwork";
 import { classifyPlaybackError } from "./audioPlaybackErrors";
 import { useMediaSession } from "../hooks/useMediaSession";
+import { useAudioPlaybackLifecycle } from "../hooks/useAudioPlaybackLifecycle";
 import { setMasterAudioVolume } from "@/shared/lib/audioInstance";
 import type {
   AudioPlayerLogicReturnType,
@@ -31,6 +32,8 @@ const AudioPlayerContext = createContext<
   AudioPlayerLogicReturnType | undefined
 >(undefined);
 
+const DEFAULT_TRACK_CROSSFADE_DURATION_SEC = 3;
+
 function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
   const audio = useAudioInstanceStore((state) => state.audioInstance);
   const audioContext = useAudioInstanceStore((state) => state.audioContext);
@@ -40,6 +43,9 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
   );
   const cleanAudioInstance = useAudioInstanceStore(
     (state) => state.cleanAudioInstance
+  );
+  const refreshAudioInstance = useAudioInstanceStore(
+    (state) => state.refreshAudioInstance
   );
   const currentTrackRef = useRef<Track | null>(null);
   const playTrackRequestRef = useRef(0);
@@ -423,6 +429,8 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
     audio,
     audioContext,
     currentTrack,
+    crossfadeDurationSec: DEFAULT_TRACK_CROSSFADE_DURATION_SEC,
+    refreshAudioInstance,
     isPlaying,
     isMuted,
     volume,
@@ -444,6 +452,11 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
     nextTrack,
     prevTrack,
     seekTo: seek,
+  });
+
+  useAudioPlaybackLifecycle({
+    isPlaying,
+    audioContext,
   });
 
   return useMemo(

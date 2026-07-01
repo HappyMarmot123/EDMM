@@ -18,7 +18,9 @@ type UseAudioElementSyncParams = {
   currentTrack: Track | null;
   isPlaying: boolean;
   isMuted: boolean;
+  refreshAudioInstance?: () => void;
   volume: number;
+  crossfadeDurationSec?: number;
   isSeekingRef: SeekingRef;
   nextTrack: () => void;
   setCurrentTime: Dispatch<SetStateAction<number>>;
@@ -35,8 +37,10 @@ export function useAudioElementSync({
   isPlaying,
   isMuted,
   volume,
+  crossfadeDurationSec = 0,
   isSeekingRef,
   nextTrack,
+  refreshAudioInstance,
   setCurrentTime,
   setDuration,
   setIsBuffering,
@@ -58,8 +62,9 @@ export function useAudioElementSync({
       setCurrentTime(0);
     }
 
-    void transitionAudioTrack(trackUrl, isPlaying)
+    void transitionAudioTrack(trackUrl, isPlaying, crossfadeDurationSec)
       .then(() => {
+        refreshAudioInstance?.();
         if (isPlaying) {
           setPlaybackError(null);
         }
@@ -73,6 +78,7 @@ export function useAudioElementSync({
     audio,
     audioContext,
     currentTrack?.streamUrl,
+    crossfadeDurationSec,
     isPlaying,
     setIsBuffering,
     setIsPlaying,
