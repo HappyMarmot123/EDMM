@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
-import { ViewportSize } from "@/shared/types/dataType";
+
+interface ViewportSize {
+  width: number;
+  height: number;
+}
 
 /*
   TODO:

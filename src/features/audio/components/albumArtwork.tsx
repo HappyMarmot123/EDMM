@@ -2,9 +2,15 @@
 import React from "react";
 import clsx from "clsx";
 import { Music2 } from "lucide-react";
-import { ExtendedAlbumArtworkProps } from "@/shared/types/dataType";
+import type { Track } from "@/entities/track/model";
 
-const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
+interface AlbumArtworkProps {
+  isPlaying: boolean;
+  isBuffering: boolean;
+  currentTrackInfo: Track | null;
+}
+
+const AlbumArtwork: React.FC<AlbumArtworkProps> = ({
   isPlaying,
   isBuffering,
   currentTrackInfo,

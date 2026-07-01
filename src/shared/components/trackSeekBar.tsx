@@ -1,6 +1,11 @@
 import React from "react";
 import { formatTime, handleMouseMove, handleMouseOut } from "../lib/util";
-import { TrackSeekBarProps } from "@/shared/types/dataType";
+
+interface TrackSeekBarProps {
+  currentTime: number;
+  duration: number;
+  seek: (time: number) => void;
+}
 
 export default function TrackSeekBar({
   currentTime,

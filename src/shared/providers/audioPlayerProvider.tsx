@@ -9,10 +9,10 @@ import { CLAMP_VOLUME } from "@/shared/lib/util";
 import { logger } from "@/shared/lib/logger";
 import { normalizeArtworkUrl, resolveArtworkUrlWithCache } from "@/shared/lib/trackArtwork";
 import { setupAudioEventListeners } from "@/shared/lib/audioEventManager";
-import {
+import type {
   AudioPlayerLogicReturnType,
   PlaybackError,
-} from "@/shared/types/dataType";
+} from "./audioPlayerTypes";
 import {
   createContext,
   useCallback,

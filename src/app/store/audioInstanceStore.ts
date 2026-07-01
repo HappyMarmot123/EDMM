@@ -1,13 +1,21 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import {
+  type AudioCapabilities,
   getAudioInstance,
   getAudioContext,
   getAnalyser,
   getAudioCapabilities,
   cleanupAudioInstance,
 } from "@/shared/lib/audioInstance";
-import { AudioInstanceState } from "@/shared/types/dataType";
+
+interface AudioInstanceState {
+  audioInstance: HTMLAudioElement | null;
+  audioContext: AudioContext | null;
+  audioAnalyser: AnalyserNode | null;
+  audioCapabilities: AudioCapabilities;
+  cleanAudioInstance: () => void;
+}
 
 const useAudioInstanceStore = create<AudioInstanceState>()(
   subscribeWithSelector(() => {

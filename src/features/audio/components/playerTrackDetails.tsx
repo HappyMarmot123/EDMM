@@ -1,7 +1,17 @@
 import React from "react";
 import type { Track } from "@/entities/track/model";
-import { PlayerTrackDetailsProps } from "@/shared/types/dataType";
 import { formatTime, handleMouseMove, handleMouseOut } from "@/shared/lib/util";
+
+interface PlayerTrackDetailsProps {
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  currentProgress: number;
+  seekBarContainerRef: React.RefObject<HTMLDivElement | null>;
+  seek: (time: number) => void;
+  isMobile?: boolean;
+  currentTrackInfo?: Track | null;
+}
 
 export const PlayerTrackSummary: React.FC<{
   currentTrackInfo: Track | null;

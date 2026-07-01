@@ -10,8 +10,12 @@ import {
   useScroll,
   wrap,
 } from "framer-motion";
-import { useRef } from "react";
-import { ParallaxProps } from "@/shared/types/dataType";
+import { useRef, type ReactNode } from "react";
+
+interface ParallaxProps {
+  children: ReactNode;
+  baseVelocity?: number;
+}
 
 export default function Parallax({
   children,

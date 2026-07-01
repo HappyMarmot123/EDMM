@@ -1,6 +1,6 @@
 import React from "react";
+import type { Track } from "@/entities/track/model";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
-import { PlayerControlsSectionProps } from "@/shared/types/dataType";
 import {
   Pause,
   Play,
@@ -15,6 +15,13 @@ import {
 import { useVolumeControl } from "@/shared/hooks/useVolumeControl";
 import { PlayerControlButton } from "@/shared/components/playerControlBtn";
 import { IconToggleButton } from "@/shared/components/iconToggleButton";
+
+interface PlayerControlsSectionProps {
+  currentTrackInfo: Track | null;
+  onFullscreenOpen?: () => void;
+  canOpenFullscreen?: boolean;
+  isFullscreenOpen?: boolean;
+}
 
 export const PlayerVolumeControls: React.FC = () => {
   const { volume, isMuted, setVolume, setLiveVolume, toggleMute } =
@@ -60,9 +67,7 @@ export const PlayerVolumeControls: React.FC = () => {
   );
 };
 
-const PlayerControlsSection: React.FC<
-  Omit<PlayerControlsSectionProps, "isMobile">
-> = ({
+const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = ({
   currentTrackInfo,
   onFullscreenOpen,
   canOpenFullscreen = false,

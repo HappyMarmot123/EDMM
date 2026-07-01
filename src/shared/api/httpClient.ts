@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosRequestConfig } from "axios";
 import { axiosInstance } from "./axiosInstance";
-import { HttpClientRequestConfig, HttpClientResponse } from "../types/dataType";
+import type { HttpClientRequestConfig, HttpClientResponse } from "./httpTypes";
 import { logger } from "@/shared/lib/logger";
 
 /*
