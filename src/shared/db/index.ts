@@ -1,6 +1,7 @@
 export { db, EDMMDatabase } from "./edmmDB";
 export type {
   FavoriteRow,
+  AudioSettingsRow,
   PlaylistRow,
   PlaylistTrackRow,
   RecentPlayRow,
@@ -28,3 +29,7 @@ export {
   getCachedTrack,
   getCachedTracks,
 } from "./repositories/trackCacheRepo";
+export {
+  getEqualizerPreset,
+  setEqualizerPreset,
+} from "./repositories/audioSettingsRepo";

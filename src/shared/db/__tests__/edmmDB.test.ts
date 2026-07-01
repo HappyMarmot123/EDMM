@@ -10,6 +10,7 @@ describe("edmmDB", () => {
     await db.open();
 
     expect(db.tables.map((table) => table.name).sort()).toEqual([
+      "audioSettings",
       "favorites",
       "playlistTracks",
       "playlists",
@@ -31,5 +32,7 @@ describe("edmmDB", () => {
 
     expect(schemas.trackCache.primKey.keyPath).toBe("trackId");
     expect(schemas.trackCache.idxByName.cachedAt).toBeDefined();
+
+    expect(schemas.audioSettings.primKey.keyPath).toBe("key");
   });
 });
