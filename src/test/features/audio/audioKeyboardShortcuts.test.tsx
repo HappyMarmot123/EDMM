@@ -113,6 +113,26 @@ describe("useAudioKeyboardShortcuts", () => {
     expect(audioState.setLiveVolume).toHaveBeenNthCalledWith(2, 0.45);
   });
 
+  it("skips to the next track with N", () => {
+    const audioState = createAudioState();
+    mockUseAudioPlayer.mockReturnValue(audioState);
+
+    render(<KeyboardShortcutHarness />);
+    fireEvent.keyDown(window, { code: "KeyN" });
+
+    expect(audioState.nextTrack).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips to the previous track with P", () => {
+    const audioState = createAudioState();
+    mockUseAudioPlayer.mockReturnValue(audioState);
+
+    render(<KeyboardShortcutHarness />);
+    fireEvent.keyDown(window, { code: "KeyP" });
+
+    expect(audioState.prevTrack).toHaveBeenCalledTimes(1);
+  });
+
   it("ignores shortcuts while typing in inputs", () => {
     const audioState = createAudioState();
     mockUseAudioPlayer.mockReturnValue(audioState);

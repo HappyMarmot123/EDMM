@@ -218,6 +218,7 @@ describe("AudioPlayer", () => {
     });
     expect(fullscreenDialog).toBeInTheDocument();
     expect(fullscreenDialog).toHaveClass("min-h-screen", "min-h-dvh");
+    expect(fullscreenDialog).toHaveAttribute("tabindex", "-1");
     expect(screen.getByAltText("Track One fullscreen artwork")).toBeInTheDocument();
     expect(screen.getByTestId("fullscreen-audio-visualizer-canvas")).toHaveAttribute(
       "data-visualizer-renderer",
@@ -226,16 +227,80 @@ describe("AudioPlayer", () => {
     expect(screen.getByLabelText("Audio Player")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Track One" })).not.toBeInTheDocument();
     expect(mockAudioPlayerState.togglePlayPause).not.toHaveBeenCalled();
-
-    fireEvent.click(
-      within(fullscreenDialog).getByRole("button", {
+    expect(
+      within(fullscreenDialog).queryByRole("button", {
         name: "Exit fullscreen view",
       }),
-    );
+    ).not.toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
 
     expect(
       screen.queryByRole("dialog", { name: "Fullscreen player" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("keeps Tab from moving focus while desktop fullscreen is open", async () => {
+    render(<AudioPlayer />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Toggle fullscreen view" }));
+
+    const fullscreenDialog = screen.getByRole("dialog", {
+      name: "Fullscreen player",
+    });
+    await waitFor(() => expect(fullscreenDialog).toHaveFocus());
+
+    const tabEvent = new KeyboardEvent("keydown", {
+      key: "Tab",
+      code: "Tab",
+      bubbles: true,
+      cancelable: true,
+    });
+
+    expect(window.dispatchEvent(tabEvent)).toBe(false);
+    expect(tabEvent.defaultPrevented).toBe(true);
+    expect(fullscreenDialog).toHaveFocus();
+  });
+
+  it("toggles fullscreen keyboard guidance from the shortcut button", () => {
+    render(<AudioPlayer />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Toggle fullscreen view" }));
+
+    const fullscreenDialog = screen.getByRole("dialog", {
+      name: "Fullscreen player",
+    });
+    const shortcutButton = within(fullscreenDialog).getByRole("button", {
+      name: "Show fullscreen shortcuts",
+    });
+
+    expect(shortcutButton).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("Keyboard controls")).not.toBeInTheDocument();
+
+    fireEvent.click(shortcutButton);
+
+    expect(screen.getByText("Keyboard controls")).toBeInTheDocument();
+    expect(screen.getByText("Space")).toBeInTheDocument();
+    expect(screen.getByText("P")).toBeInTheDocument();
+    expect(screen.getByText("Previous track")).toBeInTheDocument();
+    expect(screen.getByText("N")).toBeInTheDocument();
+    expect(screen.getByText("Next track")).toBeInTheDocument();
+    expect(screen.getByText("Esc")).toBeInTheDocument();
+    expect(screen.getByText("Exit fullscreen")).toBeInTheDocument();
+    expect(screen.getByText(/Tab is locked/i)).toBeInTheDocument();
+    expect(
+      within(fullscreenDialog).getByRole("button", {
+        name: "Hide fullscreen shortcuts",
+      }),
+    ).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.click(
+      within(fullscreenDialog).getByRole("button", {
+        name: "Hide fullscreen shortcuts",
+      }),
+    );
+
+    expect(screen.queryByText("Keyboard controls")).not.toBeInTheDocument();
   });
 
   it("does not expose fullscreen controls below the 768px viewport", () => {

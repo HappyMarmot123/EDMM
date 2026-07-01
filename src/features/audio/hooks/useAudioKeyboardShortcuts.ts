@@ -33,6 +33,8 @@ export function useAudioKeyboardShortcuts() {
     currentTrack,
     currentTime,
     duration,
+    nextTrack,
+    prevTrack,
     seek,
     setLiveVolume,
     setVolume,
@@ -89,6 +91,22 @@ export function useAudioKeyboardShortcuts() {
           setLiveVolume(nextVolume);
           break;
         }
+        case "KeyN":
+        case "n":
+        case "N": {
+          if (!hasPlayableTrack || event.repeat) return;
+          event.preventDefault();
+          nextTrack();
+          break;
+        }
+        case "KeyP":
+        case "p":
+        case "P": {
+          if (!hasPlayableTrack || event.repeat) return;
+          event.preventDefault();
+          prevTrack();
+          break;
+        }
         default:
           break;
       }
@@ -103,6 +121,8 @@ export function useAudioKeyboardShortcuts() {
     currentTime,
     currentTrack?.streamUrl,
     duration,
+    nextTrack,
+    prevTrack,
     seek,
     setLiveVolume,
     setVolume,

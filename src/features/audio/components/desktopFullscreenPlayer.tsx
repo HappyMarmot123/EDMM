@@ -1,5 +1,5 @@
-import { type CSSProperties, useEffect } from "react";
-import { Minimize2 } from "lucide-react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { Keyboard } from "lucide-react";
 import FullscreenArtworkStage from "@/features/audio/components/fullscreenArtworkStage";
 import FullscreenAudioVisualizer from "@/features/audio/components/fullscreenAudioVisualizer";
 import FullscreenBackdrop from "@/features/audio/components/fullscreenBackdrop";
@@ -22,6 +22,8 @@ export default function DesktopFullscreenPlayer({
   isPlaying,
   onClose,
 }: DesktopFullscreenPlayerProps) {
+  const dialogRef = useRef<HTMLElement>(null);
+  const [showShortcutHint, setShowShortcutHint] = useState(false);
   const artworkSrc = currentTrackInfo?.artworkUrl?.trim() ?? "";
   const trackTitle = currentTrackInfo?.title ?? "No track selected";
   const { palette, resolvedSrc } = useAlbumColorPalette(artworkSrc);
@@ -39,7 +41,15 @@ export default function DesktopFullscreenPlayer({
   } as CSSProperties;
 
   useEffect(() => {
+    dialogRef.current?.focus({ preventScroll: true });
+
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab") {
+        event.preventDefault();
+        dialogRef.current?.focus({ preventScroll: true });
+        return;
+      }
+
       if (event.key !== "Escape") {
         return;
       }
@@ -58,8 +68,12 @@ export default function DesktopFullscreenPlayer({
 
   return (
     <section
+      ref={dialogRef}
       role="dialog"
+      aria-modal="true"
       aria-label="Fullscreen player"
+      aria-describedby={showShortcutHint ? "fullscreen-keyboard-hint" : undefined}
+      tabIndex={-1}
       className="fixed inset-0 z-[60] min-h-screen min-h-dvh overflow-hidden bg-[#050306] text-white"
       style={albumPaletteStyle}
     >
@@ -102,16 +116,60 @@ export default function DesktopFullscreenPlayer({
 
       <button
         type="button"
-        onClick={onClose}
-        aria-label="Exit fullscreen view"
-        title="Exit fullscreen view"
-        className="group absolute right-8 top-8 z-[2] grid h-11 w-11 place-items-center rounded-full border border-white/12 bg-black/38 text-white/78 backdrop-blur-md transition-colors hover:bg-white/12 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        onClick={() => setShowShortcutHint((isVisible) => !isVisible)}
+        aria-label={
+          showShortcutHint
+            ? "Hide fullscreen shortcuts"
+            : "Show fullscreen shortcuts"
+        }
+        aria-expanded={showShortcutHint}
+        aria-controls="fullscreen-keyboard-hint"
+        className="absolute right-8 top-8 z-[2] grid h-9 w-9 place-items-center rounded-full border border-[#ff98a2]/45 bg-black/38 text-white/78 backdrop-blur-md transition-colors hover:border-[#ff98a2]/75 hover:bg-white/12 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
       >
-        <Minimize2 size={21} strokeWidth={2.3} aria-hidden="true" />
-        <span className="pointer-events-none absolute right-0 top-[calc(100%+10px)] whitespace-nowrap rounded-md border border-white/10 bg-black/76 px-3 py-1.5 text-xs font-bold text-white/82 opacity-0 shadow-[0_12px_36px_rgba(0,0,0,0.35)] backdrop-blur-md transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
-          Exit fullscreen
-        </span>
+        <Keyboard size={18} strokeWidth={2.25} aria-hidden="true" />
       </button>
+
+      {showShortcutHint ? (
+        <aside
+          id="fullscreen-keyboard-hint"
+          role="status"
+          aria-live="polite"
+          className="absolute right-8 top-[calc(2rem+44px)] z-[2] max-w-[360px] rounded-lg border border-[#ff98a2]/55 bg-[#080509]/96 px-4 py-3 text-white shadow-[0_18px_48px_rgba(0,0,0,0.56),0_0_30px_rgba(253,109,148,0.18)] outline outline-1 outline-white/8 backdrop-blur-xl"
+        >
+          <p className="text-xs font-black uppercase text-[#ff98a2]">
+            Keyboard controls
+          </p>
+          <div className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs font-bold text-white/82">
+            <kbd className="rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white">
+              Space
+            </kbd>
+            <span>Play / pause</span>
+            <kbd className="rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white">
+              Left / Right
+            </kbd>
+            <span>Seek 10 seconds</span>
+            <kbd className="rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white">
+              Up / Down
+            </kbd>
+            <span>Volume</span>
+            <kbd className="rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white">
+              P
+            </kbd>
+            <span>Previous track</span>
+            <kbd className="rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white">
+              N
+            </kbd>
+            <span>Next track</span>
+            <kbd className="rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white">
+              Esc
+            </kbd>
+            <span>Exit fullscreen</span>
+          </div>
+          <p className="mt-2 text-xs font-semibold text-white/62">
+            Tab is locked while fullscreen is open.
+          </p>
+        </aside>
+      ) : null}
 
       <div className="relative z-[1] flex min-h-screen min-h-dvh flex-col items-center justify-center px-12 pb-[calc(130px+max(env(safe-area-inset-bottom),12px))] pt-20">
         <div className="grid w-full max-w-[560px] justify-items-center">
