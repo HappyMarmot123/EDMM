@@ -50,13 +50,13 @@ describe("recentPlaysRepo", () => {
   });
 
   it("does not reject when recording a recent play fails", async () => {
-    jest.spyOn(console, "warn").mockImplementation(() => {});
+    jest.spyOn(console, "debug").mockImplementation(() => {});
     jest
       .spyOn(db, "transaction")
       .mockRejectedValueOnce(new Error("Quota exceeded"));
 
     await expect(addRecentPlay("track-1")).resolves.toBeUndefined();
-    expect(console.warn).toHaveBeenCalledWith(
+    expect(console.debug).toHaveBeenCalledWith(
       "Failed to record recent play:",
       expect.any(Error),
     );

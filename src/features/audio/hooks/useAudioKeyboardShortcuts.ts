@@ -53,7 +53,7 @@ export function useAudioKeyboardShortcuts() {
       }
 
       const shortcutKey = event.code || event.key;
-      const hasPlayableTrack = Boolean(currentTrack?.url);
+      const hasPlayableTrack = Boolean(currentTrack?.streamUrl);
 
       switch (shortcutKey) {
         case "Space":
@@ -101,7 +101,7 @@ export function useAudioKeyboardShortcuts() {
     };
   }, [
     currentTime,
-    currentTrack?.url,
+    currentTrack?.streamUrl,
     duration,
     seek,
     setLiveVolume,

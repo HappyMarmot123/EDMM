@@ -10,9 +10,15 @@ import PlayerControlsSection, {
   PlayerVolumeControls,
 } from "@/features/audio/components/playerControlsSection";
 import AlbumArtwork from "@/features/audio/components/albumArtwork";
+import EqualizerPanel from "@/features/audio/components/equalizerPanel";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
-import type { TrackInfo } from "@/shared/types/dataType";
+import {
+  addEdmmEventListener,
+  dispatchEdmmEvent,
+  EDMM_EVENTS,
+} from "@/shared/lib/edmmEvents";
+import type { Track } from "@/entities/track";
 
 const FULLSCREEN_VIEWPORT_QUERY = "(min-width: 768px)";
 
@@ -36,14 +42,14 @@ export default function AudioPlayer() {
     useAudioPlayer();
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
   const [fullscreenTrackOverride, setFullscreenTrackOverride] =
-    useState<TrackInfo | null>(null);
+    useState<Track | null>(null);
   const canUseFullscreen = useCanUseFullscreenViewport();
   const seekBarContainerRef = useRef<HTMLDivElement>(null);
   const currentProgress = duration > 0 ? (currentTime / duration) * 100 : 0;
-  const currentTrackId = currentTrack?.assetId;
+  const currentTrackId = currentTrack?.id;
   const fullscreenTrackInfo = fullscreenTrackOverride ?? currentTrack;
   const isFullscreenTrackCurrent =
-    !fullscreenTrackOverride || fullscreenTrackOverride.assetId === currentTrackId;
+    !fullscreenTrackOverride || fullscreenTrackOverride.id === currentTrackId;
 
   const toggleFullscreen = useCallback(() => {
     if (canUseFullscreen) {
@@ -64,28 +70,21 @@ export default function AudioPlayer() {
   }, [canUseFullscreen]);
 
   useEffect(() => {
-    const handleOpenPlayerFullscreen = (event: Event) => {
+    const cleanup = addEdmmEventListener(
+      window,
+      EDMM_EVENTS.openPlayerFullscreen,
+      (event) => {
       if (!canUseFullscreen) {
         return;
       }
 
-      const nextTrack =
-        (event as CustomEvent<{ track?: TrackInfo }>).detail?.track ?? null;
+      const nextTrack = event.detail.track ?? null;
       setFullscreenTrackOverride(nextTrack);
       setIsFullscreenOpen(true);
-    };
-
-    window.addEventListener(
-      "edmm:open-player-fullscreen",
-      handleOpenPlayerFullscreen,
+      },
     );
 
-    return () => {
-      window.removeEventListener(
-        "edmm:open-player-fullscreen",
-        handleOpenPlayerFullscreen,
-      );
-    };
+    return cleanup;
   }, [canUseFullscreen]);
 
   const handleTrackZoneClick = () => {
@@ -104,11 +103,9 @@ export default function AudioPlayer() {
 
     router.replace(nextPath, { scroll: false });
     if (typeof window !== "undefined") {
-      window.dispatchEvent(
-        new CustomEvent("edmm:player-track-zone-select", {
-          detail: { trackId: currentTrackId },
-        }),
-      );
+      dispatchEdmmEvent(window, EDMM_EVENTS.playerTrackZoneSelect, {
+        trackId: currentTrackId,
+      });
     }
   };
 
@@ -176,10 +173,11 @@ export default function AudioPlayer() {
           </section>
           <section
             data-testid="player-volume-zone"
-            className="min-w-0 flex-shrink-0 justify-end flex"
+            className="min-w-0 flex-shrink-0 justify-end flex-col items-end flex gap-2"
             aria-label="Volume zone"
           >
             <PlayerVolumeControls />
+            <EqualizerPanel />
           </section>
         </div>
       </aside>

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 import AudioPlayerShell from "@/widgets/audioPlayer/audioPlayerShell";
 
 const mockPlayTrack = jest.fn();

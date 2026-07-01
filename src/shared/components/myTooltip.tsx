@@ -1,6 +1,13 @@
 import * as React from "react";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { MyTooltipProps } from "@/shared/types/dataType";
+
+interface MyTooltipProps {
+  children: React.ReactNode;
+  tooltipText: string;
+  showTooltip?: boolean;
+  delayDuration?: number;
+  sideOffset?: number;
+}
 
 const MyTooltip: React.FC<MyTooltipProps> = ({
   children,

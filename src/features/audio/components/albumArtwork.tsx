@@ -1,15 +1,22 @@
-/* eslint-disable @next/next/no-img-element -- Player artwork receives dynamic CDN hosts. */
 import React from "react";
+import Image from "next/image";
 import clsx from "clsx";
 import { Music2 } from "lucide-react";
-import { ExtendedAlbumArtworkProps } from "@/shared/types/dataType";
+import type { Track } from "@/entities/track";
+import { shouldUnoptimizeArtworkImage } from "./artworkImage";
 
-const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
+interface AlbumArtworkProps {
+  isPlaying: boolean;
+  isBuffering: boolean;
+  currentTrackInfo: Track | null;
+}
+
+const AlbumArtwork: React.FC<AlbumArtworkProps> = ({
   isPlaying,
   isBuffering,
   currentTrackInfo,
 }) => {
-  const artworkSrc = currentTrackInfo?.artworkId?.trim() ?? "";
+  const artworkSrc = currentTrackInfo?.artworkUrl?.trim() ?? "";
   const [hasArtworkError, setHasArtworkError] = React.useState(false);
   const [errorRetryCount, setErrorRetryCount] = React.useState(0);
 
@@ -40,7 +47,7 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
       className={finalClassName}
       aria-label={
         currentTrackInfo
-          ? `Open details for ${currentTrackInfo.name}`
+          ? `Open details for ${currentTrackInfo.title}`
         : "No track artwork"
       }
       disabled={!currentTrackInfo}
@@ -50,15 +57,15 @@ const AlbumArtwork: React.FC<Omit<ExtendedAlbumArtworkProps, "isMobile">> = ({
           <Music2 width={26} height={26} aria-hidden="true" />
         </span>
       ) : shouldRenderArtwork ? (
-        <img
+        <Image
           key={`${artworkSrc}-${errorRetryCount}`}
           src={artworkSrc}
-          alt={currentTrackInfo.album}
-          className="absolute inset-0 z-[1] block h-full w-full object-cover opacity-100 select-none"
+          alt={currentTrackInfo.albumName ?? currentTrackInfo.source}
+          fill
+          sizes="92px"
+          unoptimized={shouldUnoptimizeArtworkImage(artworkSrc)}
+          className="z-[1] object-cover opacity-100 select-none"
           draggable={false}
-          width={92}
-          height={92}
-          loading="lazy"
           onError={() =>
             setErrorRetryCount((retryCount) => {
               if (retryCount >= 1) {

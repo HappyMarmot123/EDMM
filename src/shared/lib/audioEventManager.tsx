@@ -1,3 +1,5 @@
+import { logger } from "@/shared/lib/logger";
+
 type AudioEventManagerState = {
   audio: HTMLAudioElement;
   storeSetCurrentTime: (time: number) => void;
@@ -35,7 +37,7 @@ export const setupAudioEventListeners = (actions: AudioEventManagerActions) => {
       return;
     }
 
-    console.error("Audio Error:", event);
+    logger.error("Audio Error:", event);
     actions.state.storeSetIsBuffering(false);
   };
 

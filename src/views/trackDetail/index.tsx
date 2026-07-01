@@ -12,11 +12,11 @@ import {
   Radio,
   Search,
 } from "lucide-react";
-import type { Track } from "@/entities/track/model";
-import { isPlayable } from "@/entities/track/model";
-import { AudioVisualizer } from "@/features/audio/components/audioVisualizer";
+import type { Track } from "@/entities/track";
+import { isPlayable } from "@/entities/track";
+import { AudioVisualizer } from "@/features/audio";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
-import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
+import { getCachedTrack } from "@/shared/db";
 
 export interface TrackDetailViewProps {
   trackId: string;
@@ -191,7 +191,7 @@ export function TrackDetailView({ trackId, onPlay }: TrackDetailViewProps) {
   }
 
   const canPlay = Boolean(onPlay) && isPlayable(track);
-  const isCurrentTrack = currentTrack?.assetId === track.id;
+  const isCurrentTrack = currentTrack?.id === track.id;
   const isVisualizerActive = isCurrentTrack && isPlaying;
   const albumLabel = track.albumName || "Single";
 

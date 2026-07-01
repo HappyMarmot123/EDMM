@@ -1,4 +1,5 @@
-import type { Track } from "@/entities/track/model";
+import { revalidateTag } from "next/cache";
+import type { Track } from "@/entities/track";
 import {
   adaptCloudinaryTrack,
   type CloudinaryResource,
@@ -6,34 +7,44 @@ import {
 
 export type ResourceTypeFilter = "video" | "image" | "all";
 
-const DEFAULT_MAX_CACHE_ENTRIES = 100;
-const VIDEO_CACHE_TTL_MS = 60_000;
 const VIDEO_MAX_RESULTS = 100;
-const IMAGE_CACHE_TTL_MS = 300_000;
 const IMAGE_MAX_RESULTS = 100;
-const ALL_CACHE_TTL_MS = 120_000;
 const ALL_MAX_RESULTS = 100;
+const CLOUDINARY_TRACK_CACHE_TTL_MS = 86_400_000;
+const CLOUDINARY_TRACK_BROWSER_CACHE_TTL_MS = 300_000;
+const CLOUDINARY_TRACK_STALE_TTL_MS = 604_800_000;
 const MAX_PAGES = 20;
 const MAX_SEARCH_TOKENS = 8;
 const SEARCH_TOKEN_REGEX = /[\p{L}\p{N}_-]+/gu;
 const SEARCH_FIELDS = ["public_id", "filename", "tags", "context"] as const;
+export const CLOUDINARY_TRACKS_CACHE_TAG = "cloudinary-tracks";
 
 export type CloudinaryCachePolicy = {
   cacheTtlMs: number;
+  browserCacheTtlMs?: number;
+  staleWhileRevalidateMs?: number;
   maxResults?: number;
 };
 
-type CacheEntry = {
-  expiresAt: number;
-  tracks: Track[];
-};
-
-const responseCache = new Map<string, CacheEntry>();
-
 const policyByResourceType: Record<ResourceTypeFilter, CloudinaryCachePolicy> = {
-  video: { cacheTtlMs: VIDEO_CACHE_TTL_MS, maxResults: VIDEO_MAX_RESULTS },
-  image: { cacheTtlMs: IMAGE_CACHE_TTL_MS, maxResults: IMAGE_MAX_RESULTS },
-  all: { cacheTtlMs: ALL_CACHE_TTL_MS, maxResults: ALL_MAX_RESULTS },
+  video: {
+    cacheTtlMs: CLOUDINARY_TRACK_CACHE_TTL_MS,
+    browserCacheTtlMs: CLOUDINARY_TRACK_BROWSER_CACHE_TTL_MS,
+    staleWhileRevalidateMs: CLOUDINARY_TRACK_STALE_TTL_MS,
+    maxResults: VIDEO_MAX_RESULTS,
+  },
+  image: {
+    cacheTtlMs: CLOUDINARY_TRACK_CACHE_TTL_MS,
+    browserCacheTtlMs: CLOUDINARY_TRACK_BROWSER_CACHE_TTL_MS,
+    staleWhileRevalidateMs: CLOUDINARY_TRACK_STALE_TTL_MS,
+    maxResults: IMAGE_MAX_RESULTS,
+  },
+  all: {
+    cacheTtlMs: CLOUDINARY_TRACK_CACHE_TTL_MS,
+    browserCacheTtlMs: CLOUDINARY_TRACK_BROWSER_CACHE_TTL_MS,
+    staleWhileRevalidateMs: CLOUDINARY_TRACK_STALE_TTL_MS,
+    maxResults: ALL_MAX_RESULTS,
+  },
 };
 
 const assertServerEnvironment = () => {
@@ -71,18 +82,6 @@ const searchTokens = (query: string) =>
 const searchExpressionForToken = (token: string) =>
   `(${SEARCH_FIELDS.map((field) => `${field}:${token}*`).join(" OR ")})`;
 
-const pruneCloudinaryTrackCache = (now: number) => {
-  for (const [key, entry] of responseCache) {
-    if (entry.expiresAt <= now) responseCache.delete(key);
-  }
-
-  while (responseCache.size > DEFAULT_MAX_CACHE_ENTRIES) {
-    const oldestKey = responseCache.keys().next().value;
-    if (oldestKey === undefined) break;
-    responseCache.delete(oldestKey);
-  }
-};
-
 type FetchCloudinaryTrackOptions = {
   resourceType?: ResourceTypeFilter;
   filterPlayable?: boolean;
@@ -91,17 +90,8 @@ type FetchCloudinaryTrackOptions = {
 
 const getCloudinaryTrackPolicy = (
   resourceType: ResourceTypeFilter,
-  filterPlayable = false,
 ): CloudinaryCachePolicy => {
   const defaultPolicy = policyByResourceType[resourceType];
-
-  if (resourceType === "all" && filterPlayable) {
-    return {
-      ...defaultPolicy,
-      cacheTtlMs: Math.max(Math.floor(defaultPolicy.cacheTtlMs / 2), 30_000),
-      maxResults: defaultPolicy.maxResults,
-    };
-  }
 
   return defaultPolicy;
 };
@@ -134,22 +124,34 @@ export function buildCloudinaryExpression(
 }
 
 export function clearCloudinaryTrackCacheForTests() {
-  responseCache.clear();
+  // Next Data Cache is managed by Next.js. Unit tests mock fetch directly and
+  // keep this helper as a stable test boundary for older call sites.
+}
+
+export function revalidateCloudinaryTrackCache() {
+  revalidateTag(CLOUDINARY_TRACKS_CACHE_TAG, "max");
 }
 
 export const getCloudinaryTrackCachePolicy = (
   resourceType: ResourceTypeFilter,
-  filterPlayable = false,
 ): CloudinaryCachePolicy => {
-  return getCloudinaryTrackPolicy(resourceType, filterPlayable);
+  return getCloudinaryTrackPolicy(resourceType);
 };
 
 export const buildCloudinaryCacheHeader = (
   policy: CloudinaryCachePolicy,
 ) => {
-  const maxAgeSeconds = Math.max(1, Math.floor(policy.cacheTtlMs / 1000));
+  const sharedMaxAgeSeconds = Math.max(1, Math.floor(policy.cacheTtlMs / 1000));
+  const browserMaxAgeSeconds = Math.max(
+    1,
+    Math.floor((policy.browserCacheTtlMs ?? policy.cacheTtlMs) / 1000),
+  );
+  const staleWhileRevalidateSeconds = Math.max(
+    1,
+    Math.floor((policy.staleWhileRevalidateMs ?? policy.cacheTtlMs) / 1000),
+  );
 
-  return `public, max-age=${maxAgeSeconds}, s-maxage=${maxAgeSeconds}, stale-while-revalidate=${maxAgeSeconds}`;
+  return `public, max-age=${browserMaxAgeSeconds}, s-maxage=${sharedMaxAgeSeconds}, stale-while-revalidate=${staleWhileRevalidateSeconds}`;
 };
 
 export async function fetchCloudinaryTracks(
@@ -163,21 +165,7 @@ export async function fetchCloudinaryTracks(
   const resourceType = options?.resourceType ?? "video";
   const filterPlayable = options.filterPlayable ?? false;
   const cachePolicy =
-    options.cachePolicy ?? getCloudinaryTrackPolicy(resourceType, filterPlayable);
-  const now = Date.now();
-  pruneCloudinaryTrackCache(now);
-
-  const cacheKey = JSON.stringify({
-    query: normalizedQuery,
-    resourceType,
-    filterPlayable,
-    maxResults: cachePolicy.maxResults ?? 100,
-  });
-
-  const cached = responseCache.get(cacheKey);
-
-  if (cached && cached.expiresAt > now) return cached.tracks;
-
+    options.cachePolicy ?? getCloudinaryTrackPolicy(resourceType);
   const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
   const tracks: Track[] = [];
   const expression = buildCloudinaryExpression(folder, normalizedQuery, resourceType);
@@ -202,7 +190,11 @@ export async function fetchCloudinaryTracks(
 
     const response = await fetch(url, {
       headers: { Authorization: `Basic ${auth}` },
-      cache: "no-store",
+      cache: "force-cache",
+      next: {
+        revalidate: Math.max(1, Math.floor(cachePolicy.cacheTtlMs / 1000)),
+        tags: [CLOUDINARY_TRACKS_CACHE_TAG],
+      },
     });
 
     if (!response.ok) {
@@ -227,14 +219,6 @@ export async function fetchCloudinaryTracks(
   if (page >= MAX_PAGES && nextCursor) {
     throw new Error("Cloudinary search pagination exceeded safety limit");
   }
-
-  const fetchedAt = Date.now();
-
-  responseCache.set(cacheKey, {
-    expiresAt: fetchedAt + cachePolicy.cacheTtlMs,
-    tracks,
-  });
-  pruneCloudinaryTrackCache(fetchedAt);
 
   return tracks;
 }

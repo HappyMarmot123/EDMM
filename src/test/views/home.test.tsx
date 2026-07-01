@@ -1,13 +1,13 @@
 import type { PropsWithChildren } from "react";
 import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { Track } from "@/entities/track/model";
-import { useFavorites } from "@/features/library/hooks/useFavorites";
+import type { Track } from "@/entities/track";
+import { useFavorites } from "@/features/library";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import { HomeView } from "@/views/home";
 
 jest.mock("@/features/cloudinary/hooks/useCloudinaryTracks");
-jest.mock("@/features/library/hooks/useFavorites");
+jest.mock("@/features/library");
 
 const mockUseCloudinaryTracks = useCloudinaryTracks as jest.Mock;
 const mockUseFavorites = useFavorites as jest.Mock;

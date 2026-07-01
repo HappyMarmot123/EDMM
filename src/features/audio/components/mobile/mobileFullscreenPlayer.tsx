@@ -1,7 +1,7 @@
-/* eslint-disable @next/next/no-img-element -- Player artwork receives dynamic CDN hosts. */
 "use client";
 
 import { useRef, useState, type MouseEvent, type PointerEvent } from "react";
+import Image from "next/image";
 import {
   ChevronDown,
   Music2,
@@ -11,14 +11,15 @@ import {
   SkipBack,
   SkipForward,
 } from "lucide-react";
-import type { TrackInfo } from "@/shared/types/dataType";
+import { shouldUnoptimizeArtworkImage } from "@/features/audio/components/artworkImage";
+import type { Track } from "@/entities/track";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { IconToggleButton } from "@/shared/components/iconToggleButton";
 import { PlayerControlButton } from "@/shared/components/playerControlBtn";
 import { formatTime } from "@/shared/lib/util";
 
 type MobileFullscreenPlayerProps = {
-  currentTrackInfo: TrackInfo | null;
+  currentTrackInfo: Track | null;
   currentProgress: number;
   duration: number;
   seek: (time: number) => void;
@@ -40,8 +41,8 @@ export default function MobileFullscreenPlayer({
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  const hasPlayableTrack = Boolean(currentTrackInfo?.url);
-  const artworkSrc = currentTrackInfo?.artworkId?.trim() ?? "";
+  const hasPlayableTrack = Boolean(currentTrackInfo?.streamUrl);
+  const artworkSrc = currentTrackInfo?.artworkUrl?.trim() ?? "";
 
   const handleSeek = (event: MouseEvent<HTMLDivElement>) => {
     if (!seekBarRef.current || !duration) return;
@@ -146,14 +147,15 @@ export default function MobileFullscreenPlayer({
       </button>
 
       <div className="flex min-h-0 flex-1 flex-col justify-center px-6 pb-[calc(28px+max(env(safe-area-inset-bottom),12px))]">
-        <div className="mx-auto aspect-square w-full max-w-[300px] overflow-hidden rounded-lg bg-white/10 shadow-[0_34px_90px_rgba(0,0,0,0.5)]">
+        <div className="relative mx-auto aspect-square w-full max-w-[300px] overflow-hidden rounded-lg bg-white/10 shadow-[0_34px_90px_rgba(0,0,0,0.5)]">
           {artworkSrc && currentTrackInfo ? (
-            <img
+            <Image
               src={artworkSrc}
-              alt={currentTrackInfo.album}
-              width={300}
-              height={300}
-              className="h-full w-full object-cover"
+              alt={currentTrackInfo.albumName ?? currentTrackInfo.source}
+              fill
+              sizes="300px"
+              unoptimized={shouldUnoptimizeArtworkImage(artworkSrc)}
+              className="object-cover"
               draggable={false}
             />
           ) : (
@@ -165,10 +167,10 @@ export default function MobileFullscreenPlayer({
 
         <div className="mt-8 min-w-0">
           <h2 className="truncate text-2xl font-black tracking-tight text-white">
-            {currentTrackInfo?.name ?? "No track selected"}
+            {currentTrackInfo?.title ?? "No track selected"}
           </h2>
           <p className="mt-1 truncate text-base font-semibold text-white/62">
-            {currentTrackInfo?.producer ?? "Choose a song to start playback"}
+            {currentTrackInfo?.artistName ?? "Choose a song to start playback"}
           </p>
         </div>
 
@@ -192,7 +194,7 @@ export default function MobileFullscreenPlayer({
 
         <section
           className="mt-4 flex items-center justify-center gap-5"
-          aria-label={`${currentTrackInfo?.name ?? "Current track"} fullscreen controls`}
+          aria-label={`${currentTrackInfo?.title ?? "Current track"} fullscreen controls`}
         >
           <PlayerControlButton
             id="mobile-fullscreen-shuffle"

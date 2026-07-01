@@ -4,7 +4,7 @@ import {
   useAudioPlayer,
 } from "@/shared/providers/audioPlayerProvider";
 import { setupAudioEventListeners } from "@/shared/lib/audioEventManager";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 
 const mockDetachAudioListeners = jest.fn();
 const mockCleanAudioInstance = jest.fn();
@@ -40,13 +40,10 @@ jest.mock("@/shared/lib/audioEventManager", () => ({
   setupAudioEventListeners: jest.fn(() => mockDetachAudioListeners),
 }));
 
-jest.mock("@/shared/db/repositories/trackCacheRepo", () => ({
+jest.mock("@/shared/db", () => ({
+  addRecentPlay: jest.fn(async () => undefined),
   cacheTrack: jest.fn(async () => undefined),
   getCachedTrack: jest.fn(async () => undefined),
-}));
-
-jest.mock("@/shared/db/repositories/recentPlaysRepo", () => ({
-  addRecentPlay: jest.fn(async () => undefined),
 }));
 
 function AudioConsumer() {
@@ -104,6 +101,27 @@ function PlaybackErrorConsumer() {
       <span data-testid="is-playing">{String(player.isPlaying)}</span>
       <button type="button" onClick={() => void player.playTrack(playableTrack)}>
         Play track
+      </button>
+    </div>
+  );
+}
+
+function CurrentTrackConsumer() {
+  const player = useAudioPlayer();
+
+  return (
+    <div>
+      <span data-testid="current-track-id">{player.currentTrack?.id ?? "none"}</span>
+      <span data-testid="current-track-title">
+        {player.currentTrack?.title ?? "none"}
+      </span>
+      <button
+        type="button"
+        onClick={() => {
+          void player.playTrack(playableTrack, [playableTrack], false);
+        }}
+      >
+        Queue track
       </button>
     </div>
   );
@@ -188,5 +206,20 @@ describe("AudioPlayerProvider", () => {
       "Error playing audio:",
       expect.any(DOMException),
     );
+  });
+
+  it("keeps Track as the exposed current track model", async () => {
+    render(
+      <AudioPlayerProvider>
+        <CurrentTrackConsumer />
+      </AudioPlayerProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Queue track" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("current-track-id")).toHaveTextContent("track-1");
+      expect(screen.getByTestId("current-track-title")).toHaveTextContent("Track One");
+    });
   });
 });

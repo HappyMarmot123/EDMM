@@ -9,8 +9,8 @@ import {
   useRef,
 } from "react";
 import { type VirtuosoHandle, Virtuoso } from "react-virtuoso";
-import type { Track } from "@/entities/track/model";
-import { isPlayable } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
+import { isPlayable } from "@/entities/track";
 
 type MusicTrackListProps = {
   tracks: Track[];

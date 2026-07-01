@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import type { Track } from "@/entities/track/model";
-import { cacheTrack } from "@/shared/db/repositories/trackCacheRepo";
+import type { Track } from "@/entities/track";
+import { cacheTrack } from "@/shared/db";
 import { useHydrated } from "@/shared/hooks/useHydrated";
 import type { ResourceTypeFilter } from "@/shared/api/cloudinary/cloudinaryClient";
+import { logger } from "@/shared/lib/logger";
 
 type CloudinaryTrackQueryOptions = {
   resourceType?: ResourceTypeFilter;
@@ -74,7 +75,7 @@ const cacheTracks = async (tracks: Track[]) => {
   );
   cacheResults.forEach((result) => {
     if (result.status === "rejected") {
-      console.warn("Failed to cache Cloudinary track:", result.reason);
+      logger.warn("Failed to cache Cloudinary track:", result.reason);
     }
   });
 };

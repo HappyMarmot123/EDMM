@@ -1,4 +1,4 @@
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 
 type CloudinaryContext = {
   custom?: Record<string, string | undefined>;

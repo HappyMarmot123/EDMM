@@ -1,16 +1,25 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import {
+  type AudioCapabilities,
   getAudioInstance,
   getAudioContext,
   getAnalyser,
   getAudioCapabilities,
   cleanupAudioInstance,
 } from "@/shared/lib/audioInstance";
-import { AudioInstanceState } from "@/shared/types/dataType";
+
+interface AudioInstanceState {
+  audioInstance: HTMLAudioElement | null;
+  audioContext: AudioContext | null;
+  audioAnalyser: AnalyserNode | null;
+  audioCapabilities: AudioCapabilities;
+  cleanAudioInstance: () => void;
+  refreshAudioInstance: () => void;
+}
 
 const useAudioInstanceStore = create<AudioInstanceState>()(
-  subscribeWithSelector(() => {
+  subscribeWithSelector((set) => {
     let audioContext: AudioContext | null = null;
     let audioInstance: HTMLAudioElement | null = null;
 
@@ -26,6 +35,7 @@ const useAudioInstanceStore = create<AudioInstanceState>()(
           initializationError: "Not in a browser environment",
         },
         cleanAudioInstance: () => {},
+        refreshAudioInstance: () => {},
       };
     }
 
@@ -38,6 +48,14 @@ const useAudioInstanceStore = create<AudioInstanceState>()(
       audioAnalyser: getAnalyser(),
       audioCapabilities: getAudioCapabilities(),
       cleanAudioInstance: cleanupAudioInstance,
+      refreshAudioInstance: () => {
+        set({
+          audioInstance: getAudioInstance(),
+          audioContext: getAudioContext(),
+          audioAnalyser: getAnalyser(),
+          audioCapabilities: getAudioCapabilities(),
+        });
+      },
     };
   })
 );

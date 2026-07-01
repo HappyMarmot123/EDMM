@@ -1,8 +1,20 @@
 "use client";
 
 import React from "react";
+import type { LucideProps } from "lucide-react";
 import { PlayerControlButton } from "./playerControlBtn";
-import { IconToggleButtonProps } from "@/shared/types/dataType";
+
+interface IconToggleButtonProps {
+  id: string;
+  condition: boolean;
+  IconOnTrue: React.ComponentType<LucideProps>;
+  IconOnFalse: React.ComponentType<LucideProps>;
+  onClick: () => void | Promise<void>;
+  label: string;
+  iconProps?: React.SVGProps<SVGSVGElement>;
+  className?: string;
+  disabled?: boolean;
+}
 
 export const IconToggleButton: React.FC<IconToggleButtonProps> = ({
   id,

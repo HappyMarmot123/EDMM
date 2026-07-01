@@ -3,7 +3,7 @@ import {
   fetchCloudinaryTracks,
   getCloudinaryTrackCachePolicy,
 } from "@/shared/api/cloudinary/cloudinaryClient";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 import { GET as GET_IMAGE } from "@/app/api/cloudinary/tracks/image/route";
 import { GET as GET_VIDEO } from "@/app/api/cloudinary/tracks/video/route";
 
@@ -24,13 +24,10 @@ jest.mock("@/shared/api/cloudinary/cloudinaryClient", () => ({
   buildCloudinaryCacheHeader: jest.fn((policy) =>
     `public, max-age=${Math.floor(policy.cacheTtlMs / 1000)}`,
   ),
-  getCloudinaryTrackCachePolicy: jest.fn((resourceType) => ({
-    cacheTtlMs:
-      resourceType === "image"
-        ? 300_000
-        : resourceType === "all"
-          ? 120_000
-          : 60_000,
+  getCloudinaryTrackCachePolicy: jest.fn(() => ({
+    cacheTtlMs: 86_400_000,
+    browserCacheTtlMs: 300_000,
+    staleWhileRevalidateMs: 604_800_000,
   })),
 }));
 
@@ -81,10 +78,10 @@ it("calls Cloudinary with image resource type in the image endpoint", async () =
   expect(fetchCloudinaryTracks).toHaveBeenCalledWith("lemonade", {
     resourceType: "image",
   });
-  expect(mockGetPolicy).toHaveBeenCalledWith("image", false);
+  expect(mockGetPolicy).toHaveBeenCalledWith("image");
   expect(res.status).toBe(200);
   expect(res.headers.get("cache-control")).toBe(
-    `public, max-age=${Math.floor(300_000 / 1000)}`,
+    `public, max-age=${Math.floor(86_400_000 / 1000)}`,
   );
   expect(body).toEqual([trackFixture]);
 });
@@ -98,10 +95,10 @@ it("calls Cloudinary with video resource type in the video endpoint", async () =
   expect(fetchCloudinaryTracks).toHaveBeenCalledWith("lemonade", {
     resourceType: "video",
   });
-  expect(mockGetPolicy).toHaveBeenCalledWith("video", false);
+  expect(mockGetPolicy).toHaveBeenCalledWith("video");
   expect(res.status).toBe(200);
   expect(res.headers.get("cache-control")).toBe(
-    `public, max-age=${Math.floor(60_000 / 1000)}`,
+    `public, max-age=${Math.floor(86_400_000 / 1000)}`,
   );
   expect(body).toEqual([trackFixture]);
 });

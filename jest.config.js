@@ -14,6 +14,14 @@ const config = {
   transformIgnorePatterns: [
     "/node_modules/(?!(jose|@panva/hkdf-node|uuid|@szmarczak|cacheable-request|normalize-url))",
   ],
+  coverageThreshold: {
+    global: {
+      statements: 78,
+      branches: 65,
+      functions: 75,
+      lines: 80,
+    },
+  },
 };
 
 module.exports = createJestConfig(config);

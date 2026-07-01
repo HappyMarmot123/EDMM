@@ -1,12 +1,12 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
-import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
+import { useRecentPlays } from "@/features/library";
 import {
   getCachedTrack,
   getCachedTracks,
-} from "@/shared/db/repositories/trackCacheRepo";
+} from "@/shared/db";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import MusicShell from "@/widgets/musicShell";
 
@@ -29,12 +29,12 @@ jest.mock("react-virtuoso", () => ({
 }), { virtual: true });
 
 jest.mock("@/features/cloudinary/hooks/useCloudinaryTracks");
-jest.mock("@/features/library/hooks/useRecentPlays");
-jest.mock("@/shared/db/repositories/trackCacheRepo");
+jest.mock("@/features/library");
+jest.mock("@/shared/db");
 jest.mock("@/shared/providers/audioPlayerProvider", () => ({
   useAudioPlayer: jest.fn(),
 }));
-jest.mock("@/features/audio/components/audioVisualizer", () => ({
+jest.mock("@/features/audio", () => ({
   AudioVisualizer: () => <div>Audio visualizer</div>,
 }));
 
@@ -187,6 +187,30 @@ describe("MusicShell", () => {
     ).toBeInTheDocument();
   });
 
+  it("does not render the mobile bottom tab navigation", () => {
+    mockTrackSelectPlaybackMedia(true);
+
+    render(<MusicShell />);
+
+    expect(
+      screen.queryByRole("navigation", { name: "Bottom tab navigation" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("forces the mobile view to stay on All even when initialView is recent", async () => {
+    mockTrackSelectPlaybackMedia(true);
+    mockUseRecentPlays.mockReturnValue({
+      recentIds: ["cloudinary:recent-1"],
+    });
+    mockGetCachedTracks.mockResolvedValue([recentTrack]);
+
+    render(<MusicShell initialView="recent" />);
+
+    expect(await screen.findByRole("button", { name: "Select Cloud Track One" }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Select Recent Track" })).not.toBeInTheDocument();
+  });
+
   it("updates detail selection when initialTrackId changes", async () => {
     mockGetCachedTrack.mockImplementation(async (trackId: string) =>
       [hiddenTrack, recentTrack, ...cloudTracks].find((item) => item.id === trackId),
@@ -219,14 +243,7 @@ describe("MusicShell", () => {
 
     mockUseAudioPlayer.mockReturnValue({
       ...mockAudioState,
-      currentTrack: {
-        assetId: cloudTracks[1].id,
-        album: cloudTracks[1].albumName,
-        name: cloudTracks[1].title,
-        artworkId: cloudTracks[1].artworkUrl,
-        url: cloudTracks[1].streamUrl ?? "",
-        producer: cloudTracks[1].artistName,
-      },
+      currentTrack: cloudTracks[1],
     });
 
     rerender(<MusicShell initialTrackId="cloudinary:hidden-1" />);
@@ -467,14 +484,7 @@ describe("MusicShell", () => {
 
     mockUseAudioPlayer.mockReturnValue({
       ...mockAudioState,
-      currentTrack: {
-        assetId: recentTrack.id,
-        album: recentTrack.albumName,
-        name: recentTrack.title,
-        artworkId: recentTrack.artworkUrl,
-        url: recentTrack.streamUrl ?? "",
-        producer: recentTrack.artistName,
-      },
+      currentTrack: recentTrack,
     });
     rerender(<MusicShell onPlay={onPlay} />);
 

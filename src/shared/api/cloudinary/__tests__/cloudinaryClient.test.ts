@@ -1,15 +1,44 @@
-import {
+import fs from "node:fs";
+import path from "node:path";
+import { revalidateTag } from "next/cache";
+import * as cloudinaryClient from "../cloudinaryClient";
+
+jest.mock("next/cache", () => ({
+  revalidateTag: jest.fn(),
+}));
+
+const {
   buildCloudinaryExpression,
   clearCloudinaryTrackCacheForTests,
   buildCloudinaryCacheHeader,
   fetchCloudinaryTracks,
   getCloudinaryTrackCachePolicy,
-} from "../cloudinaryClient";
+} = cloudinaryClient;
+
+type CloudinaryClientExports = typeof cloudinaryClient & {
+  CLOUDINARY_TRACKS_CACHE_TAG?: string;
+  revalidateCloudinaryTrackCache?: () => void;
+};
 
 global.fetch = jest.fn();
 
 const originalEnv = process.env;
 const mockFetch = global.fetch as jest.Mock;
+const mockRevalidateTag = jest.mocked(revalidateTag);
+const cloudinaryClientExports = cloudinaryClient as CloudinaryClientExports;
+const expectedCloudinaryTracksCacheTag = "cloudinary-tracks";
+const readCloudinaryClientSource = () =>
+  fs.readFileSync(
+    path.join(
+      process.cwd(),
+      "src",
+      "shared",
+      "api",
+      "cloudinary",
+      "cloudinaryClient.ts",
+    ),
+    "utf8",
+  );
 
 const rawResource = {
   asset_id: "asset-1",
@@ -113,9 +142,24 @@ describe("buildCloudinaryExpression", () => {
 
 describe("cache policy", () => {
   it("returns default cache policies by resource type", () => {
-    expect(getCloudinaryTrackCachePolicy("video").cacheTtlMs).toBe(60_000);
-    expect(getCloudinaryTrackCachePolicy("image").cacheTtlMs).toBe(300_000);
-    expect(getCloudinaryTrackCachePolicy("all").cacheTtlMs).toBe(120_000);
+    expect(getCloudinaryTrackCachePolicy("video")).toMatchObject({
+      cacheTtlMs: 86_400_000,
+      browserCacheTtlMs: 300_000,
+      staleWhileRevalidateMs: 604_800_000,
+      maxResults: 100,
+    });
+    expect(getCloudinaryTrackCachePolicy("image")).toMatchObject({
+      cacheTtlMs: 86_400_000,
+      browserCacheTtlMs: 300_000,
+      staleWhileRevalidateMs: 604_800_000,
+      maxResults: 100,
+    });
+    expect(getCloudinaryTrackCachePolicy("all")).toMatchObject({
+      cacheTtlMs: 86_400_000,
+      browserCacheTtlMs: 300_000,
+      staleWhileRevalidateMs: 604_800_000,
+      maxResults: 100,
+    });
   });
 
   it("builds cache headers from policy", () => {
@@ -126,6 +170,39 @@ describe("cache policy", () => {
 
     expect(header).toBe(
       "public, max-age=90, s-maxage=90, stale-while-revalidate=90",
+    );
+  });
+
+  it("builds long server cache headers with a short browser max-age", () => {
+    expect(
+      buildCloudinaryCacheHeader(getCloudinaryTrackCachePolicy("video")),
+    ).toBe(
+      "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800",
+    );
+  });
+
+  it("delegates response caching to the Next Data Cache", () => {
+    const source = readCloudinaryClientSource();
+
+    expect(source).not.toContain("responseCache");
+    expect(source).not.toContain('cache: "no-store"');
+    expect(source).toContain('cache: "force-cache"');
+    expect(source).toContain("CLOUDINARY_TRACKS_CACHE_TAG");
+    expect(cloudinaryClientExports.CLOUDINARY_TRACKS_CACHE_TAG).toBe(
+      expectedCloudinaryTracksCacheTag,
+    );
+  });
+
+  it("revalidates the Cloudinary track cache tag with the max profile", () => {
+    expect(cloudinaryClientExports.revalidateCloudinaryTrackCache).toEqual(
+      expect.any(Function),
+    );
+
+    cloudinaryClientExports.revalidateCloudinaryTrackCache?.();
+
+    expect(mockRevalidateTag).toHaveBeenCalledWith(
+      expectedCloudinaryTracksCacheTag,
+      "max",
     );
   });
 });
@@ -152,11 +229,15 @@ describe("fetchCloudinaryTracks", () => {
     );
     expect(url.searchParams.getAll("with_field")).toEqual(["tags", "context"]);
     expect(init).toMatchObject({
-      cache: "no-store",
+      cache: "force-cache",
       headers: {
         Authorization: `Basic ${Buffer.from("api-key:api-secret").toString(
           "base64",
         )}`,
+      },
+      next: {
+        revalidate: 86_400,
+        tags: [expectedCloudinaryTracksCacheTag],
       },
     });
     expect(tracks[0]).toMatchObject({
@@ -276,8 +357,20 @@ describe("fetchCloudinaryTracks", () => {
     expect(mockFetch).toHaveBeenCalledTimes(2);
     expect(mockFetch.mock.calls[0][0].toString()).toContain("max_results=100");
     expect(mockFetch.mock.calls[1][0].toString()).toContain("next_cursor=cursor-1");
-    expect(mockFetch.mock.calls[0][1]).toMatchObject({ cache: "no-store" });
-    expect(mockFetch.mock.calls[1][1]).toMatchObject({ cache: "no-store" });
+    expect(mockFetch.mock.calls[0][1]).toMatchObject({
+      cache: "force-cache",
+      next: {
+        revalidate: 86_400,
+        tags: [expectedCloudinaryTracksCacheTag],
+      },
+    });
+    expect(mockFetch.mock.calls[1][1]).toMatchObject({
+      cache: "force-cache",
+      next: {
+        revalidate: 86_400,
+        tags: [expectedCloudinaryTracksCacheTag],
+      },
+    });
     expect(tracks).toHaveLength(2);
     expect(tracks[0]).toMatchObject({ id: "cloudinary:asset-1" });
     expect(tracks[1]).toMatchObject({ id: "cloudinary:asset-2" });
@@ -352,34 +445,6 @@ describe("fetchCloudinaryTracks", () => {
       new Error("Cloudinary client can only be used on the server"),
     );
     expect(mockFetch).not.toHaveBeenCalled();
-  });
-
-  it("caches responses by normalized query", async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ resources: [rawResource] }),
-    });
-
-    const first = await fetchCloudinaryTracks("  lemonade  ");
-    const second = await fetchCloudinaryTracks("lemonade");
-
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-    expect(second).toBe(first);
-  });
-
-  it("evicts oldest cached responses when the cache exceeds its entry limit", async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ resources: [] }),
-    });
-
-    for (let index = 0; index < 101; index += 1) {
-      await fetchCloudinaryTracks(`query-${index}`);
-    }
-
-    await fetchCloudinaryTracks("query-0");
-
-    expect(mockFetch).toHaveBeenCalledTimes(102);
   });
 
   it("rejects when Cloudinary returns a non-OK response", async () => {

@@ -16,7 +16,6 @@ const eslintConfig = [
       ".tmp-*",
       "node_modules/**",
       "coverage/**",
-      "drizzle/**",
       "next-env.d.ts",
       "eslint.config.mjs",
       "src/shared/config/eslint.config.mjs",
@@ -41,14 +40,27 @@ const eslintConfig = [
       ...nextRules,
       "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": "warn",
-      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-empty-object-type": "off",
       "@typescript-eslint/no-require-imports": "off",
       "no-undef": "off",
-      "prefer-const": "off",
+      "prefer-const": "error",
+      "no-console": "error",
       "no-useless-assignment": "off",
       "preserve-caught-error": "off",
       "no-case-declarations": "off",
+    },
+  },
+  {
+    files: ["src/shared/lib/logger.ts"],
+    rules: {
+      "no-console": "off",
+    },
+  },
+  {
+    files: ["src/test/**/*.{ts,tsx}", "src/**/__tests__/**/*.{ts,tsx}"],
+    rules: {
+      "no-console": "off",
     },
   },
 ];

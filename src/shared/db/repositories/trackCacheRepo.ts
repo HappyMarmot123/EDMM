@@ -1,11 +1,6 @@
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 import { db } from "@/shared/db/edmmDB";
-
-const warnInDevelopment = (message: string, error: unknown) => {
-  if (process.env.NODE_ENV !== "production") {
-    console.warn(message, error);
-  }
-};
+import { logger } from "@/shared/lib/logger";
 
 export async function cacheTrack(track: Track): Promise<void> {
   try {
@@ -15,7 +10,7 @@ export async function cacheTrack(track: Track): Promise<void> {
       cachedAt: Date.now(),
     });
   } catch (error) {
-    warnInDevelopment("Failed to cache track:", error);
+    logger.debug("Failed to cache track:", error);
   }
 }
 

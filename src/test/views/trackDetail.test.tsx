@@ -1,15 +1,15 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import type { Track } from "@/entities/track/model";
-import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
+import type { Track } from "@/entities/track";
+import { getCachedTrack } from "@/shared/db";
 import TrackDetailAside from "@/widgets/musicShell/trackDetailAside";
 import { decodeTrackId } from "@/app/track/[id]/trackId";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 
-jest.mock("@/shared/db/repositories/trackCacheRepo");
+jest.mock("@/shared/db");
 jest.mock("@/shared/providers/audioPlayerProvider", () => ({
   useAudioPlayer: jest.fn(),
 }));
-jest.mock("@/features/audio/components/audioVisualizer", () => ({
+jest.mock("@/features/audio", () => ({
   AudioVisualizer: () => <div>Audio visualizer</div>,
 }));
 
@@ -32,16 +32,10 @@ const track: Track = {
 };
 
 const mockAudioState = {
-  currentTrack: {
-    assetId: track.id,
-    album: "Cached Album",
-    name: "Cached Track",
-    artworkId: "https://example.com/artwork.png",
-    url: "https://example.com/stream.mp3",
-    producer: "Cached Artist",
-  },
+  currentTrack: track,
   isPlaying: false,
   audioAnalyser: null,
+  duration: 240,
 };
 
 describe("TrackDetailAside", () => {

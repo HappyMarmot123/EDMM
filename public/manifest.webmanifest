@@ -1,0 +1,28 @@
+{
+  "name": "EDMM",
+  "short_name": "EDMM",
+  "description": "EDMM Web Audio Player",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "orientation": "portrait",
+  "lang": "ko-KR",
+  "categories": ["music", "entertainment"],
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "홈으로",
+      "url": "/",
+      "description": "EDMM 홈"
+    }
+  ]
+}

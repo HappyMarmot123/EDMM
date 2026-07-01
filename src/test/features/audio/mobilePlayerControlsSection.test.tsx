@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import MPlayerControlsSection from "@/features/audio/components/mobile/m_playerControlsSection";
-import type { TrackInfo } from "@/shared/types/dataType";
+import type { Track } from "@/entities/track";
 
 jest.mock("@/shared/providers/audioPlayerProvider", () => ({
   useAudioPlayer: () => ({
@@ -11,13 +11,17 @@ jest.mock("@/shared/providers/audioPlayerProvider", () => ({
   }),
 }));
 
-const track: TrackInfo = {
-  assetId: "track-1",
-  album: "Album",
-  name: "Track One",
-  artworkId: "https://example.com/art.jpg",
-  url: "https://example.com/audio.mp3",
-  producer: "Artist One",
+const track: Track = {
+  id: "track-1",
+  source: "cloudinary",
+  title: "Track One",
+  artistId: "artist-1",
+  artistName: "Artist One",
+  albumName: "Album",
+  artworkUrl: "https://example.com/art.jpg",
+  durationMs: 180000,
+  streamUrl: "https://example.com/audio.mp3",
+  metadata: {},
 };
 
 describe("MPlayerControlsSection", () => {

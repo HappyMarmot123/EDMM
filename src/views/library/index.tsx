@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Track } from "@/entities/track/model";
-import { useFavorites } from "@/features/library/hooks/useFavorites";
-import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
-import { getCachedTracks } from "@/shared/db/repositories/trackCacheRepo";
+import type { Track } from "@/entities/track";
+import { useFavorites } from "@/features/library";
+import { useRecentPlays } from "@/features/library";
+import { getCachedTracks } from "@/shared/db";
 import { TrackList } from "@/widgets/trackList";
 
 export interface LibraryViewProps {

@@ -1,5 +1,5 @@
-import type { Track } from "@/entities/track/model";
-import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
+import type { Track } from "@/entities/track";
+import { getCachedTrack } from "@/shared/db";
 
 export const normalizeArtworkUrl = (value: string | undefined | null): string => {
   return value?.trim().length ? value.trim() : "";

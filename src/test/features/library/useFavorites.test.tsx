@@ -1,8 +1,8 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { db } from "@/shared/db/edmmDB";
-import { useFavorites } from "@/features/library/hooks/useFavorites";
-import { usePlaylists } from "@/features/library/hooks/usePlaylists";
-import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
+import { db } from "@/shared/db";
+import { useFavorites } from "@/features/library";
+import { usePlaylists } from "@/features/library";
+import { useRecentPlays } from "@/features/library";
 
 beforeEach(async () => {
   await db.delete();

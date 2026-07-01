@@ -1,9 +1,9 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { Track } from "@/entities/track/model";
-import { useFavorites } from "@/features/library/hooks/useFavorites";
+import { Track } from "@/entities/track";
+import { useFavorites } from "@/features/library";
 import { TrackList } from "@/widgets/trackList";
 
-jest.mock("@/features/library/hooks/useFavorites");
+jest.mock("@/features/library");
 
 const mockUseFavorites = useFavorites as jest.Mock;
 

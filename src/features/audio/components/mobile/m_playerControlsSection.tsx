@@ -1,23 +1,27 @@
 "use client";
 
 import { memo } from "react";
-import { type PlayerControlsSectionProps } from "@/shared/types/dataType";
+import type { Track } from "@/entities/track";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { Play, Pause } from "lucide-react";
 import { IconToggleButton } from "@/shared/components/iconToggleButton";
 
+interface MPlayerControlsSectionProps {
+  currentTrackInfo: Track | null;
+}
+
 const MPlayerControlsSection = ({
   currentTrackInfo,
-}: Pick<PlayerControlsSectionProps, "currentTrackInfo">) => {
+}: MPlayerControlsSectionProps) => {
   const { isPlaying, togglePlayPause } = useAudioPlayer();
   const playPauseLabel = isPlaying ? "Pause" : "Play";
-  const hasPlayableTrack = Boolean(currentTrackInfo?.url);
+  const hasPlayableTrack = Boolean(currentTrackInfo?.streamUrl);
 
   return (
     <section
       id="player-controls-mobile"
       className="flex flex-none items-center justify-end"
-      aria-label={`${currentTrackInfo?.name ?? "Current track"} controls`}
+      aria-label={`${currentTrackInfo?.title ?? "Current track"} controls`}
     >
       <IconToggleButton
         id="play-pause-mobile"

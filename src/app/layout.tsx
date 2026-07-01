@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://edmm.vercel.app"),
   title: "EDMM",
   description: "음악 스트리밍 서비스",
+  manifest: "/manifest.webmanifest",
   keywords: ["음악", "스트리밍", "트랙", "EDMM", "music"],
   openGraph: {
     title: "EDMM",
@@ -47,12 +48,39 @@ export const metadata: Metadata = {
 const RootLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <html lang="ko" suppressHydrationWarning={true}>
+      <head>
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <meta name="theme-color" content="#111827" />
+        <meta name="msapplication-TileColor" content="#111827" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+        <link rel="apple-touch-icon" href="/favicon.ico" />
+      </head>
       <body suppressHydrationWarning={true}>
         <Script
           id="hydration-extension-attribute-guard"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: HYDRATION_EXTENSION_ATTRIBUTE_GUARD_SCRIPT,
+          }}
+        />
+        <Script
+          id="pwa-service-worker-registration"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ("serviceWorker" in navigator) {
+                window.addEventListener("load", () => {
+                  navigator.serviceWorker
+                    .register("/sw.js")
+                    .catch(() => {});
+                });
+              }
+            `,
           }}
         />
         <AppProviders>{children}</AppProviders>

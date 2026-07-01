@@ -2,13 +2,14 @@
 
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Disc3, Link, Maximize2, Music2, Pause, Play, Radio } from "lucide-react";
-import type { Track } from "@/entities/track/model";
-import { AudioVisualizer } from "@/features/audio/components/audioVisualizer";
-import { getCachedTrack } from "@/shared/db/repositories/trackCacheRepo";
+import type { Track } from "@/entities/track";
+import { AudioVisualizer } from "@/features/audio";
+import EqualizerPanel from "@/features/audio/components/equalizerPanel";
+import { getCachedTrack } from "@/shared/db";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
+import { dispatchEdmmEvent, EDMM_EVENTS } from "@/shared/lib/edmmEvents";
 import { pickArtworkUrl } from "@/shared/lib/trackArtwork";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
-import type { TrackInfo } from "@/shared/types/dataType";
 
 type TrackDetailAsideProps = {
   selectedTrackId: string | null;
@@ -19,15 +20,6 @@ type TrackDetailAsideProps = {
 };
 
 const TRACK_DETAIL_FULLSCREEN_VIEWPORT_QUERY = "(min-width: 768px)";
-
-const toTrackInfo = (track: Track): TrackInfo => ({
-  assetId: track.id,
-  album: track.albumName || track.source,
-  name: track.title,
-  artworkId: track.artworkUrl ?? "",
-  url: track.streamUrl ?? "",
-  producer: track.artistName,
-});
 
 const formatDuration = (durationMs: number) => {
   const totalSeconds = Math.max(0, Math.round(durationMs / 1000));
@@ -103,7 +95,7 @@ export function TrackDetailAside({
   }, [selectedTrackId]);
 
   const liveTrackFallback = useMemo(() => {
-    if (!currentTrack || currentTrack.assetId !== selectedTrackId) {
+    if (!currentTrack || currentTrack.id !== selectedTrackId) {
       return null;
     }
 
@@ -113,19 +105,12 @@ export function TrackDetailAside({
         : (fallbackTrack?.durationMs ?? 0);
 
     return {
-      id: currentTrack.assetId,
-      source: "cloudinary" as const,
-      title: currentTrack.name,
-      artistId: "",
-      artistName: currentTrack.producer,
-      albumName: currentTrack.album,
+      ...currentTrack,
       artworkUrl: pickArtworkUrl(
-        currentTrack.artworkId,
+        currentTrack.artworkUrl,
         fallbackTrack?.artworkUrl,
       ),
       durationMs: fallbackDurationMs,
-      streamUrl: currentTrack.url,
-      metadata: {},
     };
   }, [currentTrack, duration, fallbackTrack?.artworkUrl, selectedTrackId]);
 
@@ -159,7 +144,7 @@ export function TrackDetailAside({
     return liveTrackFallback;
   }, [cachedTrack, fallbackTrack, selectedTrackId, liveTrackFallback]);
 
-  const isCurrentTrack = track && currentTrack?.assetId === track.id;
+  const isCurrentTrack = track && currentTrack?.id === track.id;
   const isVisualizerActive = Boolean(isCurrentTrack && isPlaying);
   const canOpenArtworkFullscreen = Boolean(
     canUseArtworkFullscreen && track?.artworkUrl,
@@ -174,11 +159,7 @@ export function TrackDetailAside({
       return;
     }
 
-    window.dispatchEvent(
-      new CustomEvent("edmm:open-player-fullscreen", {
-        detail: { track: toTrackInfo(track) },
-      }),
-    );
+    dispatchEdmmEvent(window, EDMM_EVENTS.openPlayerFullscreen, { track });
   };
 
   return (
@@ -308,6 +289,7 @@ export function TrackDetailAside({
                 )}
                 {isCurrentTrack && isPlaying ? "Pause selected" : "Play selected"}
               </button>
+              <EqualizerPanel />
 
               <dl className="grid gap-2">
                 {track.albumName ? <DetailLine label="Album" value={track.albumName} /> : null}

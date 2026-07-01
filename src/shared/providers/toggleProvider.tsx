@@ -1,7 +1,17 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
-import { ToggleContextType } from "@/shared/types/dataType";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  type ReactNode,
+} from "react";
+
+interface ToggleContextType {
+  isOpen: boolean;
+  openToggle: () => void;
+  closeToggle: () => void;
+}
 
 const ToggleContext = createContext<ToggleContextType | undefined>(undefined);
 

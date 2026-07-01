@@ -1,18 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { isPlayable, type Track } from "@/entities/track/model";
+import { isPlayable, type Track } from "@/entities/track";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
-import { useRecentPlays } from "@/features/library/hooks/useRecentPlays";
-import { getCachedTracks } from "@/shared/db/repositories/trackCacheRepo";
+import { useRecentPlays } from "@/features/library";
+import { getCachedTracks } from "@/shared/db";
+import { addEdmmEventListener, EDMM_EVENTS } from "@/shared/lib/edmmEvents";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
-import { normalizeArtworkUrl } from "@/shared/lib/trackArtwork";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import MusicShellHeader, { type MusicView } from "./musicShellHeader";
 import MusicTrackList from "./musicTrackList";
 import TrackDetailAside from "./trackDetailAside";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
+  buildTrackSeedFingerprint,
   dedupeIds,
   findTrackById,
   firstPlayableTrack,
@@ -34,10 +35,6 @@ type CachedTrackState = {
 };
 const noop: NonNullable<MusicShellProps["onPlay"]> = () => {};
 const TRACK_SELECT_PLAYBACK_MEDIA_QUERY = "(max-width: 767px)";
-const MOBILE_VIEW_OPTIONS: Array<{ value: MusicView; label: string }> = [
-  { value: "all", label: "All" },
-  { value: "recent", label: "Recent" },
-];
 
 const isMusicView = (view: MusicView | undefined): view is MusicView =>
   view === "all" || view === "recent";
@@ -87,11 +84,14 @@ export function MusicShell({
   initialTrackId = null,
 }: MusicShellProps) {
   const normalizedInitialView = isMusicView(initialView) ? initialView : "all";
+  const isMobileView = useTrackSelectPlaybackMode();
   const normalizedInitialTrackId =
     initialTrackId?.trim().length ? initialTrackId : null;
 
   const [query, setQuery] = useState("");
-  const [view, setView] = useState<MusicView>(normalizedInitialView);
+  const [view, setView] = useState<MusicView>(
+    isMobileView ? "all" : normalizedInitialView,
+  );
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(
     normalizedInitialTrackId,
   );
@@ -104,7 +104,7 @@ export function MusicShell({
   ] = useState<{ trackId: string; requestId: number } | null>(null);
   const [isTrackDetailOpen, setIsTrackDetailOpen] = useState(true);
   const { currentTrack, isPlaying } = useAudioPlayer();
-  const currentTrackId = currentTrack?.assetId ?? null;
+  const currentTrackId = currentTrack?.id ?? null;
   const appliedInitialTrackIdRef = useRef<string | null>(
     normalizedInitialTrackId,
   );
@@ -112,23 +112,38 @@ export function MusicShell({
     normalizedInitialTrackId ? currentTrackId : null,
   );
   const isCurrentTrackPlaying = Boolean(currentTrackId && isPlaying);
-  const shouldPlayOnTrackSelect = useTrackSelectPlaybackMode();
+  const shouldPlayOnTrackSelect = isMobileView;
+  const activeView = useMemo<MusicView>(() => {
+    return isMobileView ? "all" : view;
+  }, [isMobileView, view]);
 
   const handleTrackZoneScrollHandled = useCallback(
     () => setPlayerZoneScrollRequest(null),
     [],
   );
 
+  const handleViewChange = useCallback(
+    (nextView: MusicView) => {
+      if (isMobileView) {
+        return;
+      }
+
+      setView(nextView);
+    },
+    [isMobileView],
+  );
+
   const seededTrackIdRef = useRef<string | null>(null);
   useEffect(() => {
-    setView(normalizedInitialView);
-  }, [normalizedInitialView]);
+    setView(isMobileView ? "all" : normalizedInitialView);
+  }, [isMobileView, normalizedInitialView]);
 
   useEffect(() => {
-    const handleTrackZoneSelect = (event: Event) => {
-      const trackId = (
-        event as CustomEvent<{ trackId?: string }>
-      ).detail?.trackId?.trim();
+    const cleanup = addEdmmEventListener(
+      window,
+      EDMM_EVENTS.playerTrackZoneSelect,
+      (event) => {
+      const trackId = event.detail.trackId.trim();
       if (!trackId) {
         return;
       }
@@ -140,19 +155,10 @@ export function MusicShell({
         requestId:
           current?.trackId === trackId ? current.requestId + 1 : 1,
       }));
-    };
-
-    window.addEventListener(
-      "edmm:player-track-zone-select",
-      handleTrackZoneSelect,
+      },
     );
 
-    return () => {
-      window.removeEventListener(
-        "edmm:player-track-zone-select",
-        handleTrackZoneSelect,
-      );
-    };
+    return cleanup;
   }, []);
 
   const normalizedQuery = query.trim();
@@ -169,14 +175,18 @@ export function MusicShell({
 
   const { recentIds } = useRecentPlays();
 
-  const recentTrackIds = useMemo(() => dedupeIds(recentIds), [recentIds]);
+  const allRecentTrackIds = useMemo(() => dedupeIds(recentIds), [recentIds]);
+  const recentTrackIds = useMemo(
+    () => (isMobileView ? [] : allRecentTrackIds),
+    [allRecentTrackIds, isMobileView],
+  );
   const recentState = useCachedTrackList(recentTrackIds);
 
   const visibleTracks = useMemo(() => {
-    if (view === "recent") return recentState.tracks;
+    if (activeView === "recent") return recentState.tracks;
 
     return catalogTracks;
-  }, [catalogTracks, recentState.tracks, view]);
+  }, [activeView, catalogTracks, recentState.tracks]);
 
   const visibleTrackIds = useMemo(
     () => new Set(visibleTracks.map((track) => track.id)),
@@ -285,11 +295,6 @@ export function MusicShell({
     [visibleTracks],
   );
 
-  const buildTrackSeedFingerprint = useCallback((track: Track, queue: Track[]) => {
-    const queueFingerprint = queue.map((queuedTrack) => queuedTrack.id).join(",");
-    return `${track.id}|${normalizeArtworkUrl(track.artworkUrl)}|${queueFingerprint}`;
-  }, []);
-
   const activateTrackInPlayer = useCallback(
     (
       track: Track,
@@ -308,7 +313,7 @@ export function MusicShell({
       setSelectedTrackId(track.id);
       setSelectionSource(source);
     },
-    [buildTrackSeedFingerprint, onPlay, queueForTrack],
+    [onPlay, queueForTrack],
   );
 
   const handleSelect = (track: Track) => {
@@ -350,20 +355,19 @@ export function MusicShell({
     fallbackToFirstPlayable,
   });
 
-  const isVisibleLoading =
-    view === "all"
-      ? isCatalogLoading
-      : recentState.isLoading;
-  const isVisibleError = view === "all" ? isCatalogError : false;
+  const isVisibleLoading = activeView === "all"
+    ? isCatalogLoading
+    : recentState.isLoading;
+  const isVisibleError = activeView === "all" ? isCatalogError : false;
   const emptyMessage =
-    view === "all"
+    activeView === "all"
       ? normalizedQuery
         ? `No tracks found for "${normalizedQuery}".`
         : "No tracks in this view."
       : "No tracks in this view.";
   return (
     <main
-      className="relative flex h-screen h-[100dvh] max-h-screen max-h-[100dvh] flex-col overflow-hidden bg-[#050306] px-4 pb-[calc(148px+max(env(safe-area-inset-bottom),10px))] pt-5 text-white sm:px-6 sm:pb-[calc(156px+max(env(safe-area-inset-bottom),12px))] md:pb-[calc(96px+max(env(safe-area-inset-bottom),12px))] lg:px-8"
+      className="relative flex h-screen h-[100dvh] max-h-screen max-h-[100dvh] flex-col overflow-hidden bg-[#050306] px-4 pb-[calc(84px+max(env(safe-area-inset-bottom),10px))] pt-5 text-white sm:px-6 sm:pb-[calc(84px+max(env(safe-area-inset-bottom),12px))] md:pb-[calc(96px+max(env(safe-area-inset-bottom),12px))] lg:px-8"
     >
       <section
         className={`music-shell-grid mx-auto grid min-h-0 w-full flex-1 gap-5 max-w-7xl ${
@@ -375,11 +379,11 @@ export function MusicShell({
         <main className="min-w-0 flex min-h-0 flex-1 flex-col gap-5">
           <MusicShellHeader
             query={query}
-            view={view}
+            view={activeView}
             resultCount={catalogTracks.length}
-            recentCount={recentTrackIds.length}
+            recentCount={allRecentTrackIds.length}
             onQueryChange={setQuery}
-            onViewChange={setView}
+            onViewChange={handleViewChange}
           />
 
           <section
@@ -400,7 +404,9 @@ export function MusicShell({
               scrollToTrackId={playerZoneScrollRequest?.trackId ?? null}
               scrollToTrackRequest={playerZoneScrollRequest?.requestId}
               onTrackZoneScrollHandled={handleTrackZoneScrollHandled}
-              onRetry={view === "all" ? () => void refetch?.() : undefined}
+              onRetry={
+                activeView === "all" ? () => void refetch?.() : undefined
+              }
             />
           </section>
         </main>
@@ -444,33 +450,6 @@ export function MusicShell({
         </section>
       </section>
 
-      <nav
-        id="bottom-tab-navigation"
-        className="fixed inset-x-0 bottom-0 z-[60] grid grid-cols-2 gap-2 border-t border-white/10 bg-[#080609]/96 px-4 pt-2 text-white shadow-[0_-18px_45px_rgba(0,0,0,0.38)] backdrop-blur-xl md:hidden"
-        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 10px)" }}
-        aria-label="Bottom tab navigation"
-      >
-        {MOBILE_VIEW_OPTIONS.map(({ value, label }) => {
-          const isActive = view === value;
-
-          return (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={isActive}
-              onClick={() => setView(value)}
-              className={[
-                "flex min-h-[52px] items-center justify-center rounded-xl text-sm font-black transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#ffb8c0]",
-                isActive
-                  ? "bg-[#ff98a2] text-black shadow-[0_10px_26px_rgba(255,152,162,0.22)]"
-                  : "bg-transparent text-white/58 hover:bg-white/10 hover:text-white",
-              ].join(" ")}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </nav>
     </main>
   );
 }

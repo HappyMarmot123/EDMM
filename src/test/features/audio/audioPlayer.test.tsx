@@ -1,20 +1,23 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import { fireEvent } from "@testing-library/react";
-import AudioPlayer from "@/features/audio/ui/audioPlayer";
-import MobileAudioPlayer from "@/features/audio/ui/mobileAudioPlayer";
-import type { TrackInfo } from "@/shared/types/dataType";
+import { AudioPlayer, MobileAudioPlayer } from "@/features/audio";
+import type { Track } from "@/entities/track";
 
-const track: TrackInfo = {
-  assetId: "track-1",
-  album: "Album One",
-  name: "Track One",
-  artworkId: "https://example.com/art.jpg",
-  url: "https://example.com/audio.mp3",
-  producer: "Artist One",
+const track: Track = {
+  id: "track-1",
+  source: "cloudinary",
+  title: "Track One",
+  artistId: "artist-1",
+  artistName: "Artist One",
+  albumName: "Album One",
+  artworkUrl: "https://example.com/art.jpg",
+  durationMs: 180000,
+  streamUrl: "https://example.com/audio.mp3",
+  metadata: {},
 };
 
 type MockAudioPlayerState = {
-  currentTrack: TrackInfo | null;
+  currentTrack: Track | null;
   isPlaying: boolean;
   isBuffering: boolean;
   currentTime: number;

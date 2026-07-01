@@ -1,6 +1,6 @@
 import React from "react";
+import type { Track } from "@/entities/track";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
-import { PlayerControlsSectionProps } from "@/shared/types/dataType";
 import {
   Pause,
   Play,
@@ -15,6 +15,13 @@ import {
 import { useVolumeControl } from "@/shared/hooks/useVolumeControl";
 import { PlayerControlButton } from "@/shared/components/playerControlBtn";
 import { IconToggleButton } from "@/shared/components/iconToggleButton";
+
+interface PlayerControlsSectionProps {
+  currentTrackInfo: Track | null;
+  onFullscreenOpen?: () => void;
+  canOpenFullscreen?: boolean;
+  isFullscreenOpen?: boolean;
+}
 
 export const PlayerVolumeControls: React.FC = () => {
   const { volume, isMuted, setVolume, setLiveVolume, toggleMute } =
@@ -60,9 +67,7 @@ export const PlayerVolumeControls: React.FC = () => {
   );
 };
 
-const PlayerControlsSection: React.FC<
-  Omit<PlayerControlsSectionProps, "isMobile">
-> = ({
+const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = ({
   currentTrackInfo,
   onFullscreenOpen,
   canOpenFullscreen = false,
@@ -78,8 +83,8 @@ const PlayerControlsSection: React.FC<
   } = useAudioPlayer();
 
   const playPauseLabel = isPlaying ? "Pause" : "Play";
-  const hasPlayableTrack = Boolean(currentTrackInfo?.url);
-  const hasPlayableQueue = Boolean(currentTrackInfo?.assetId);
+  const hasPlayableTrack = Boolean(currentTrackInfo?.streamUrl);
+  const hasPlayableQueue = Boolean(currentTrackInfo?.id);
   const handleFullscreenClick = () => onFullscreenOpen?.();
   const FullscreenIcon = isFullscreenOpen ? Minimize2 : Maximize2;
   const fullscreenLabel = isFullscreenOpen
@@ -91,7 +96,7 @@ const PlayerControlsSection: React.FC<
     <section
       id="player-controls"
       className="flex w-full flex-col items-center gap-2"
-      aria-label={`${currentTrackInfo?.name ?? "Current track"} controls`}
+      aria-label={`${currentTrackInfo?.title ?? "Current track"} controls`}
     >
       <div className="flex w-full justify-center gap-2">
         <div className="flex items-center gap-2">

@@ -3,7 +3,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import {
   getAllFavorites,
   toggleFavorite,
-} from "@/shared/db/repositories/favoritesRepo";
+} from "@/shared/db";
 
 export function useFavorites() {
   const favorites = useLiveQuery(getAllFavorites, [], []);

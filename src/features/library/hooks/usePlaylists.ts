@@ -2,8 +2,8 @@ import { useLiveQuery } from "dexie-react-hooks";
 import {
   createPlaylist,
   getPlaylists,
-} from "@/shared/db/repositories/playlistsRepo";
-import type { PlaylistRow } from "@/shared/db/edmmDB";
+} from "@/shared/db";
+import type { PlaylistRow } from "@/shared/db";
 
 export function usePlaylists(): {
   playlists: PlaylistRow[];

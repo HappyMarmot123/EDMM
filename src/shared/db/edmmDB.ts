@@ -1,5 +1,5 @@
 import Dexie, { type Table } from "dexie";
-import type { Track } from "@/entities/track/model";
+import type { Track } from "@/entities/track";
 
 export interface FavoriteRow {
   id?: number;
@@ -32,12 +32,18 @@ export interface TrackCacheRow {
   cachedAt: number;
 }
 
+export interface AudioSettingsRow {
+  key: string;
+  value: string;
+}
+
 export class EDMMDatabase extends Dexie {
   favorites!: Table<FavoriteRow, number>;
   playlists!: Table<PlaylistRow, number>;
   playlistTracks!: Table<PlaylistTrackRow, number>;
   recentPlays!: Table<RecentPlayRow, number>;
   trackCache!: Table<TrackCacheRow, string>;
+  audioSettings!: Table<AudioSettingsRow, string>;
 
   constructor() {
     super("edmm");
@@ -48,6 +54,15 @@ export class EDMMDatabase extends Dexie {
       playlistTracks: "++id, playlistId, trackId, order",
       recentPlays: "++id, trackId, playedAt",
       trackCache: "trackId, cachedAt",
+    });
+
+    this.version(2).stores({
+      favorites: "++id, &trackId, addedAt",
+      playlists: "++id, name, createdAt",
+      playlistTracks: "++id, playlistId, trackId, order",
+      recentPlays: "++id, trackId, playedAt",
+      trackCache: "trackId, cachedAt",
+      audioSettings: "key",
     });
   }
 }

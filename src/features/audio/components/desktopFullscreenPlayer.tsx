@@ -1,13 +1,15 @@
 /* eslint-disable @next/next/no-img-element -- Fullscreen artwork receives dynamic CDN hosts. */
 import { type CSSProperties, useEffect } from "react";
+import Image from "next/image";
 import { Minimize2, Music2 } from "lucide-react";
+import { shouldUnoptimizeArtworkImage } from "@/features/audio/components/artworkImage";
 import FullscreenAlbumDisc from "@/features/audio/components/fullscreenAlbumDisc";
 import FullscreenAudioVisualizer from "@/features/audio/components/fullscreenAudioVisualizer";
 import { useAlbumColorPalette } from "@/features/audio/components/visualizers/albumColorPalette";
-import type { TrackInfo } from "@/shared/types/dataType";
+import type { Track } from "@/entities/track";
 
 type DesktopFullscreenPlayerProps = {
-  currentTrackInfo: TrackInfo | null;
+  currentTrackInfo: Track | null;
   analyser: AnalyserNode | null;
   isPlaying: boolean;
   onClose: () => void;
@@ -19,8 +21,8 @@ export default function DesktopFullscreenPlayer({
   isPlaying,
   onClose,
 }: DesktopFullscreenPlayerProps) {
-  const artworkSrc = currentTrackInfo?.artworkId?.trim() ?? "";
-  const trackTitle = currentTrackInfo?.name ?? "No track selected";
+  const artworkSrc = currentTrackInfo?.artworkUrl?.trim() ?? "";
+  const trackTitle = currentTrackInfo?.title ?? "No track selected";
   const hasArtwork = Boolean(artworkSrc);
   const albumPalette = useAlbumColorPalette(artworkSrc);
   const albumPaletteStyle = {
@@ -149,10 +151,13 @@ export default function DesktopFullscreenPlayer({
               }}
             >
             {hasArtwork ? (
-              <img
+              <Image
                 src={artworkSrc}
                 alt={`${trackTitle} fullscreen artwork`}
-                className="h-full w-full object-cover"
+                fill
+                sizes="(min-width: 1024px) 400px, 42vw"
+                unoptimized={shouldUnoptimizeArtworkImage(artworkSrc)}
+                className="object-cover"
                 draggable={false}
               />
             ) : (

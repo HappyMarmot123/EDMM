@@ -1,9 +1,20 @@
 import React from "react";
-import { PlayerTrackDetailsProps, TrackInfo } from "@/shared/types/dataType";
+import type { Track } from "@/entities/track";
 import { formatTime, handleMouseMove, handleMouseOut } from "@/shared/lib/util";
 
+interface PlayerTrackDetailsProps {
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  currentProgress: number;
+  seekBarContainerRef: React.RefObject<HTMLDivElement | null>;
+  seek: (time: number) => void;
+  isMobile?: boolean;
+  currentTrackInfo?: Track | null;
+}
+
 export const PlayerTrackSummary: React.FC<{
-  currentTrackInfo: TrackInfo | null;
+  currentTrackInfo: Track | null;
 }> = ({ currentTrackInfo }) => {
   return (
     <section
@@ -13,16 +24,16 @@ export const PlayerTrackSummary: React.FC<{
       <div
         id="track-name"
         className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm font-semibold text-white"
-        title={currentTrackInfo?.name}
+        title={currentTrackInfo?.title}
       >
-        {currentTrackInfo?.name ?? "No track selected"}
+        {currentTrackInfo?.title ?? "No track selected"}
       </div>
       <div
         id="producer-name"
         className="mt-0.5 w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs text-white/55"
-        title={currentTrackInfo?.producer}
+        title={currentTrackInfo?.artistName}
       >
-        {currentTrackInfo?.producer ?? "Choose a song to start playback"}
+        {currentTrackInfo?.artistName ?? "Choose a song to start playback"}
       </div>
     </section>
   );
@@ -62,7 +73,7 @@ const PlayerTrackDetails: React.FC<
   return (
     <div
       id="player-track"
-      aria-label={`${currentTrackInfo?.name ?? "Current track"} progress`}
+      aria-label={`${currentTrackInfo?.title ?? "Current track"} progress`}
       className="w-full space-y-1.5"
     >
       <div className="flex items-center justify-between px-1 text-[11px] font-black uppercase tracking-[0.12em] text-white/46">

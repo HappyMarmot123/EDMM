@@ -1,4 +1,4 @@
-﻿import { db, type PlaylistRow } from "@/shared/db/edmmDB";
+import { db, type PlaylistRow } from "@/shared/db/edmmDB";
 
 export async function createPlaylist(name: string): Promise<number> {
   return db.playlists.add({
