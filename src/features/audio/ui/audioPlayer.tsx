@@ -10,6 +10,7 @@ import PlayerControlsSection, {
   PlayerVolumeControls,
 } from "@/features/audio/components/playerControlsSection";
 import AlbumArtwork from "@/features/audio/components/albumArtwork";
+import EqualizerPanel from "@/features/audio/components/equalizerPanel";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import {
@@ -172,10 +173,11 @@ export default function AudioPlayer() {
           </section>
           <section
             data-testid="player-volume-zone"
-            className="min-w-0 flex-shrink-0 justify-end flex"
+            className="min-w-0 flex-shrink-0 justify-end flex-col items-end flex gap-2"
             aria-label="Volume zone"
           >
             <PlayerVolumeControls />
+            <EqualizerPanel />
           </section>
         </div>
       </aside>
