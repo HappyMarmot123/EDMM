@@ -10,7 +10,6 @@ import PlayerControlsSection, {
   PlayerVolumeControls,
 } from "@/features/audio/components/playerControlsSection";
 import AlbumArtwork from "@/features/audio/components/albumArtwork";
-import EqualizerPanel from "@/features/audio/components/equalizerPanel";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import {
@@ -177,7 +176,6 @@ export default function AudioPlayer() {
             aria-label="Volume zone"
           >
             <PlayerVolumeControls />
-            <EqualizerPanel />
           </section>
         </div>
       </aside>

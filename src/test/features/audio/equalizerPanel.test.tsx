@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import EqualizerPanel from "@/features/audio/components/equalizerPanel";
 import { EQ_PRESET_GAINS } from "@/shared/lib/equalizer";
-import type { EQPresetName } from "@/shared/lib/equalizer";
+import { getEqualizerPreset, setEqualizerPreset } from "@/shared/db";
 
 const mockFilters = [
   { gain: { value: 0 } },
@@ -11,17 +11,21 @@ const mockFilters = [
   { gain: { value: 0 } },
 ] as BiquadFilterNode[];
 
-const mockGetEqualizerPreset = jest.fn<Promise<EQPresetName>, []>();
-const mockSetEqualizerPreset = jest.fn();
-
 jest.mock("@/shared/db", () => ({
-  getEqualizerPreset: mockGetEqualizerPreset,
-  setEqualizerPreset: mockSetEqualizerPreset,
+  getEqualizerPreset: jest.fn(),
+  setEqualizerPreset: jest.fn(),
 }));
 
 jest.mock("@/shared/lib/audioInstance", () => ({
   getEqualizerFilters: () => mockFilters,
 }));
+
+const mockGetEqualizerPreset = getEqualizerPreset as jest.MockedFunction<
+  typeof getEqualizerPreset
+>;
+const mockSetEqualizerPreset = setEqualizerPreset as jest.MockedFunction<
+  typeof setEqualizerPreset
+>;
 
 describe("EqualizerPanel", () => {
   beforeEach(() => {
@@ -30,6 +34,7 @@ describe("EqualizerPanel", () => {
       filter.gain.value = 0;
     });
     mockGetEqualizerPreset.mockResolvedValue("flat");
+    mockSetEqualizerPreset.mockResolvedValue(undefined);
   });
 
   it("loads persisted preset and applies preset gains on mount", async () => {
@@ -68,5 +73,23 @@ describe("EqualizerPanel", () => {
         EQ_PRESET_GAINS.edm,
       );
     });
+  });
+
+  it("explains each preset with tooltip help text", () => {
+    render(<EqualizerPanel />);
+
+    expect(screen.getByRole("button", { name: "Flat" })).toHaveAttribute(
+      "title",
+      "Keeps the original balance without EQ boosts.",
+    );
+    expect(screen.getByRole("button", { name: "EDM" })).toHaveAccessibleDescription(
+      "Boosts bass, presence, and air for energetic electronic tracks.",
+    );
+    expect(screen.getByRole("button", { name: "Bass" })).toHaveAccessibleDescription(
+      "Emphasizes kick and sub-bass while trimming some midrange.",
+    );
+    expect(screen.getByRole("button", { name: "Vocal" })).toHaveAccessibleDescription(
+      "Pulls vocals and upper mids forward for clearer lead lines.",
+    );
   });
 });
