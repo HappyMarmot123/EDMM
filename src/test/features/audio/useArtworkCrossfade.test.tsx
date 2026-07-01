@@ -1,4 +1,4 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import {
   useArtworkCrossfade,
   type ArtworkLayer,
@@ -101,5 +101,49 @@ describe("useArtworkCrossfade", () => {
     expect(result.current.layers).toHaveLength(1);
     expect(top(result.current.layers).artworkSrc).toBe("b.jpg");
     expect(top(result.current.layers).opacity).toBe(1);
+  });
+
+  it("auto-activates a fallback artwork layer without calling activateLayer", async () => {
+    const { result } = renderHook(() =>
+      useArtworkCrossfade({
+        artworkSrc: "",
+        palette: FALLBACK_ALBUM_PALETTE,
+        resolvedSrc: "",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(top(result.current.layers).opacity).toBe(1);
+    });
+    expect(result.current.layers).toHaveLength(1);
+    expect(top(result.current.layers).hasArtwork).toBe(false);
+  });
+
+  it("prunes the outgoing layer automatically after the fade duration", () => {
+    jest.useFakeTimers();
+    try {
+      const { result, rerender } = renderHook(
+        ({ artworkSrc, palette, resolvedSrc }) =>
+          useArtworkCrossfade({
+            artworkSrc,
+            palette,
+            resolvedSrc,
+            fadeDurationMs: 450,
+          }),
+        { initialProps: { artworkSrc: "a.jpg", palette: paletteA, resolvedSrc: "a.jpg" } },
+      );
+
+      rerender({ artworkSrc: "b.jpg", palette: paletteB, resolvedSrc: "b.jpg" });
+      const incoming = top(result.current.layers);
+      act(() => result.current.activateLayer(incoming.key));
+      act(() => {
+        jest.advanceTimersByTime(450 + 80);
+      });
+
+      expect(result.current.layers).toHaveLength(1);
+      expect(top(result.current.layers).artworkSrc).toBe("b.jpg");
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

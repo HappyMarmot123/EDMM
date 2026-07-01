@@ -84,15 +84,19 @@ export function useArtworkCrossfade({
         return current;
       }
 
+      const reduced = prefersReducedMotion();
       const incoming: ArtworkLayer = {
         key: keyRef.current++,
         artworkSrc,
         hasArtwork,
         palette,
-        opacity: prefersReducedMotion() ? 1 : 0,
+        opacity: reduced ? 1 : 0,
       };
 
-      return prefersReducedMotion() ? [incoming] : [topLayer, incoming];
+      // Cap at two layers: keep the current top as the outgoing layer. On a rapid
+      // skip before the previous incoming has faded in, the still-hidden top is used
+      // as the base — acceptable since the next fade quickly resolves it.
+      return reduced ? [incoming] : [topLayer, incoming];
     });
   }, [artworkSrc, palette, resolvedSrc]);
 
