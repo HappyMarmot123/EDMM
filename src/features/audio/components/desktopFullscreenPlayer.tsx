@@ -24,7 +24,7 @@ export default function DesktopFullscreenPlayer({
   const artworkSrc = currentTrackInfo?.artworkUrl?.trim() ?? "";
   const trackTitle = currentTrackInfo?.title ?? "No track selected";
   const hasArtwork = Boolean(artworkSrc);
-  const albumPalette = useAlbumColorPalette(artworkSrc);
+  const { palette: albumPalette } = useAlbumColorPalette(artworkSrc);
   const albumPaletteStyle = {
     "--album-primary-rgb": albumPalette.primary,
     "--album-secondary-rgb": albumPalette.secondary,

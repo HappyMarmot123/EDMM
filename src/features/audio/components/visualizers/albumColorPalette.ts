@@ -177,19 +177,22 @@ export function extractAlbumPaletteFromImageUrl(
 }
 
 export function useAlbumColorPalette(artworkSrc: string) {
-  const [palette, setPalette] = useState(FALLBACK_ALBUM_PALETTE);
+  const [state, setState] = useState<{
+    palette: AlbumColorPalette;
+    resolvedSrc: string;
+  }>({ palette: FALLBACK_ALBUM_PALETTE, resolvedSrc: "" });
 
   useEffect(() => {
     let isActive = true;
 
     if (!artworkSrc) {
-      setPalette(FALLBACK_ALBUM_PALETTE);
+      setState({ palette: FALLBACK_ALBUM_PALETTE, resolvedSrc: "" });
       return;
     }
 
     extractAlbumPaletteFromImageUrl(artworkSrc).then((nextPalette) => {
       if (isActive) {
-        setPalette(nextPalette);
+        setState({ palette: nextPalette, resolvedSrc: artworkSrc });
       }
     });
 
@@ -198,5 +201,5 @@ export function useAlbumColorPalette(artworkSrc: string) {
     };
   }, [artworkSrc]);
 
-  return palette;
+  return state;
 }
