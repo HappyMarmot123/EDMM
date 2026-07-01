@@ -187,6 +187,30 @@ describe("MusicShell", () => {
     ).toBeInTheDocument();
   });
 
+  it("does not render the mobile bottom tab navigation", () => {
+    mockTrackSelectPlaybackMedia(true);
+
+    render(<MusicShell />);
+
+    expect(
+      screen.queryByRole("navigation", { name: "Bottom tab navigation" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("forces the mobile view to stay on All even when initialView is recent", async () => {
+    mockTrackSelectPlaybackMedia(true);
+    mockUseRecentPlays.mockReturnValue({
+      recentIds: ["cloudinary:recent-1"],
+    });
+    mockGetCachedTracks.mockResolvedValue([recentTrack]);
+
+    render(<MusicShell initialView="recent" />);
+
+    expect(await screen.findByRole("button", { name: "Select Cloud Track One" }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Select Recent Track" })).not.toBeInTheDocument();
+  });
+
   it("updates detail selection when initialTrackId changes", async () => {
     mockGetCachedTrack.mockImplementation(async (trackId: string) =>
       [hiddenTrack, recentTrack, ...cloudTracks].find((item) => item.id === trackId),

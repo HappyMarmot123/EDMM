@@ -42,7 +42,7 @@ export default function MobileAudioPlayer() {
       <div
         id="player-container-mobile"
         className="fixed inset-x-3 z-[70] rounded-lg bg-[#2b111c] text-white shadow-[0_16px_42px_rgba(0,0,0,0.4)] ring-1 ring-white/10"
-        style={{ bottom: "calc(64px + max(env(safe-area-inset-bottom), 10px))" }}
+        style={{ bottom: "max(env(safe-area-inset-bottom), 10px)" }}
         aria-label="Audio Player"
       >
         <div
