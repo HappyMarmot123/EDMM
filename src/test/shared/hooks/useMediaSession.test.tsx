@@ -17,10 +17,21 @@ const TRACK: Track = {
   metadata: {},
 };
 
-type SetActionHandler = (type: string, handler: ((...args: any[]) => void) | null) => void;
+type MediaSessionActionType = "play" | "pause" | "nexttrack" | "previoustrack" | "seekto";
+type SetActionHandler = (
+  type: MediaSessionActionType,
+  handler: ((...args: unknown[]) => void) | null,
+) => void;
+type MediaSessionActionHandler = ((...args: unknown[]) => void) | null;
 
 const createMediaSessionMock = () => {
-  const handlers: Record<string, ((...args: any[]) => void) | null> = {};
+  const handlers: Record<MediaSessionActionType, MediaSessionActionHandler> = {
+    play: null,
+    pause: null,
+    nexttrack: null,
+    previoustrack: null,
+    seekto: null,
+  };
   return {
     handlers,
     mediaSession: {
@@ -59,35 +70,59 @@ const installMediaSession = () => {
 function TestHost({
   track,
   children,
+  currentTime = 0,
+  duration = 180,
+  seekTo,
+  nextTrack,
+  prevTrack,
+  togglePlayPause,
+  isPlayingOverride,
 }: {
   track: Track | null;
+  currentTime?: number;
+  duration?: number;
+  seekTo?: jest.Mock;
+  nextTrack?: jest.Mock;
+  prevTrack?: jest.Mock;
+  togglePlayPause?: jest.Mock;
+  isPlayingOverride?: boolean;
   children?: ReactNode;
 }) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration] = useState(180);
-  const nextTrack = jest.fn();
-  const prevTrack = jest.fn();
-  const seekTo = jest.fn((time: number) => setCurrentTime(time));
-  const togglePlayPause = jest.fn(() => setIsPlaying((prev) => !prev));
+  const [, setCurrentTime] = useState(0);
+  const onSeekTo = seekTo ?? jest.fn((time: number) => setCurrentTime(time));
+  const onNextTrack = nextTrack ?? jest.fn();
+  const onPrevTrack = prevTrack ?? jest.fn();
+  const onTogglePlayPause =
+    togglePlayPause ??
+    jest.fn(() => {
+      setIsPlaying((prev) => !prev);
+    });
+  const isPlayingValue = isPlayingOverride ?? isPlaying;
 
   useMediaSession({
-    isPlaying,
+    isPlaying: isPlayingValue,
     currentTrack: track,
     currentTime,
     duration,
-    togglePlayPause,
-    nextTrack,
-    prevTrack,
-    seekTo,
+    togglePlayPause: onTogglePlayPause,
+    nextTrack: onNextTrack,
+    prevTrack: onPrevTrack,
+    seekTo: onSeekTo,
   });
 
   return (
     <div>
       {children}
-      <button type="button" onClick={nextTrack}>
+      <button type="button" onClick={() => onNextTrack()}>
         Next
       </button>
+      <button
+        type="button"
+        onClick={() => onPrevTrack()}
+        aria-label="prev"
+      />
+      <button type="button" onClick={() => onTogglePlayPause()} aria-label="toggle" />
     </div>
   );
 }
@@ -131,6 +166,52 @@ describe("useMediaSession", () => {
     render(<TestHost track={null} />);
 
     expect(mediaSession.setActionHandler).not.toHaveBeenCalled();
+  });
+
+  it("updates position state when current time changes", () => {
+    const { mediaSession, unmount } = installMediaSession();
+    const { rerender } = render(<TestHost track={TRACK} currentTime={0} />);
+    expect(mediaSession.setPositionState).toHaveBeenCalledWith({
+      duration: 180,
+      position: 0,
+      playbackRate: 1,
+    });
+
+    rerender(<TestHost track={TRACK} currentTime={50} />);
+    expect(mediaSession.setPositionState).toHaveBeenCalledWith({
+      duration: 180,
+      position: 50,
+      playbackRate: 1,
+    });
+    unmount();
+  });
+
+  it("clamps seek action to track duration", () => {
+    const { mediaSession, handlers } = installMediaSession();
+    const seekTo = jest.fn();
+    render(<TestHost track={TRACK} duration={120} seekTo={seekTo} />);
+
+    expect(typeof handlers.seekto).toBe("function");
+    handlers.seekto?.({ seekTime: 181 });
+
+    expect(seekTo).toHaveBeenCalledWith(120);
+  });
+
+  it("invokes togglePlayPause for play and pause actions", () => {
+    const { handlers } = installMediaSession();
+    const togglePlayPause = jest.fn(() => {});
+    render(
+      <TestHost
+        track={TRACK}
+        isPlayingOverride={true}
+        togglePlayPause={togglePlayPause}
+      />,
+    );
+
+    handlers.play?.();
+    handlers.pause?.();
+
+    expect(togglePlayPause).toHaveBeenCalledTimes(2);
   });
 
   it("invokes action handlers and cleanup on unmount", () => {

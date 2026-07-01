@@ -12,8 +12,11 @@ type MediaSessionState = {
   seekTo: (time: number) => void;
 };
 
+const clampPositionState = (value: number) =>
+  Number.isFinite(value) ? Math.max(0, value) : 0;
+
 export function useMediaSession({
-  isPlaying,
+  isPlaying: _isPlaying,
   currentTrack,
   currentTime,
   duration,
@@ -56,15 +59,11 @@ export function useMediaSession({
     }
 
     mediaSession.setActionHandler("play", () => {
-      if (!isPlaying) {
-        void togglePlayPause();
-      }
+      void togglePlayPause();
     });
 
     mediaSession.setActionHandler("pause", () => {
-      if (isPlaying) {
-        void togglePlayPause();
-      }
+      void togglePlayPause();
     });
 
     mediaSession.setActionHandler("nexttrack", nextTrack);
@@ -73,7 +72,7 @@ export function useMediaSession({
       const nextTime = details?.seekTime;
 
       if (typeof nextTime === "number" && clampedDuration > 0) {
-        seekTo(nextTime);
+        seekTo(clampPositionState(Math.min(nextTime, clampedDuration)));
       }
     });
 
@@ -86,13 +85,36 @@ export function useMediaSession({
       mediaSession.metadata = null;
     };
   }, [
-    isPlaying,
     currentTrack,
-    currentTime,
     duration,
     nextTrack,
     prevTrack,
     seekTo,
     togglePlayPause,
   ]);
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      !currentTrack ||
+      !("mediaSession" in navigator)
+    ) {
+      return;
+    }
+
+    const mediaSession = navigator.mediaSession;
+    const clampedDuration =
+      Number.isFinite(duration) && duration > 0 ? duration : 0;
+    const clampedPosition = clampPositionState(
+      currentTime > clampedDuration ? clampedDuration : currentTime,
+    );
+
+    if (clampedDuration > 0 && "setPositionState" in mediaSession) {
+      mediaSession.setPositionState({
+        duration: clampedDuration,
+        position: clampedPosition,
+        playbackRate: 1,
+      });
+    }
+  }, [currentTrack, currentTime, duration]);
 }

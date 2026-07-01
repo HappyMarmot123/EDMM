@@ -457,6 +457,12 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
   useAudioPlaybackLifecycle({
     isPlaying,
     audioContext,
+    audio,
+    restoreStrategy:
+      process.env.NEXT_PUBLIC_AUDIO_BACKGROUND_RESTORE_STRATEGY ===
+      "media-element-first"
+        ? "media-element-first"
+        : "context-first",
   });
 
   return useMemo(
