@@ -4,6 +4,7 @@ import { useEffect, type Dispatch, type SetStateAction } from "react";
 import type { Track } from "@/entities/track";
 import { setupAudioEventListeners } from "@/shared/lib/audioEventManager";
 import { logger } from "@/shared/lib/logger";
+import { setMasterAudioVolume, transitionAudioTrack } from "@/shared/lib/audioInstance";
 import type { PlaybackError } from "./audioPlayerTypes";
 import { classifyPlaybackError } from "./audioPlaybackErrors";
 
@@ -46,50 +47,23 @@ export function useAudioElementSync({
     if (!audio) return;
     const trackUrl = currentTrack?.streamUrl;
 
-    if (trackUrl) {
-      if (audio.src !== trackUrl) {
-        audio.src = trackUrl;
-        setCurrentTime(0);
-        audio.load();
-      }
-    } else {
+    if (!trackUrl) {
       setIsBuffering(false);
-      audio.pause();
+      setPlaybackError(null);
+      void transitionAudioTrack("", false).catch(() => {});
       return;
     }
 
-    if (!isPlaying) {
-      audio.pause();
-      return;
+    if (audio.src !== trackUrl) {
+      setCurrentTime(0);
     }
 
-    if (audioContext?.state === "suspended") {
-      audioContext
-        .resume()
-        .catch((error) => {
-          setPlaybackError(
-            classifyPlaybackError(error, "unsupported-audio-context"),
-          );
-          logger.warn("Error resuming audio context:", error);
-        })
-        .finally(() => {
-          void audio
-            .play()
-            .then(() => setPlaybackError(null))
-            .catch((error) => {
-              setPlaybackError(
-                classifyPlaybackError(error, "source-load-failed"),
-              );
-              logger.warn("Error playing audio:", error);
-              setIsPlaying(false);
-            });
-        });
-      return;
-    }
-
-    void audio
-      .play()
-      .then(() => setPlaybackError(null))
+    void transitionAudioTrack(trackUrl, isPlaying)
+      .then(() => {
+        if (isPlaying) {
+          setPlaybackError(null);
+        }
+      })
       .catch((error) => {
         setPlaybackError(classifyPlaybackError(error, "source-load-failed"));
         logger.warn("Error playing audio:", error);
@@ -98,18 +72,16 @@ export function useAudioElementSync({
   }, [
     audio,
     audioContext,
-    currentTrack,
+    currentTrack?.streamUrl,
     isPlaying,
-    setCurrentTime,
     setIsBuffering,
     setIsPlaying,
     setPlaybackError,
   ]);
 
   useEffect(() => {
-    if (audio) {
-      audio.volume = isMuted ? 0 : volume;
-    }
+    const masterVolume = isMuted ? 0 : volume;
+    setMasterAudioVolume(masterVolume);
   }, [audio, isMuted, volume]);
 
   useEffect(() => {

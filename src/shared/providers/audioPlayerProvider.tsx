@@ -10,6 +10,7 @@ import { logger } from "@/shared/lib/logger";
 import { normalizeArtworkUrl } from "@/shared/lib/trackArtwork";
 import { classifyPlaybackError } from "./audioPlaybackErrors";
 import { useMediaSession } from "../hooks/useMediaSession";
+import { setMasterAudioVolume } from "@/shared/lib/audioInstance";
 import type {
   AudioPlayerLogicReturnType,
   PlaybackError,
@@ -129,11 +130,9 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
 
   const setLiveVolume = useCallback(
     (nextVolume: number) => {
-      if (audio) {
-        audio.volume = CLAMP_VOLUME(nextVolume);
-      }
+      setMasterAudioVolume(CLAMP_VOLUME(nextVolume));
     },
-    [audio]
+    []
   );
 
   const toggleMute = useCallback(() => {
