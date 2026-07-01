@@ -124,6 +124,12 @@ export function MusicShell({
   }, [normalizedInitialView]);
 
   useEffect(() => {
+    if (isMobileView && view !== "all") {
+      setView("all");
+    }
+  }, [isMobileView, view]);
+
+  useEffect(() => {
     const cleanup = addEdmmEventListener(
       window,
       EDMM_EVENTS.playerTrackZoneSelect,
