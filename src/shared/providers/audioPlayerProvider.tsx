@@ -353,11 +353,6 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
             : primaryTrackInfo;
 
         if (shouldAutoPlay) {
-          if (audio && audio.currentSrc !== primaryTrackInfo.streamUrl) {
-            audio.src = primaryTrackInfo.streamUrl ?? "";
-            setCurrentTime(0);
-            audio.load();
-          }
           setCurrentTrack(syncTrackMeta);
           setIsBuffering(false);
           setIsPlaying((playing) => !playing);
@@ -379,11 +374,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
         void recoverArtworkForCurrentTrack(primaryTrackInfo.id);
       }
 
-      if (shouldAutoPlay && audio && primaryTrackInfo.streamUrl) {
-        if (audio.src !== primaryTrackInfo.streamUrl) {
-          audio.src = primaryTrackInfo.streamUrl;
-          setCurrentTime(0);
-        }
+      if (shouldAutoPlay && audio) {
         if (audioContext?.state === "suspended") {
           try {
             await audioContext.resume();
