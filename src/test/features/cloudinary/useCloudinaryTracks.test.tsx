@@ -46,7 +46,7 @@ it("calls the Cloudinary tracks route with encoded nonblank query", async () => 
 
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-  expect(mockFetch).toHaveBeenCalledWith("/api/cloudinary/tracks/video?q=lemonade");
+  expect(mockFetch).toHaveBeenCalledWith("/api/cloudinary/tracks/video?v=2&q=lemonade");
   expect(mockCacheTrack).toHaveBeenCalledWith(
     expect.objectContaining({
       id: "cloudinary:asset-1",
@@ -103,11 +103,11 @@ it("fetches and merges video and image tracks when resourceType is all", async (
 
   expect(mockFetch).toHaveBeenNthCalledWith(
     1,
-    "/api/cloudinary/tracks/video?q=lemonade",
+    "/api/cloudinary/tracks/video?v=2&q=lemonade",
   );
   expect(mockFetch).toHaveBeenNthCalledWith(
     2,
-    "/api/cloudinary/tracks/image?q=lemonade",
+    "/api/cloudinary/tracks/image?v=2&q=lemonade",
   );
   expect(mockFetch).toHaveBeenCalledTimes(2);
   expect(result.current.data).toHaveLength(1);
@@ -132,7 +132,7 @@ it("calls the dedicated image tracks route", async () => {
 
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-  expect(mockFetch).toHaveBeenCalledWith("/api/cloudinary/tracks/image?q=lemonade");
+  expect(mockFetch).toHaveBeenCalledWith("/api/cloudinary/tracks/image?v=2&q=lemonade");
 });
 
 it("calls video and image endpoints when resourceType=all with filterPlayable", async () => {
@@ -168,11 +168,11 @@ it("calls video and image endpoints when resourceType=all with filterPlayable", 
 
   expect(mockFetch).toHaveBeenNthCalledWith(
     1,
-    "/api/cloudinary/tracks/video?q=lemonade&filterPlayable=false",
+    "/api/cloudinary/tracks/video?v=2&q=lemonade&filterPlayable=false",
   );
   expect(mockFetch).toHaveBeenNthCalledWith(
     2,
-    "/api/cloudinary/tracks/image?q=lemonade",
+    "/api/cloudinary/tracks/image?v=2&q=lemonade",
   );
 });
 
@@ -188,7 +188,7 @@ it("omits q for blank queries", async () => {
 
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-  expect(mockFetch).toHaveBeenCalledWith("/api/cloudinary/tracks/video");
+  expect(mockFetch).toHaveBeenCalledWith("/api/cloudinary/tracks/video?v=2");
 });
 
 it("logs cache failures without failing the query", async () => {

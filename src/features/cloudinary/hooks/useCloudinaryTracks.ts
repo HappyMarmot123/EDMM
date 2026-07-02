@@ -11,6 +11,9 @@ type CloudinaryTrackQueryOptions = {
 };
 
 const TRACK_LIST_BASE = "/api/cloudinary/tracks";
+// 캐시 버스터
+// 이전 HTTP 캐시(max-age + stale-while-revalidate) 엔트리를 우회한다.
+const TRACK_LIST_CACHE_VERSION = "2";
 const TRACK_LIST_ENDPOINTS: Record<ResourceTypeFilter, string> = {
   video: `${TRACK_LIST_BASE}/video`,
   image: `${TRACK_LIST_BASE}/image`,
@@ -24,6 +27,7 @@ const toSearchParams = (
   filterPlayable?: boolean,
 ) => {
   const params = new URLSearchParams();
+  params.set("v", TRACK_LIST_CACHE_VERSION);
 
   if (resourceType === "all") {
     params.set("resourceType", resourceType);
