@@ -154,7 +154,7 @@ export default function AudioPlayer() {
       >
         <div
           id="player"
-          className="mx-auto grid min-h-[96px] w-full max-w-[1440px] items-center gap-4 px-6 pt-3 grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(164px,0.75fr)]"
+          className="mx-auto grid min-h-[96px] w-full max-w-6xl items-center gap-4 px-6 pt-3 grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(164px,0.75fr)]"
         >
           <section
             data-testid="player-track-zone"
