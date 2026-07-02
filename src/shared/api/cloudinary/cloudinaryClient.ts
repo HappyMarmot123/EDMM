@@ -16,7 +16,6 @@ const CLOUDINARY_TRACK_STALE_TTL_MS = 604_800_000;
 const MAX_PAGES = 20;
 const MAX_SEARCH_TOKENS = 8;
 const SEARCH_TOKEN_REGEX = /[\p{L}\p{N}_-]+/gu;
-const SEARCH_FIELDS = ["public_id", "filename", "tags", "context"] as const;
 export const CLOUDINARY_TRACKS_CACHE_TAG = "cloudinary-tracks";
 
 export type CloudinaryCachePolicy = {
@@ -79,8 +78,23 @@ const escapeExpressionValue = (value: string) =>
 const searchTokens = (query: string) =>
   (query.match(SEARCH_TOKEN_REGEX) ?? []).slice(0, MAX_SEARCH_TOKENS);
 
-const searchExpressionForToken = (token: string) =>
-  `(${SEARCH_FIELDS.map((field) => `${field}:${token}*`).join(" OR ")})`;
+// 검색 대상은 곡명과 아티스트만. 캡션이 없는 에셋은 어댑터가 파일명을
+// 제목으로 쓰므로 파일명 기반 곡도 자연스럽게 매칭된다.
+const buildTrackSearchHaystack = (track: Track) => {
+  return [track.title, track.artistName]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+};
+
+const matchesTrackSearchQuery = (track: Track, tokens: string[]) => {
+  if (tokens.length === 0) {
+    return true;
+  }
+
+  const haystack = buildTrackSearchHaystack(track);
+  return tokens.every((token) => haystack.includes(token));
+};
 
 type FetchCloudinaryTrackOptions = {
   resourceType?: ResourceTypeFilter;
@@ -107,7 +121,6 @@ const isPlayableCloudinaryTrack = (track: Track) => {
 
 export function buildCloudinaryExpression(
   folder: string,
-  query: string,
   resourceType: ResourceTypeFilter = "video",
 ) {
   const normalizedFolder = folder.trim();
@@ -115,12 +128,8 @@ export function buildCloudinaryExpression(
     resourceType === "all"
       ? "(resource_type:video OR resource_type:image)"
       : `resource_type:${resourceType}`;
-  const base = `${resourceTypeExpression} AND (asset_folder="${escapeExpressionValue(normalizedFolder)}" OR folder="${escapeExpressionValue(normalizedFolder)}")`;
-  const tokens = searchTokens(query);
 
-  if (tokens.length === 0) return base;
-
-  return `${base} AND ${tokens.map(searchExpressionForToken).join(" AND ")}`;
+  return `${resourceTypeExpression} AND (asset_folder="${escapeExpressionValue(normalizedFolder)}" OR folder="${escapeExpressionValue(normalizedFolder)}")`;
 }
 
 export function clearCloudinaryTrackCacheForTests() {
@@ -168,7 +177,8 @@ export async function fetchCloudinaryTracks(
     options.cachePolicy ?? getCloudinaryTrackPolicy(resourceType);
   const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
   const tracks: Track[] = [];
-  const expression = buildCloudinaryExpression(folder, normalizedQuery, resourceType);
+  const expression = buildCloudinaryExpression(folder, resourceType);
+  const queryTokens = searchTokens(normalizedQuery.toLowerCase());
   let nextCursor: string | null = null;
   let page = 0;
 
@@ -207,9 +217,12 @@ export async function fetchCloudinaryTracks(
     };
 
     const mappedTracks = (body.resources ?? []).map(adaptCloudinaryTrack);
+    const matchedTracks = mappedTracks.filter((track) =>
+      matchesTrackSearchQuery(track, queryTokens),
+    );
     const filtered = filterPlayable
-      ? mappedTracks.filter(isPlayableCloudinaryTrack)
-      : mappedTracks;
+      ? matchedTracks.filter(isPlayableCloudinaryTrack)
+      : matchedTracks;
 
     tracks.push(...filtered);
     page += 1;

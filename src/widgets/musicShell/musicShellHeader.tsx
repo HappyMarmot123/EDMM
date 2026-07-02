@@ -64,7 +64,7 @@ export function MusicShellHeader({
             aria-label="Search catalog"
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Search tracks, artists, albums"
+            placeholder="Search tracks, artists"
             className="min-h-11 min-w-0 flex-1 bg-transparent text-sm font-semibold text-white outline-none placeholder:text-white/38"
           />
         </form>
