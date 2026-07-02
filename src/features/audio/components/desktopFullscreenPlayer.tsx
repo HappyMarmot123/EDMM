@@ -20,7 +20,10 @@ type DesktopFullscreenPlayerProps = {
   onClose: () => void;
 };
 
-const FADE_MS = 450;
+// 아트워크는 겹침 없이 스냅 아웃 후 빠르게 페이드 인, backdrop(저주파 그라데이션)은
+// 느린 크로스페이드 유지 — 이미지 두 장이 블렌딩되며 생기는 시각 피로를 제거한다.
+const ARTWORK_FADE_MS = 280;
+const BACKDROP_FADE_MS = 450;
 
 export default function DesktopFullscreenPlayer({
   currentTrackInfo,
@@ -39,8 +42,9 @@ export default function DesktopFullscreenPlayer({
     artworkSrc,
     palette,
     resolvedSrc,
-    fadeDurationMs: FADE_MS,
+    fadeDurationMs: BACKDROP_FADE_MS,
   });
+  const topArtworkLayer = layers.length ? layers[layers.length - 1] : null;
 
   const albumPaletteStyle = {
     "--album-primary-rgb": topPalette.primary,
@@ -106,9 +110,9 @@ export default function DesktopFullscreenPlayer({
     return () => window.removeEventListener("mousedown", handleMouseDown);
   }, [focusDialog, showShortcutHint]);
 
-  const fadeStyle = (opacity: number): CSSProperties => ({
+  const fadeStyle = (opacity: number, durationMs: number): CSSProperties => ({
     opacity,
-    transition: `opacity ${FADE_MS}ms ease-out`,
+    transition: `opacity ${durationMs}ms ease-out`,
   });
 
   return (
@@ -129,7 +133,17 @@ export default function DesktopFullscreenPlayer({
           key={layer.key}
           aria-hidden="true"
           className="absolute inset-0"
-          style={fadeStyle(layer.opacity)}
+          style={fadeStyle(layer.opacity, BACKDROP_FADE_MS)}
+          onTransitionEnd={(event) => {
+            // 전환 완료 판정은 가장 느린 backdrop 기준 — 아트워크(280ms)에 걸면
+            // backdrop 크로스페이드가 중도 절단된다.
+            if (
+              event.propertyName === "opacity" &&
+              event.target === event.currentTarget
+            ) {
+              completeLayer(layer.key);
+            }
+          }}
         >
           <FullscreenBackdrop
             artworkSrc={layer.artworkSrc}
@@ -224,32 +238,23 @@ export default function DesktopFullscreenPlayer({
       <div className="relative z-[1] flex min-h-screen min-h-dvh flex-col items-center justify-center px-12 pb-[calc(130px+max(env(safe-area-inset-bottom),12px))] pt-20">
         <div className="grid w-full max-w-[560px] justify-items-center">
           <div className="relative">
-            {layers.map((layer, index) => {
-              const isTop = index === layers.length - 1;
-              return (
-                <div
-                  key={layer.key}
-                  className={isTop ? "relative z-[1]" : "absolute inset-0"}
-                  style={fadeStyle(layer.opacity)}
-                  onTransitionEnd={(event) => {
-                    if (
-                      event.propertyName === "opacity" &&
-                      event.target === event.currentTarget
-                    ) {
-                      completeLayer(layer.key);
-                    }
-                  }}
-                >
-                  <FullscreenArtworkStage
-                    artworkSrc={layer.artworkSrc}
-                    trackTitle={trackTitle}
-                    hasArtwork={layer.hasArtwork}
-                    isPlaying={isPlaying}
-                    palette={layer.palette}
-                  />
-                </div>
-              );
-            })}
+            {/* 스냅 아웃: top 레이어만 렌더한다. key가 바뀌면 이전 아트워크는
+                즉시 unmount되고, 새 레이어는 훅의 활성화 타이머로 페이드 인한다. */}
+            {topArtworkLayer ? (
+              <div
+                key={topArtworkLayer.key}
+                className="relative z-[1]"
+                style={fadeStyle(topArtworkLayer.opacity, ARTWORK_FADE_MS)}
+              >
+                <FullscreenArtworkStage
+                  artworkSrc={topArtworkLayer.artworkSrc}
+                  trackTitle={trackTitle}
+                  hasArtwork={topArtworkLayer.hasArtwork}
+                  isPlaying={isPlaying}
+                  palette={topArtworkLayer.palette}
+                />
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
