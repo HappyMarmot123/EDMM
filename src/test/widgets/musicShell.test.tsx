@@ -133,11 +133,9 @@ describe("MusicShell", () => {
     expect(
       screen.getByRole("heading", { name: "EDMM" }),
     ).toBeInTheDocument();
+    // 뷰포트 높이는 케스케이드 순서에 안전한 전용 클래스로 고정 (100vh + @supports dvh)
     expect(container.querySelector("main.relative")).toHaveClass(
-      "h-screen",
-      "h-[100dvh]",
-      "max-h-screen",
-      "max-h-[100dvh]",
+      "app-viewport-height",
     );
     expect(mockUseCloudinaryTracks).toHaveBeenLastCalledWith("", { resourceType: "all" });
     expect(screen.getByRole("button", { name: "Select Cloud Track One" })).toBeInTheDocument();

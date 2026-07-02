@@ -12,6 +12,8 @@
 }
 
 :root {
+  /* 다크 스킴 선언 — 브라우저 강제 다크 모드의 색 변환 옵트아웃 + 폼 컨트롤 다크 렌더링 */
+  color-scheme: dark;
   --background: #000000;
   --foreground: #ededed;
   --color-bg-light: #ffffff;
@@ -57,6 +59,21 @@ body {
 ol,
 ul {
   list-style: none;
+}
+
+/* 뷰포트 높이 고정 — Tailwind 폴백 페어(h-screen h-[100dvh])는 컴파일 순서에 따라
+   100vh가 이겨 모바일 URL 바 높이만큼 overflow될 수 있다. @supports 오버라이드는
+   케스케이드 순서와 무관하게 결정적이다. */
+.app-viewport-height {
+  height: 100vh;
+  max-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  .app-viewport-height {
+    height: 100dvh;
+    max-height: 100dvh;
+  }
 }
 
 a {

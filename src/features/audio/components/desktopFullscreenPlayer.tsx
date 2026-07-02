@@ -56,7 +56,11 @@ export default function DesktopFullscreenPlayer({
   }, []);
 
   useEffect(() => {
-    focusDialog();
+    // 힌트가 열려 있을 때 다이얼로그로 포커스를 가져가면 Radix 툴팁이
+    // 트리거 blur로 즉시 닫혀 버린다 — 닫힘 상태에서만 재포커스한다.
+    if (!showShortcutHint) {
+      focusDialog();
+    }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Tab") {

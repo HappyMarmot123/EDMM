@@ -32,7 +32,6 @@ export default function MobileAudioPlayer() {
       {isFullscreenOpen ? (
         <MobileFullscreenPlayer
           currentTrackInfo={currentTrack}
-          currentProgress={currentProgress}
           duration={duration}
           seek={seek}
           onClose={() => setIsFullscreenOpen(false)}
@@ -57,13 +56,13 @@ export default function MobileAudioPlayer() {
           <div
             id="seek-bar-container-mobile"
             ref={seekBarContainerRef}
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-1"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]"
             aria-label="Track progress"
           >
             <div className="h-full w-full bg-white/20">
               <div
                 id="seek-bar-mobile"
-                className="h-full bg-white transition-[width] duration-150 ease-out"
+                className="h-full bg-[#fd6d94] transition-[width] duration-150 ease-out"
                 style={{ width: `${currentProgress}%` }}
               />
             </div>

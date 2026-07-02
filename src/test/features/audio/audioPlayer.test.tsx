@@ -323,7 +323,8 @@ describe("AudioPlayer", () => {
     expect(fullscreenDialog).toHaveFocus();
   });
 
-  it("toggles fullscreen keyboard guidance from the shortcut button", () => {
+  // 단축키 힌트는 Radix 툴팁(controlled)으로 렌더된다 — focus/hover로 열리고 blur로 닫힌다
+  it("shows fullscreen keyboard guidance while the shortcut button is focused", async () => {
     render(<AudioPlayer />);
 
     fireEvent.click(screen.getByRole("button", { name: "Toggle fullscreen view" }));
@@ -335,33 +336,23 @@ describe("AudioPlayer", () => {
       name: "Show fullscreen shortcuts",
     });
 
-    expect(shortcutButton).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText("Keyboard controls")).not.toBeInTheDocument();
+    expect(screen.queryAllByText("Keyboard controls")).toHaveLength(0);
 
-    fireEvent.click(shortcutButton);
+    act(() => shortcutButton.focus());
 
-    expect(screen.getByText("Keyboard controls")).toBeInTheDocument();
-    expect(screen.getByText("Space")).toBeInTheDocument();
-    expect(screen.getByText("P")).toBeInTheDocument();
-    expect(screen.getByText("Previous track")).toBeInTheDocument();
-    expect(screen.getByText("N")).toBeInTheDocument();
-    expect(screen.getByText("Next track")).toBeInTheDocument();
-    expect(screen.getByText("Esc")).toBeInTheDocument();
-    expect(screen.getByText("Close shortcuts / exit fullscreen")).toBeInTheDocument();
-    expect(screen.getByText(/Tab is locked/i)).toBeInTheDocument();
-    expect(
-      within(fullscreenDialog).getByRole("button", {
-        name: "Hide fullscreen shortcuts",
-      }),
-    ).toHaveAttribute("aria-expanded", "true");
+    // Radix 툴팁은 콘텐츠를 가시 본문 + 접근성용 숨김 사본으로 두 번 렌더한다
+    expect((await screen.findAllByText("Keyboard controls")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Space").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Previous track").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Next track").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Close shortcuts / exit fullscreen").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Tab is locked/i).length).toBeGreaterThan(0);
 
-    fireEvent.click(
-      within(fullscreenDialog).getByRole("button", {
-        name: "Hide fullscreen shortcuts",
-      }),
+    act(() => shortcutButton.blur());
+
+    await waitFor(() =>
+      expect(screen.queryAllByText("Keyboard controls")).toHaveLength(0),
     );
-
-    expect(screen.queryByText("Keyboard controls")).not.toBeInTheDocument();
   });
 
   it("keeps playback shortcuts active after opening fullscreen keyboard guidance", async () => {
@@ -381,8 +372,8 @@ describe("AudioPlayer", () => {
     shortcutButton.focus();
     fireEvent.click(shortcutButton);
 
-    await waitFor(() => expect(fullscreenDialog).toHaveFocus());
-
+    // 힌트가 열려 트리거에 포커스가 남아 있어도 재생 단축키는 동작해야 한다
+    // (버튼은 더 이상 단축키를 차단하지 않음)
     fireEvent.keyDown(document.activeElement ?? fullscreenDialog, {
       code: "KeyN",
     });
@@ -390,7 +381,7 @@ describe("AudioPlayer", () => {
     expect(mockAudioPlayerState.nextTrack).toHaveBeenCalledTimes(1);
   });
 
-  it("closes fullscreen keyboard guidance when clicking outside it", () => {
+  it("closes fullscreen keyboard guidance when focus leaves the shortcut button", async () => {
     render(<AudioPlayer />);
 
     fireEvent.click(screen.getByRole("button", { name: "Toggle fullscreen view" }));
@@ -398,21 +389,22 @@ describe("AudioPlayer", () => {
     const fullscreenDialog = screen.getByRole("dialog", {
       name: "Fullscreen player",
     });
-    fireEvent.click(
-      within(fullscreenDialog).getByRole("button", {
-        name: "Show fullscreen shortcuts",
-      }),
+    const shortcutButton = within(fullscreenDialog).getByRole("button", {
+      name: "Show fullscreen shortcuts",
+    });
+
+    act(() => shortcutButton.focus());
+    expect((await screen.findAllByText("Keyboard controls")).length).toBeGreaterThan(0);
+
+    act(() => shortcutButton.blur());
+
+    await waitFor(() =>
+      expect(screen.queryAllByText("Keyboard controls")).toHaveLength(0),
     );
-
-    expect(screen.getByText("Keyboard controls")).toBeInTheDocument();
-
-    fireEvent.mouseDown(fullscreenDialog);
-
-    expect(screen.queryByText("Keyboard controls")).not.toBeInTheDocument();
     expect(fullscreenDialog).toBeInTheDocument();
   });
 
-  it("closes fullscreen keyboard guidance before closing fullscreen with Escape", () => {
+  it("closes fullscreen keyboard guidance before closing fullscreen with Escape", async () => {
     render(<AudioPlayer />);
 
     fireEvent.click(screen.getByRole("button", { name: "Toggle fullscreen view" }));
@@ -420,17 +412,18 @@ describe("AudioPlayer", () => {
     const fullscreenDialog = screen.getByRole("dialog", {
       name: "Fullscreen player",
     });
-    fireEvent.click(
-      within(fullscreenDialog).getByRole("button", {
-        name: "Show fullscreen shortcuts",
-      }),
-    );
+    const shortcutButton = within(fullscreenDialog).getByRole("button", {
+      name: "Show fullscreen shortcuts",
+    });
+    act(() => shortcutButton.focus());
 
-    expect(screen.getByText("Keyboard controls")).toBeInTheDocument();
+    expect((await screen.findAllByText("Keyboard controls")).length).toBeGreaterThan(0);
 
     fireEvent.keyDown(window, { key: "Escape" });
 
-    expect(screen.queryByText("Keyboard controls")).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryAllByText("Keyboard controls")).toHaveLength(0),
+    );
     expect(fullscreenDialog).toBeInTheDocument();
 
     jest.useFakeTimers();

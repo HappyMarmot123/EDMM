@@ -30,6 +30,7 @@ const MPlayerControlsSection = ({
         IconOnFalse={Play}
         onClick={togglePlayPause}
         label={playPauseLabel}
+        pressFeedback
         className="h-11 w-11 text-white hover:bg-white/10"
         disabled={!hasPlayableTrack}
         iconProps={{

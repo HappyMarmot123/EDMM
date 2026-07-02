@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useSeekDrag } from "@/features/audio/hooks/useSeekDrag";
 import { formatTime } from "@/shared/lib/util";
 
 interface SeekBarProps {
@@ -12,16 +13,11 @@ interface SeekBarProps {
 const clampFraction = (value: number) => Math.max(0, Math.min(1, value));
 
 export default function SeekBar({ currentTime, duration, seek }: SeekBarProps) {
-  const containerRef = React.useRef<HTMLDivElement>(null);
+  const { containerRef, isDragging, dragFraction, dragHandlers } = useSeekDrag({
+    duration,
+    seek,
+  });
   const tooltipRef = React.useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = React.useState(false);
-  const [dragFraction, setDragFraction] = React.useState(0);
-
-  const fractionFromPointer = (clientX: number) => {
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect || rect.width === 0) return 0;
-    return clampFraction((clientX - rect.left) / rect.width);
-  };
 
   const updateHoverPreview = (clientX: number) => {
     const container = containerRef.current;
@@ -40,41 +36,10 @@ export default function SeekBar({ currentTime, duration, seek }: SeekBarProps) {
     if (tooltipRef.current) tooltipRef.current.style.opacity = "0";
   };
 
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!duration) return;
-    event.preventDefault();
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    setDragFraction(fractionFromPointer(event.clientX));
-    setIsDragging(true);
-  };
-
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     updateHoverPreview(event.clientX);
-    if (isDragging) setDragFraction(fractionFromPointer(event.clientX));
+    dragHandlers.onPointerMove(event);
   };
-
-  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    event.currentTarget.releasePointerCapture?.(event.pointerId);
-    if (!isDragging || !duration) return;
-    setIsDragging(false);
-    seek(fractionFromPointer(event.clientX) * duration);
-  };
-
-  const handlePointerCancel = () => setIsDragging(false);
-
-  // Escape → 드래그 취소. 캡처 단계 + stopPropagation으로 풀스크린의
-  // window Escape 핸들러(닫기)가 드래그 취소와 동시에 발화하지 않게 한다.
-  React.useEffect(() => {
-    if (!isDragging) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      event.stopPropagation();
-      setIsDragging(false);
-    };
-    window.addEventListener("keydown", onKeyDown, true);
-    return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [isDragging]);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (!duration) return;
@@ -105,10 +70,10 @@ export default function SeekBar({ currentTime, duration, seek }: SeekBarProps) {
       aria-valuenow={Math.round(shownTime)}
       aria-valuetext={`${formatTime(shownTime)} of ${formatTime(duration)}`}
       tabIndex={0}
-      onPointerDown={handlePointerDown}
+      onPointerDown={dragHandlers.onPointerDown}
       onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerCancel}
+      onPointerUp={dragHandlers.onPointerUp}
+      onPointerCancel={dragHandlers.onPointerCancel}
       onPointerLeave={hideHoverPreview}
       onKeyDown={handleKeyDown}
     >
