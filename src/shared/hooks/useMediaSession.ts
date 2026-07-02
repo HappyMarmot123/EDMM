@@ -16,7 +16,6 @@ const clampPositionState = (value: number) =>
   Number.isFinite(value) ? Math.max(0, value) : 0;
 
 export function useMediaSession({
-  isPlaying: _isPlaying,
   currentTrack,
   currentTime,
   duration,
