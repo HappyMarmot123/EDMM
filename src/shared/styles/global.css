@@ -593,6 +593,52 @@ h1 {
   }
 }
 
+/* /search 배경 장식 — 흰색 저투명 문양: 그레인 + 엣지 레터링 */
+.search-backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.search-backdrop__grain {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  opacity: 0.1;
+}
+
+.search-backdrop__edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  padding: 14px 0;
+  writing-mode: vertical-rl;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.06);
+}
+
+.search-backdrop__edge--left {
+  left: 6px;
+  transform: rotate(180deg);
+}
+
+.search-backdrop__edge--right {
+  right: 6px;
+}
+
+@media (max-width: 767px) {
+  .search-backdrop__edge {
+    display: none;
+  }
+}
+
 .music-shell-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
@@ -617,23 +663,19 @@ h1 {
   --scroll-fade-color: #050306;
 }
 
-.scroll-fade-bottom--aside {
-  --scroll-fade-color: #0b0609;
-}
-
 .scroll-fade-bottom::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 64px;
+  height: 80px;
   border-radius: inherit;
   pointer-events: none;
   z-index: 5;
   background: linear-gradient(
     to top,
-    var(--scroll-fade-color) 10%,
+    var(--scroll-fade-color) 20%,
     transparent
   );
   opacity: 1;
@@ -646,12 +688,6 @@ h1 {
 
 @media (min-width: 768px) {
   .scroll-fade-bottom--mobile::after {
-    display: none;
-  }
-}
-
-@media (max-width: 767px) {
-  .scroll-fade-bottom--desktop::after {
     display: none;
   }
 }

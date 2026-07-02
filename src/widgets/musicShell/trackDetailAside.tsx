@@ -1,7 +1,6 @@
 "use client";
 
 import { type ReactNode, useEffect, useMemo, useState } from "react";
-import { useScrollAtBottom } from "@/shared/hooks/useScrollAtBottom";
 import { Disc3, Link, Maximize2, Music2, Radio } from "lucide-react";
 import type { Track } from "@/entities/track";
 import { AudioVisualizer, EqualizerPanel } from "@/features/audio";
@@ -52,9 +51,6 @@ export function TrackDetailAside({
 }: TrackDetailAsideProps) {
   const [cachedTrack, setCachedTrack] = useState<Track | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [scrollAreaElement, setScrollAreaElement] =
-    useState<HTMLDivElement | null>(null);
-  const isScrolledToBottom = useScrollAtBottom(scrollAreaElement);
   const canUseArtworkFullscreen = useMediaQuery(
     TRACK_DETAIL_FULLSCREEN_VIEWPORT_QUERY,
     false,
@@ -165,18 +161,14 @@ export function TrackDetailAside({
     <>
       <aside
         aria-label="Track details"
-        data-at-bottom={isScrolledToBottom ? "true" : "false"}
-        className="scroll-fade-bottom scroll-fade-bottom--desktop scroll-fade-bottom--aside flex h-full min-h-0 flex-col rounded-lg border border-white/10 bg-[#0b0609] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)]"
+        className="flex h-full min-h-0 flex-col rounded-lg border border-white/10 bg-[#0b0609] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)]"
       >
         <p className="inline-flex items-center gap-2 mb-4 text-xs font-black uppercase text-[#ff98a2]">
           <Radio size={15} strokeWidth={2.1} aria-hidden="true" />
           Track Detail
         </p>
 
-        <div
-          ref={setScrollAreaElement}
-          className="min-h-0 flex-1 overflow-y-auto scrollbar-hide"
-        >
+        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-hide">
           {!selectedTrackId ? (
             <div className="flex h-full min-h-[280px] flex-col justify-center rounded-md border border-dashed border-white/12 p-5 text-center">
               <Music2 className="mx-auto text-[#ff98a2]" size={34} strokeWidth={1.8} />

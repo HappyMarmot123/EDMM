@@ -152,6 +152,10 @@ export default function AudioPlayer() {
         style={{ paddingBottom: "max(env(safe-area-inset-bottom), 12px)" }}
         aria-label="Audio Player"
       >
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-white/[0.03] to-transparent"
+        />
         <div
           id="player"
           className="mx-auto grid min-h-[96px] w-full max-w-6xl items-center gap-4 px-6 pt-3 grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(164px,0.75fr)]"
