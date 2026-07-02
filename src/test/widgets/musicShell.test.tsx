@@ -142,6 +142,23 @@ describe("MusicShell", () => {
     expect(screen.getByRole("button", { name: "Select Cloud Track Two" })).toBeInTheDocument();
   });
 
+  it("marks the track list and detail aside with the bottom scroll fade", () => {
+    const { container } = render(<MusicShell />);
+
+    // 리스트 페이드는 모바일 뷰 전용, aside 페이드는 태블릿·데스크탑 전용
+    const list = container.querySelector(".music-track-list");
+    expect(list).toHaveClass("scroll-fade-bottom");
+    expect(list).toHaveClass("scroll-fade-bottom--mobile");
+    expect(list).toHaveAttribute("data-at-bottom");
+
+    const detailAside = container.querySelector(
+      "aside[aria-label='Track details']",
+    );
+    expect(detailAside).toHaveClass("scroll-fade-bottom");
+    expect(detailAside).toHaveClass("scroll-fade-bottom--desktop");
+    expect(detailAside).toHaveAttribute("data-at-bottom");
+  });
+
   it("calls Cloudinary search with a normalized typed query", async () => {
     const user = userEvent.setup();
 

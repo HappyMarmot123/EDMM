@@ -367,7 +367,7 @@ export function MusicShell({
       : "No tracks in this view.";
   return (
     <main
-      className="app-viewport-height relative flex flex-col overflow-hidden bg-[#050306] px-4 pb-[calc(84px+max(env(safe-area-inset-bottom),10px))] pt-5 text-white sm:px-6 sm:pb-[calc(84px+max(env(safe-area-inset-bottom),12px))] md:pb-[calc(96px+max(env(safe-area-inset-bottom),12px))] lg:px-8"
+      className="app-viewport-height relative flex flex-col overflow-hidden bg-[#050306] px-4 pb-[calc(84px+max(env(safe-area-inset-bottom),10px))] pt-5 text-white sm:px-6 sm:pb-[calc(84px+max(env(safe-area-inset-bottom),12px))] md:pb-[calc(112px+max(env(safe-area-inset-bottom),12px))] lg:px-8"
     >
       <section
         className={`music-shell-grid mx-auto grid min-h-0 w-full flex-1 gap-5 max-w-7xl ${
@@ -439,8 +439,6 @@ export function MusicShell({
               <TrackDetailAside
                 selectedTrackId={detailSelectedTrackId}
                 fallbackTrack={selectedTrack}
-                queue={visibleTracks}
-                onPlay={handlePlay}
                 isWaitingForSelectionSeed={
                   selectionSource === "initial" && !selectedTrack && isVisibleLoading
                 }

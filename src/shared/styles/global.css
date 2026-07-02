@@ -596,6 +596,9 @@ h1 {
 .music-shell-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
+  /* 행을 컨테이너 높이로 고정 — auto 행은 aside 콘텐츠만큼 자라서
+     뷰포트를 넘치고 내부 스크롤 영역이 작동하지 않는다. */
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
 }
 
@@ -607,6 +610,50 @@ h1 {
 
 .music-shell-aside__toggle {
   display: none;
+}
+
+.scroll-fade-bottom {
+  position: relative;
+  --scroll-fade-color: #050306;
+}
+
+.scroll-fade-bottom--aside {
+  --scroll-fade-color: #0b0609;
+}
+
+.scroll-fade-bottom::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 64px;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 5;
+  background: linear-gradient(
+    to top,
+    var(--scroll-fade-color) 10%,
+    transparent
+  );
+  opacity: 1;
+  transition: opacity 200ms ease;
+}
+
+.scroll-fade-bottom[data-at-bottom="true"]::after {
+  opacity: 0;
+}
+
+@media (min-width: 768px) {
+  .scroll-fade-bottom--mobile::after {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .scroll-fade-bottom--desktop::after {
+    display: none;
+  }
 }
 
 .music-shell-aside-shell {
@@ -623,6 +670,12 @@ h1 {
 .music-shell-aside__content {
   display: flex;
   flex-direction: column;
+}
+
+/* aside 내부 h-full 체인이 끊기지 않도록 콘텐츠가 aside 높이를 채운다.
+   상세 영역 스크롤은 TrackDetailAside 내부의 overflow-y-auto가 담당. */
+.music-shell-aside__content {
+  flex: 1 1 0;
 }
 
 @media (max-width: 767px) {

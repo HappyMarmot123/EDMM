@@ -7,6 +7,7 @@ import {
   useCallback,
   useEffect,
   useRef,
+  useState,
 } from "react";
 import { type VirtuosoHandle, Virtuoso } from "react-virtuoso";
 import type { Track } from "@/entities/track";
@@ -69,6 +70,7 @@ export function MusicTrackList({
 }: MusicTrackListProps) {
   const virtuosoRef = useRef<VirtuosoHandle | null>(null);
   const scrollerRef = useRef<HTMLElement | Window | null>(null);
+  const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
 
   useEffect(() => {
     if (!scrollToTrackId || scrollToTrackRequest === undefined) {
@@ -190,7 +192,8 @@ export function MusicTrackList({
 
   return (
     <div
-      className="music-track-list relative h-full min-h-0 overflow-hidden"
+      className="music-track-list scroll-fade-bottom scroll-fade-bottom--mobile relative h-full min-h-0 overflow-hidden"
+      data-at-bottom={isScrolledToBottom ? "true" : "false"}
       aria-label="Track list"
       role="list"
     >
@@ -199,6 +202,7 @@ export function MusicTrackList({
         scrollerRef={(ref) => {
           scrollerRef.current = ref;
         }}
+        atBottomStateChange={setIsScrolledToBottom}
         data={tracks}
         overscan={6}
         computeItemKey={getTrackKey}
@@ -298,7 +302,7 @@ export function MusicTrackList({
       />
       <button
         type="button"
-        className="absolute bottom-3 left-3 z-10 grid h-11 w-11 place-items-center rounded-full border border-[#ff98a2]/70 bg-[#080609]/82 text-[#ff98a2] shadow-[0_14px_34px_rgba(0,0,0,0.36)] backdrop-blur transition-colors hover:bg-[#ff98a2]/12 hover:text-[#ffb8c0] md:left-0 md:right-4"
+        className="absolute bottom-0 left-3 z-10 grid h-11 w-11 place-items-center rounded-full border border-[#ff98a2]/70 bg-[#080609]/82 text-[#ff98a2] shadow-[0_14px_34px_rgba(0,0,0,0.36)] backdrop-blur transition-colors hover:bg-[#ff98a2]/12 hover:text-[#ffb8c0] md:left-0 md:right-4"
         onClick={handleScrollToTop}
         aria-label="Scroll to top"
       >
