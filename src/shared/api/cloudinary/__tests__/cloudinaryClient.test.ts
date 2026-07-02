@@ -80,63 +80,22 @@ afterAll(() => {
 });
 
 describe("buildCloudinaryExpression", () => {
-  it("builds a folder-scoped video expression for blank queries", () => {
-    expect(buildCloudinaryExpression("edmm/media-pipeline", "")).toBe(
+  it("builds a folder-scoped video expression", () => {
+    expect(buildCloudinaryExpression("edmm/media-pipeline")).toBe(
       'resource_type:video AND (asset_folder="edmm/media-pipeline" OR folder="edmm/media-pipeline")',
     );
   });
 
   it("builds an image expression when requested", () => {
-    expect(buildCloudinaryExpression("edmm/media-pipeline", "", "image")).toBe(
+    expect(buildCloudinaryExpression("edmm/media-pipeline", "image")).toBe(
       'resource_type:image AND (asset_folder="edmm/media-pipeline" OR folder="edmm/media-pipeline")',
     );
   });
 
   it("builds an all-type expression when requested", () => {
-    expect(buildCloudinaryExpression("edmm/media-pipeline", "", "all")).toBe(
+    expect(buildCloudinaryExpression("edmm/media-pipeline", "all")).toBe(
       '(resource_type:video OR resource_type:image) AND (asset_folder="edmm/media-pipeline" OR folder="edmm/media-pipeline")',
     );
-  });
-
-  it("builds prefix wildcard search clauses from safe tokens", () => {
-    const expression = buildCloudinaryExpression(
-      "edmm/media-pipeline",
-      "  lemonade  ",
-    );
-
-    expect(expression).toContain(
-      '(asset_folder="edmm/media-pipeline" OR folder="edmm/media-pipeline")',
-    );
-    expect(expression).toContain("public_id:lemonade*");
-    expect(expression).toContain("filename:lemonade*");
-    expect(expression).toContain("tags:lemonade*");
-    expect(expression).toContain("context:lemonade*");
-    expect(expression).not.toContain(":*lemonade");
-    expect(expression).not.toContain("metadata");
-  });
-
-  it("drops unsafe search syntax instead of interpolating raw q", () => {
-    const expression = buildCloudinaryExpression(
-      "edmm/media-pipeline",
-      'lemonade") OR resource_type:image OR tags:* aespa-kpop remix_01',
-    );
-
-    expect(expression).toContain("public_id:lemonade*");
-    expect(expression).toContain("public_id:aespa-kpop*");
-    expect(expression).toContain("public_id:remix_01*");
-    expect(expression).not.toContain('lemonade")');
-    expect(expression).not.toContain("resource_type:image");
-    expect(expression).not.toContain("tags:*");
-  });
-
-  it("caps the number of search tokens", () => {
-    const expression = buildCloudinaryExpression(
-      "edmm/media-pipeline",
-      "one two three four five six seven eight nine",
-    );
-
-    expect(expression).toContain("public_id:eight*");
-    expect(expression).not.toContain("public_id:nine*");
   });
 });
 
@@ -392,22 +351,85 @@ describe("fetchCloudinaryTracks", () => {
     );
   });
 
-  it("includes the search term in the Cloudinary expression", async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ resources: [] }),
+  describe("local query filtering", () => {
+    const wallsResource = {
+      asset_id: "asset-walls",
+      public_id: "edmm/media-pipeline/Screamarts_Blocksberg_-_Walls_xgwuyq",
+      resource_type: "video",
+      type: "upload",
+      format: "mp4",
+      secure_url: "https://res.cloudinary.com/demo/video/upload/walls.mp4",
+      duration: 200,
+      tags: [],
+      context: { custom: { caption: "Walls", alt: "Screamarts & Blocksberg" } },
+    };
+
+    beforeEach(() => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ resources: [rawResource, wallsResource] }),
+      });
     });
 
-    await fetchCloudinaryTracks("lemonade");
+    it("keeps the remote expression free of query tokens", async () => {
+      await fetchCloudinaryTracks("Wall");
 
-    const url = new URL(mockFetch.mock.calls[0][0].toString());
-    const expression = url.searchParams.get("expression") ?? "";
+      const url = new URL(mockFetch.mock.calls[0][0].toString());
+      const expression = url.searchParams.get("expression") ?? "";
 
-    expect(expression).toContain("public_id:lemonade*");
-    expect(expression).toContain("filename:lemonade*");
-    expect(expression).toContain("tags:lemonade*");
-    expect(expression).not.toContain("metadata");
-    expect(expression).not.toContain(":*lemonade");
+      expect(expression).toBe(
+        'resource_type:video AND (asset_folder="edmm/media-pipeline" OR folder="edmm/media-pipeline")',
+      );
+    });
+
+    it("matches partial title text case-insensitively", async () => {
+      const tracks = await fetchCloudinaryTracks("wall");
+
+      expect(tracks.map((track) => track.id)).toEqual([
+        "cloudinary:asset-walls",
+      ]);
+    });
+
+    it("matches by artist name", async () => {
+      const tracks = await fetchCloudinaryTracks("screamarts");
+
+      expect(tracks.map((track) => track.id)).toEqual([
+        "cloudinary:asset-walls",
+      ]);
+    });
+
+    it("matches by track title", async () => {
+      // rawResource has no caption, so its title falls back to the filename stem
+      const tracks = await fetchCloudinaryTracks("lemonade");
+
+      expect(tracks.map((track) => track.id)).toEqual(["cloudinary:asset-1"]);
+    });
+
+    it("does not match album, folder, or tag values", async () => {
+      // albumName falls back to the parent folder "media-pipeline";
+      // rawResource carries the "edmm" tag — neither is searchable
+      expect(await fetchCloudinaryTracks("media-pipeline")).toEqual([]);
+      expect(await fetchCloudinaryTracks("edmm")).toEqual([]);
+    });
+
+    it("requires every query token to match", async () => {
+      const tracks = await fetchCloudinaryTracks("screamarts walls");
+
+      expect(tracks.map((track) => track.id)).toEqual([
+        "cloudinary:asset-walls",
+      ]);
+      expect(await fetchCloudinaryTracks("screamarts lemonade")).toEqual([]);
+    });
+
+    it("returns nothing when no track matches", async () => {
+      expect(await fetchCloudinaryTracks("zzzz")).toEqual([]);
+    });
+
+    it("returns everything for a blank query", async () => {
+      const tracks = await fetchCloudinaryTracks("");
+
+      expect(tracks).toHaveLength(2);
+    });
   });
 
   it("throws when Cloudinary configuration is missing", async () => {

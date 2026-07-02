@@ -302,9 +302,10 @@ export function MusicTrackList({
       />
       <button
         type="button"
-        className="absolute bottom-0 left-3 z-10 grid h-11 w-11 place-items-center rounded-full border border-[#ff98a2]/70 bg-[#080609]/82 text-[#ff98a2] shadow-[0_14px_34px_rgba(0,0,0,0.36)] backdrop-blur transition-colors hover:bg-[#ff98a2]/12 hover:text-[#ffb8c0] md:left-0 md:right-4"
+        className="cursor-pointer absolute bottom-0 left-3 z-10 grid h-11 w-11 place-items-center rounded-full border border-[#ff98a2]/70 bg-[#080609]/82 text-[#ff98a2] shadow-[0_14px_34px_rgba(0,0,0,0.36)] backdrop-blur transition-colors hover:bg-[#ff98a2]/12 hover:text-[#ffb8c0] md:left-0 md:right-4"
         onClick={handleScrollToTop}
         aria-label="Scroll to top"
+        title="Scroll to top"
       >
         <ArrowUp size={18} strokeWidth={2.2} aria-hidden="true" />
       </button>
