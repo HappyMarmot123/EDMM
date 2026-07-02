@@ -131,7 +131,7 @@ describe("AudioPlayer", () => {
     render(<AudioPlayer />);
 
     const player = screen.getByLabelText("Audio Player");
-    const playerGrid = player.firstElementChild;
+    const playerGrid = player.querySelector("#player");
     const trackZone = screen.getByTestId("player-track-zone");
     const controlZone = screen.getByTestId("player-control-zone");
     const volumeZone = screen.getByTestId("player-volume-zone");

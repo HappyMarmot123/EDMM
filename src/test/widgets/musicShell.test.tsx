@@ -142,10 +142,33 @@ describe("MusicShell", () => {
     expect(screen.getByRole("button", { name: "Select Cloud Track Two" })).toBeInTheDocument();
   });
 
-  it("marks the track list and detail aside with the bottom scroll fade", () => {
+  it("renders the decorative search backdrop behind the shell content", () => {
     const { container } = render(<MusicShell />);
 
-    // 리스트 페이드는 모바일 뷰 전용, aside 페이드는 태블릿·데스크탑 전용
+    const backdrop = container.querySelector(".search-backdrop");
+    expect(backdrop).toBeInTheDocument();
+    expect(backdrop).toHaveAttribute("aria-hidden", "true");
+    // 확정 디자인: 그레인 + 좌우 엣지 레터링 (그리드 없음)
+    expect(backdrop?.querySelector(".search-backdrop__grid")).toBeNull();
+    expect(
+      backdrop?.querySelector(".search-backdrop__grain"),
+    ).toBeInTheDocument();
+    expect(backdrop?.querySelectorAll(".search-backdrop__edge")).toHaveLength(2);
+    expect(backdrop?.querySelector(".search-backdrop__lettering")).toBeNull();
+  });
+
+  it("hides the scroll-to-top button while the list is at the top", () => {
+    render(<MusicShell />);
+
+    expect(
+      screen.queryByRole("button", { name: "Scroll to top" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("marks only the track list with the mobile bottom scroll fade", () => {
+    const { container } = render(<MusicShell />);
+
+    // 하단 스크롤 페이드는 모바일 리스트 전용
     const list = container.querySelector(".music-track-list");
     expect(list).toHaveClass("scroll-fade-bottom");
     expect(list).toHaveClass("scroll-fade-bottom--mobile");
@@ -154,9 +177,8 @@ describe("MusicShell", () => {
     const detailAside = container.querySelector(
       "aside[aria-label='Track details']",
     );
-    expect(detailAside).toHaveClass("scroll-fade-bottom");
-    expect(detailAside).toHaveClass("scroll-fade-bottom--desktop");
-    expect(detailAside).toHaveAttribute("data-at-bottom");
+    expect(detailAside).not.toHaveClass("scroll-fade-bottom");
+    expect(detailAside).not.toHaveAttribute("data-at-bottom");
   });
 
   it("calls Cloudinary search with a normalized typed query", async () => {

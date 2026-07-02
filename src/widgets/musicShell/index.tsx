@@ -10,6 +10,7 @@ import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import MusicShellHeader, { type MusicView } from "./musicShellHeader";
 import MusicTrackList from "./musicTrackList";
+import SearchBackdrop from "./searchBackdrop";
 import TrackDetailAside from "./trackDetailAside";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
@@ -369,8 +370,9 @@ export function MusicShell({
     <main
       className="app-viewport-height relative flex flex-col overflow-hidden bg-[#050306] px-4 pb-[calc(84px+max(env(safe-area-inset-bottom),10px))] pt-5 text-white sm:px-6 sm:pb-[calc(84px+max(env(safe-area-inset-bottom),12px))] md:pb-[calc(112px+max(env(safe-area-inset-bottom),12px))] lg:px-8"
     >
+      <SearchBackdrop />
       <section
-        className={`music-shell-grid mx-auto grid min-h-0 w-full flex-1 gap-5 max-w-6xl ${
+        className={`music-shell-grid relative mx-auto grid min-h-0 w-full flex-1 gap-5 max-w-6xl ${
           isTrackDetailOpen
             ? "music-shell-grid--aside-open"
             : "music-shell-grid--aside-closed"
@@ -447,7 +449,6 @@ export function MusicShell({
           </aside>
         </section>
       </section>
-
     </main>
   );
 }

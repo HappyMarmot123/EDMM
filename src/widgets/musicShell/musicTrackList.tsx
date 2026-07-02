@@ -12,6 +12,7 @@ import {
 import { type VirtuosoHandle, Virtuoso } from "react-virtuoso";
 import type { Track } from "@/entities/track";
 import { isPlayable } from "@/entities/track";
+import { useFadePresence } from "@/shared/hooks/useFadePresence";
 
 type MusicTrackListProps = {
   tracks: Track[];
@@ -71,6 +72,8 @@ export function MusicTrackList({
   const virtuosoRef = useRef<VirtuosoHandle | null>(null);
   const scrollerRef = useRef<HTMLElement | Window | null>(null);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
+  const [isScrolledToTop, setIsScrolledToTop] = useState(true);
+  const scrollTopButtonPresence = useFadePresence(!isScrolledToTop, 200);
 
   useEffect(() => {
     if (!scrollToTrackId || scrollToTrackRequest === undefined) {
@@ -203,6 +206,7 @@ export function MusicTrackList({
           scrollerRef.current = ref;
         }}
         atBottomStateChange={setIsScrolledToBottom}
+        atTopStateChange={setIsScrolledToTop}
         data={tracks}
         overscan={6}
         computeItemKey={getTrackKey}
@@ -300,15 +304,21 @@ export function MusicTrackList({
           );
         }}
       />
-      <button
-        type="button"
-        className="cursor-pointer absolute bottom-0 left-3 z-10 grid h-11 w-11 place-items-center rounded-full border border-[#ff98a2]/70 bg-[#080609]/82 text-[#ff98a2] shadow-[0_14px_34px_rgba(0,0,0,0.36)] backdrop-blur transition-colors hover:bg-[#ff98a2]/12 hover:text-[#ffb8c0] md:left-0 md:right-4"
-        onClick={handleScrollToTop}
-        aria-label="Scroll to top"
-        title="Scroll to top"
-      >
-        <ArrowUp size={18} strokeWidth={2.2} aria-hidden="true" />
-      </button>
+      {scrollTopButtonPresence.mounted ? (
+        <button
+          type="button"
+          className={`cursor-pointer absolute bottom-0 left-3 z-10 grid h-11 w-11 place-items-center rounded-full border border-[#ff98a2]/70 bg-[#080609]/82 text-[#ff98a2] shadow-[0_14px_34px_rgba(0,0,0,0.36)] backdrop-blur transition-[opacity,background-color,color] duration-200 ease-out hover:bg-[#ff98a2]/12 hover:text-[#ffb8c0] md:left-0 md:right-4 ${
+            scrollTopButtonPresence.visible
+              ? "opacity-100"
+              : "pointer-events-none opacity-0"
+          }`}
+          onClick={handleScrollToTop}
+          aria-label="Scroll to top"
+          title="Scroll to top"
+        >
+          <ArrowUp size={18} strokeWidth={2.2} aria-hidden="true" />
+        </button>
+      ) : null}
     </div>
   );
 }
