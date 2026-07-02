@@ -18,10 +18,6 @@ const TRACK: Track = {
 };
 
 type MediaSessionActionType = "play" | "pause" | "nexttrack" | "previoustrack" | "seekto";
-type SetActionHandler = (
-  type: MediaSessionActionType,
-  handler: ((...args: unknown[]) => void) | null,
-) => void;
 type MediaSessionActionHandler = ((...args: unknown[]) => void) | null;
 
 const createMediaSessionMock = () => {
@@ -35,9 +31,11 @@ const createMediaSessionMock = () => {
   return {
     handlers,
     mediaSession: {
-      setActionHandler: jest.fn<SetActionHandler>((type, handler) => {
-        handlers[type] = handler;
-      }),
+      setActionHandler: jest.fn(
+        (type: MediaSessionActionType, handler: MediaSessionActionHandler) => {
+          handlers[type] = handler;
+        },
+      ),
       setPositionState: jest.fn(),
       metadata: null as MediaMetadata | null,
     },
@@ -45,7 +43,7 @@ const createMediaSessionMock = () => {
 };
 
 beforeEach(() => {
-  (globalThis as any).MediaMetadata = class {
+  (globalThis as Record<string, unknown>).MediaMetadata = class {
     constructor(init: Record<string, string | string[] | undefined>) {
       void init;
     }
@@ -169,8 +167,8 @@ describe("useMediaSession", () => {
   });
 
   it("updates position state when current time changes", () => {
-    const { mediaSession, unmount } = installMediaSession();
-    const { rerender } = render(<TestHost track={TRACK} currentTime={0} />);
+    const { mediaSession } = installMediaSession();
+    const { rerender, unmount } = render(<TestHost track={TRACK} currentTime={0} />);
     expect(mediaSession.setPositionState).toHaveBeenCalledWith({
       duration: 180,
       position: 0,
@@ -187,7 +185,7 @@ describe("useMediaSession", () => {
   });
 
   it("clamps seek action to track duration", () => {
-    const { mediaSession, handlers } = installMediaSession();
+    const { handlers } = installMediaSession();
     const seekTo = jest.fn();
     render(<TestHost track={TRACK} duration={120} seekTo={seekTo} />);
 

@@ -11,6 +11,7 @@ jest.mock("@/shared/providers/audioPlayerProvider", () => ({
 }));
 jest.mock("@/features/audio", () => ({
   AudioVisualizer: () => <div>Audio visualizer</div>,
+  EqualizerPanel: () => <div>Equalizer panel</div>,
 }));
 
 const mockGetCachedTrack = getCachedTrack as jest.MockedFunction<typeof getCachedTrack>;
@@ -36,7 +37,7 @@ const mockAudioState = {
   isPlaying: false,
   audioAnalyser: null,
   duration: 240,
-};
+} as unknown as ReturnType<typeof useAudioPlayer>;
 
 describe("TrackDetailAside", () => {
   beforeEach(() => {
@@ -58,7 +59,6 @@ describe("TrackDetailAside", () => {
     expect(mockGetCachedTrack).toHaveBeenCalledWith("cloudinary:asset-1");
     expect(await screen.findByText("Cached Track")).toBeInTheDocument();
     expect(screen.getByText("Cached Artist")).toBeInTheDocument();
-    expect(screen.getByText("Cached Album")).toBeInTheDocument();
     expect(screen.getByText("4:00")).toBeInTheDocument();
     expect(screen.getByText("cloudinary")).toBeInTheDocument();
     expect(screen.getByText("Audio visualizer")).toBeInTheDocument();

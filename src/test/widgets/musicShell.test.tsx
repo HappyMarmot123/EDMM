@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { JSX } from "react";
 import type { Track } from "@/entities/track";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import { useRecentPlays } from "@/features/library";
@@ -36,6 +37,7 @@ jest.mock("@/shared/providers/audioPlayerProvider", () => ({
 }));
 jest.mock("@/features/audio", () => ({
   AudioVisualizer: () => <div>Audio visualizer</div>,
+  EqualizerPanel: () => <div>Equalizer panel</div>,
 }));
 
 const mockUseCloudinaryTracks = useCloudinaryTracks as jest.Mock;
@@ -98,7 +100,7 @@ const mockAudioState = {
   currentTrack: null,
   isPlaying: false,
   audioAnalyser: null,
-};
+} as unknown as ReturnType<typeof useAudioPlayer>;
 
 const getDesktopViewButton = (name: string) =>
   within(screen.getByRole("navigation", { name: "Music views" })).getByRole(
@@ -206,9 +208,11 @@ describe("MusicShell", () => {
 
     render(<MusicShell initialView="recent" />);
 
-    expect(await screen.findByRole("button", { name: "Select Cloud Track One" }))
-      .toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Select Recent Track" })).not.toBeInTheDocument();
+    // 모바일 모드에서는 playOnSelect가 켜져 접근성 이름이 "Select and play {title}"가 된다
+    expect(
+      await screen.findByRole("button", { name: "Select and play Cloud Track One" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Recent Track/ })).not.toBeInTheDocument();
   });
 
   it("updates detail selection when initialTrackId changes", async () => {

@@ -2,8 +2,9 @@ import { logger } from "@/shared/lib/logger";
 
 const originalNodeEnv = process.env.NODE_ENV;
 
-const setNodeEnv = (value: string) => {
-  process.env.NODE_ENV = value;
+// NODE_ENV는 @types/node에서 읽기 전용 타입이므로 넓힌 타입으로 할당한다.
+const setNodeEnv = (value: string | undefined) => {
+  (process.env as Record<string, string | undefined>).NODE_ENV = value;
 };
 
 describe("logger", () => {

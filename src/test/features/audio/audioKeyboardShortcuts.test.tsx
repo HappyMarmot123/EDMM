@@ -24,7 +24,7 @@ const createAudioState = () => ({
   currentTime: 50,
   currentTrack: {
     id: "track-1",
-    source: "cloudinary",
+    source: "cloudinary" as const,
     title: "Track One",
     artistId: "artist-1",
     artistName: "Artist",
