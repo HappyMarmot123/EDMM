@@ -42,6 +42,9 @@ export const PlayerVolumeControls: React.FC = () => {
         IconOnFalse={Volume2}
         onClick={toggleMute}
         label={muteLabel}
+        title={muteLabel}
+        pressFeedback
+        blurOnPointerClick
         className="h-9 w-9 text-white/70 hover:text-white"
         iconProps={{
           width: 20,
@@ -58,7 +61,11 @@ export const PlayerVolumeControls: React.FC = () => {
         step="0.01"
         value={isMuted ? 0 : localVolume}
         onChange={handleVolumeChange}
-        onMouseUp={handleVolumeChangeEnd}
+        onMouseUp={(event) => {
+          handleVolumeChangeEnd();
+          // 드래그 후 range에 포커스가 남으면 전역 화살표 단축키(볼륨)가 막히므로 해제
+          event.currentTarget.blur();
+        }}
         onTouchEnd={handleVolumeChangeEnd}
         className="h-1.5 w-[112px] min-w-[112px] max-w-[112px] cursor-pointer appearance-none rounded-full bg-white/15 accent-[#fd6d94] [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-[#fd6d94] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#fd6d94]"
         aria-label="Volume"
@@ -107,8 +114,12 @@ const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = ({
               isShuffleEnabled ? "Disable shuffle playback" : "Enable shuffle playback"
             }
             title={isShuffleEnabled ? "Shuffle on" : "Shuffle off"}
-            className={`h-9 w-9 ${
-              isShuffleEnabled ? "text-[#fd6d94]" : "text-white/60"
+            pressFeedback
+            blurOnPointerClick
+            className={`relative h-9 w-9 ${
+              isShuffleEnabled
+                ? "text-[#fd6d94] hover:text-[#ff9ab5]"
+                : "text-white/60 hover:text-white"
             }`}
             disabled={!hasPlayableTrack}
           >
@@ -118,12 +129,22 @@ const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = ({
               fill="currentColor"
               aria-hidden="true"
             />
+            {isShuffleEnabled ? (
+              <span
+                data-testid="shuffle-active-dot"
+                aria-hidden="true"
+                className="absolute bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-[#fd6d94]"
+              />
+            ) : null}
           </PlayerControlButton>
 
           <PlayerControlButton
             id="play-previous"
             onClick={prevTrack}
             aria-label="Previous track"
+            title="Previous track"
+            pressFeedback
+            blurOnPointerClick
             className="h-10 w-10 text-white/70 hover:text-white"
             disabled={!hasPlayableQueue}
           >
@@ -142,7 +163,11 @@ const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = ({
             IconOnFalse={Play}
             onClick={togglePlayPause}
             label={playPauseLabel}
-            className="bg-white text-black hover:bg-[#ffd6e1]"
+            title={playPauseLabel}
+            hoverSurface={false}
+            pressFeedback
+            blurOnPointerClick
+            className="bg-white text-black hover:scale-105"
             disabled={!hasPlayableTrack}
             iconProps={{
               width: 22,
@@ -156,6 +181,9 @@ const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = ({
             id="play-next"
             onClick={nextTrack}
             aria-label="Next track"
+            title="Next track"
+            pressFeedback
+            blurOnPointerClick
             className="h-10 w-10 text-white/70 hover:text-white"
             disabled={!hasPlayableQueue}
           >
@@ -172,6 +200,8 @@ const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = ({
               onClick={handleFullscreenClick}
               aria-label={fullscreenLabel}
               title={fullscreenTitle}
+              pressFeedback
+              blurOnPointerClick
               className="ml-auto grid h-9 w-9 text-white/60 hover:text-white"
             >
               <FullscreenIcon
