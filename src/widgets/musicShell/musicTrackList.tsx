@@ -7,6 +7,7 @@ import {
   useCallback,
   useEffect,
   useRef,
+  useState,
 } from "react";
 import { type VirtuosoHandle, Virtuoso } from "react-virtuoso";
 import type { Track } from "@/entities/track";
@@ -69,6 +70,7 @@ export function MusicTrackList({
 }: MusicTrackListProps) {
   const virtuosoRef = useRef<VirtuosoHandle | null>(null);
   const scrollerRef = useRef<HTMLElement | Window | null>(null);
+  const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
 
   useEffect(() => {
     if (!scrollToTrackId || scrollToTrackRequest === undefined) {
@@ -190,7 +192,8 @@ export function MusicTrackList({
 
   return (
     <div
-      className="music-track-list relative h-full min-h-0 overflow-hidden"
+      className="music-track-list scroll-fade-bottom relative h-full min-h-0 overflow-hidden"
+      data-at-bottom={isScrolledToBottom ? "true" : "false"}
       aria-label="Track list"
       role="list"
     >
@@ -199,6 +202,7 @@ export function MusicTrackList({
         scrollerRef={(ref) => {
           scrollerRef.current = ref;
         }}
+        atBottomStateChange={setIsScrolledToBottom}
         data={tracks}
         overscan={6}
         computeItemKey={getTrackKey}

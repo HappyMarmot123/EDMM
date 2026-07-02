@@ -142,6 +142,20 @@ describe("MusicShell", () => {
     expect(screen.getByRole("button", { name: "Select Cloud Track Two" })).toBeInTheDocument();
   });
 
+  it("marks the track list and detail aside with the bottom scroll fade", () => {
+    const { container } = render(<MusicShell />);
+
+    const list = container.querySelector(".music-track-list");
+    expect(list).toHaveClass("scroll-fade-bottom");
+    expect(list).toHaveAttribute("data-at-bottom");
+
+    const detailAside = container.querySelector(
+      "aside[aria-label='Track details']",
+    );
+    expect(detailAside).toHaveClass("scroll-fade-bottom");
+    expect(detailAside).toHaveAttribute("data-at-bottom");
+  });
+
   it("calls Cloudinary search with a normalized typed query", async () => {
     const user = userEvent.setup();
 
