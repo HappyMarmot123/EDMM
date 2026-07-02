@@ -1378,6 +1378,29 @@ Run: `npx tsc --noEmit` → 에러 없음
 
 ---
 
+### Task 7: 커스텀 VolumeBar — 호버 thumb · 드래그 · 휠 볼륨 (A7, 2026-07-02 편입)
+
+**Files:**
+- Create: `src/features/audio/components/volumeBar.tsx`
+- Modify: `src/features/audio/components/playerControlsSection.tsx` (`PlayerVolumeControls`의 네이티브 range 교체, 휠 핸들러)
+- Test: `src/test/features/audio/volumeBar.test.tsx` (신규), `src/test/features/audio/audioPlayer.test.tsx` (볼륨 상호작용 테스트를 커스텀 바 기준으로 갱신)
+
+**Interfaces:**
+- Consumes: `useAudioPlayer()`의 `volume`, `isMuted`, `setVolume(v)`, `setLiveVolume(v)`, `toggleMute()` (provider 무수정)
+- Produces: `VolumeBar` — `{ volume; isMuted; setVolume; setLiveVolume; toggleMute }` props. `role="slider"`, `aria-label="Volume"`, `aria-valuenow`(0~100, %)
+
+**동작 계약:**
+- 시각: SeekBar와 동일 레이어 구성(트랙 `white/15`, 채움 바 상시 핑크 `#fd6d94`, 호버/드래그 시 12px thumb). 폭 112px 유지, 히트 영역 h-4
+- 드래그: pointer capture. **seek와 달리 드래그 중 `setLiveVolume` 실시간 반영**, 릴리즈 시 `setVolume` 영속화. Escape 취소 시 드래그 시작 시점 볼륨으로 라이브 복원(영속화 없음)
+- 뮤트 연동: 뮤트 상태에서 드래그/휠/화살표로 볼륨 > 0 조작 시 `toggleMute()` 자동 해제. 뮤트 중 표시 볼륨은 0
+- 휠: 볼륨 존(mute 버튼 + 바) 위에서 휠 업/다운 ±5% (React 루트의 passive wheel 제약 회피를 위해 ref + `addEventListener(..., { passive: false })`)
+- 키보드: 좌우/상하 화살표 ±5% (전역 훅은 `[role='slider']`에서 화살표를 양보하므로 로컬 처리)
+- jsdom: PointerEvent 폴리필은 seekBar 테스트와 공유 헬퍼로 추출 (`src/test/testUtils/pointerEventPolyfill.ts`)
+
+**Steps:** seekBar와 동일한 TDD 사이클 (실패 테스트 → 구현 → 통과 → 통합 → 전체 검증)
+
+---
+
 ## 최종 검증 (전 Task 완료 후)
 
 - [ ] `npm test` 전체 PASS + `npx tsc --noEmit` + `npm run lint`

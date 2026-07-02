@@ -120,7 +120,7 @@ export default function SeekBar({ currentTime, duration, seek }: SeekBarProps) {
         <div
           aria-hidden="true"
           data-testid="seek-played-bar"
-          className="absolute inset-y-0 left-0 rounded-full bg-white transition-[width] duration-150 ease-out group-hover:bg-[#fd6d94] group-data-[dragging]:bg-[#fd6d94] group-data-[dragging]:transition-none"
+          className="absolute inset-y-0 left-0 rounded-full bg-[#fd6d94] transition-[width] duration-150 ease-out group-hover:bg-[#fd6d94] group-data-[dragging]:bg-[#fd6d94] group-data-[dragging]:transition-none"
           style={{ width: `${playedPercent}%` }}
         />
       </div>

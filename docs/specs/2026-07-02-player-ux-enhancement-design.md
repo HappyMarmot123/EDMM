@@ -37,13 +37,13 @@
 | A4 | Spotify 스타일 seek 바: 호버 미리보기 바 시인성 수정, 호버/드래그 시 thumb 노출, 드래그 seek(pointer capture), 드래그 중 시각적 프리뷰 + 릴리즈 시 commit | P4 전체 해결. 플레이어 핵심 UX |
 | A5 | 컨트롤 버튼 UX 정비: cursor-pointer, hover 컬러 충돌 해소, 일관된 상태 체계(기본/호버/활성/비활성), press 피드백, 누락 title 툴팁, shuffle 활성 인디케이터 | P5 해결 |
 | A6 | seek 바 정리: 미사용 `trackSeekBar.tsx` 삭제 + `playerTrackDetails.tsx`의 seek 인터랙션을 전용 훅/컴포넌트로 추출해 A4 고도화의 단일 기반 마련 | P6 해결 — A4의 선행 작업. 모바일 seek(`mobileFullscreenPlayer` 자체 구현)는 건드리지 않음 |
+| A7 (2026-07-02 편입) | 볼륨 바 고도화: 네이티브 range를 SeekBar와 동일 패턴의 **커스텀 VolumeBar**로 교체(호버 thumb, 핑크 채움 바, 포인터 드래그) + **휠 스크롤 볼륨 조절** 포함 | 보류였던 D2를 A1~A6 완료 후 사용자 결정으로 채택. 드래그 중엔 `setLiveVolume` 실시간 반영, 릴리즈 시 `setVolume` 영속화(볼륨은 seek와 달리 라이브 반영이 자연스러움). 뮤트 상태에서 조작 시 자동 해제 |
 
 ### 2.2 보류 (다음 라운드 후보 — 이번 범위에서 제외)
 
 | ID | 아이디어 | 보류 사유 |
 |----|----------|-----------|
 | D1 | 버퍼링(로드된 범위) 게이지 표시 | 오디오 엔진의 buffered ranges 연동 필요. seek 바 구조 개편(A4/A6) 안정화 후 얹는 게 안전 |
-| D2 | 볼륨 슬라이더 동일 고도화(호버 시 thumb, 드래그 개선) | seek 바 패턴 확립 후 동일 패턴 이식이 효율적. cursor 등 기본 정비는 A5에 포함 |
 | D3 | 남은 시간 토글(duration ↔ -remaining 클릭 전환) | 부가 기능. 핵심 UX 안정화가 우선 |
 | D4 | 모바일 플레이어 동일 적용 | 이번 작업은 태블릿·데스크톱 뷰 한정(모바일 무영향 원칙). 터치 인터랙션 모델이 달라 별도 설계 필요. **본 라운드 구현 완료 + 사용자 수동 QA 통과 후 착수 검토가 확정된 후속 후보.** A4는 Pointer Events로 구현해 터치 호환 기반은 확보 |
 
@@ -201,6 +201,6 @@
 
 1. 아트워크 fade-in 시간: **`ARTWORK_FADE_MS` 상수(280ms 시작)로 관리**, 수동 QA에서 튜닝
 2. `disabled:pointer-events-none`: **유지** — 제거 시 모바일 사용처까지 파급되므로 disabled 버튼 툴팁은 이번 범위에서 포기
-3. 볼륨 슬라이더(D2): **보류 유지** — 단축키 복원과 직결되는 최소 범위(mute 버튼 blur/press, range 드래그 후 blur)만 이번 라운드에 편입
+3. 볼륨 슬라이더(D2): ~~보류 유지~~ → **A1~A6 구현 완료 후 A7로 편입 확정** (2026-07-02, 사용자 결정 — 커스텀 VolumeBar + 휠 볼륨). §2.1 A7 참조
 
 상세 결정 근거는 구현 계획(`docs/plans/2026-07-02-player-ux-enhancement.md`) 참조.

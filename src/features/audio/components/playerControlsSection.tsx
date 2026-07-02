@@ -12,9 +12,9 @@ import {
   Maximize2,
   Minimize2,
 } from "lucide-react";
-import { useVolumeControl } from "@/shared/hooks/useVolumeControl";
 import { PlayerControlButton } from "@/shared/components/playerControlBtn";
 import { IconToggleButton } from "@/shared/components/iconToggleButton";
+import VolumeBar from "@/features/audio/components/volumeBar";
 
 interface PlayerControlsSectionProps {
   currentTrackInfo: Track | null;
@@ -23,12 +23,23 @@ interface PlayerControlsSectionProps {
   isFullscreenOpen?: boolean;
 }
 
+const MIN_UNMUTE_VOLUME = 0.1;
+
 export const PlayerVolumeControls: React.FC = () => {
   const { volume, isMuted, setVolume, setLiveVolume, toggleMute } =
     useAudioPlayer();
-  const { localVolume, handleVolumeChange, handleVolumeChangeEnd } =
-    useVolumeControl(volume, setVolume, setLiveVolume, isMuted, toggleMute);
   const muteLabel = isMuted ? "Unmute" : "Mute";
+
+  const handleToggleMute = () => {
+    // 볼륨이 0(또는 최소치 미만)인 채 unmute하면 무음이 되므로 최소 볼륨으로 복원.
+    // setVolume(v > 0)이 provider에서 isMuted를 자동 해제하므로 toggleMute는 생략.
+    if (isMuted && volume < MIN_UNMUTE_VOLUME) {
+      setLiveVolume(MIN_UNMUTE_VOLUME);
+      setVolume(MIN_UNMUTE_VOLUME);
+      return;
+    }
+    toggleMute();
+  };
 
   return (
     <section
@@ -40,7 +51,7 @@ export const PlayerVolumeControls: React.FC = () => {
         condition={isMuted}
         IconOnTrue={VolumeX}
         IconOnFalse={Volume2}
-        onClick={toggleMute}
+        onClick={handleToggleMute}
         label={muteLabel}
         title={muteLabel}
         pressFeedback
@@ -54,21 +65,12 @@ export const PlayerVolumeControls: React.FC = () => {
           className: "text-current",
         }}
       />
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.01"
-        value={isMuted ? 0 : localVolume}
-        onChange={handleVolumeChange}
-        onMouseUp={(event) => {
-          handleVolumeChangeEnd();
-          // 드래그 후 range에 포커스가 남으면 전역 화살표 단축키(볼륨)가 막히므로 해제
-          event.currentTarget.blur();
-        }}
-        onTouchEnd={handleVolumeChangeEnd}
-        className="h-1.5 w-[112px] min-w-[112px] max-w-[112px] cursor-pointer appearance-none rounded-full bg-white/15 accent-[#fd6d94] [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-[#fd6d94] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#fd6d94]"
-        aria-label="Volume"
+      <VolumeBar
+        volume={volume}
+        isMuted={isMuted}
+        setVolume={setVolume}
+        setLiveVolume={setLiveVolume}
+        toggleMute={toggleMute}
       />
     </section>
   );

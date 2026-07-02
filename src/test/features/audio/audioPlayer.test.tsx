@@ -154,7 +154,7 @@ describe("AudioPlayer", () => {
     expect(seekSlider).toHaveAttribute("aria-valuenow", "12");
     expect(seekSlider).toHaveAttribute("aria-valuemax", "180");
     expect(volumeZone).toHaveClass("flex");
-    expect(volumeSlider).toHaveValue("0.7");
+    expect(volumeSlider).toHaveAttribute("aria-valuenow", "70");
     expect(within(volumeZone).queryByText("EQ Presets")).not.toBeInTheDocument();
   });
 
@@ -175,11 +175,37 @@ describe("AudioPlayer", () => {
       name: "Volume",
     });
 
-    fireEvent.change(volumeSlider, { target: { value: "0.2" } });
-    fireEvent.mouseUp(volumeSlider);
+    // 상세 드래그 동작은 volumeBar 단위 테스트가 담당 — 여기서는 배선 확인
+    fireEvent.keyDown(volumeSlider, { key: "ArrowUp" });
 
-    expect(mockAudioPlayerState.setLiveVolume).toHaveBeenCalledWith(0.2);
-    expect(mockAudioPlayerState.setVolume).toHaveBeenCalledWith(0.2);
+    expect(mockAudioPlayerState.setLiveVolume).toHaveBeenCalledWith(0.75);
+    expect(mockAudioPlayerState.setVolume).toHaveBeenCalledWith(0.75);
+  });
+
+  it("restores a minimum audible volume when unmuting from zero", () => {
+    mockAudioPlayerState.isMuted = true;
+    mockAudioPlayerState.volume = 0;
+
+    render(<AudioPlayer />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Unmute" }));
+
+    expect(mockAudioPlayerState.setLiveVolume).toHaveBeenCalledWith(0.1);
+    expect(mockAudioPlayerState.setVolume).toHaveBeenCalledWith(0.1);
+    // setVolume(0.1)이 provider에서 자동 unmute하므로 toggleMute는 호출하지 않는다
+    expect(mockAudioPlayerState.toggleMute).not.toHaveBeenCalled();
+  });
+
+  it("keeps plain toggle behavior when unmuting with an audible volume", () => {
+    mockAudioPlayerState.isMuted = true;
+    mockAudioPlayerState.volume = 0.7;
+
+    render(<AudioPlayer />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Unmute" }));
+
+    expect(mockAudioPlayerState.toggleMute).toHaveBeenCalledTimes(1);
+    expect(mockAudioPlayerState.setVolume).not.toHaveBeenCalled();
   });
 
   it("does not rotate persistent desktop artwork while playback is active", () => {
