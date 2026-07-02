@@ -192,7 +192,7 @@ export function MusicTrackList({
 
   return (
     <div
-      className="music-track-list scroll-fade-bottom relative h-full min-h-0 overflow-hidden"
+      className="music-track-list scroll-fade-bottom scroll-fade-bottom--mobile relative h-full min-h-0 overflow-hidden"
       data-at-bottom={isScrolledToBottom ? "true" : "false"}
       aria-label="Track list"
       role="list"

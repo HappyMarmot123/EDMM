@@ -439,8 +439,6 @@ export function MusicShell({
               <TrackDetailAside
                 selectedTrackId={detailSelectedTrackId}
                 fallbackTrack={selectedTrack}
-                queue={visibleTracks}
-                onPlay={handlePlay}
                 isWaitingForSelectionSeed={
                   selectionSource === "initial" && !selectedTrack && isVisibleLoading
                 }

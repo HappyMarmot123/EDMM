@@ -621,28 +621,38 @@ h1 {
   --scroll-fade-color: #0b0609;
 }
 
-@media (min-width: 768px) {
-  .scroll-fade-bottom::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 64px;
-    border-radius: inherit;
-    pointer-events: none;
-    z-index: 5;
-    background: linear-gradient(
-      to top,
-      var(--scroll-fade-color) 10%,
-      transparent
-    );
-    opacity: 1;
-    transition: opacity 200ms ease;
-  }
+.scroll-fade-bottom::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 64px;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 5;
+  background: linear-gradient(
+    to top,
+    var(--scroll-fade-color) 10%,
+    transparent
+  );
+  opacity: 1;
+  transition: opacity 200ms ease;
+}
 
-  .scroll-fade-bottom[data-at-bottom="true"]::after {
-    opacity: 0;
+.scroll-fade-bottom[data-at-bottom="true"]::after {
+  opacity: 0;
+}
+
+@media (min-width: 768px) {
+  .scroll-fade-bottom--mobile::after {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .scroll-fade-bottom--desktop::after {
+    display: none;
   }
 }
 

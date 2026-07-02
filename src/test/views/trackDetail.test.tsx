@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import type { Track } from "@/entities/track";
 import { getCachedTrack } from "@/shared/db";
 import TrackDetailAside from "@/widgets/musicShell/trackDetailAside";
@@ -48,13 +48,7 @@ describe("TrackDetailAside", () => {
   it("renders cached track details from the shell aside without lyrics", async () => {
     mockGetCachedTrack.mockResolvedValue(track);
 
-    render(
-      <TrackDetailAside
-        selectedTrackId="cloudinary:asset-1"
-        queue={[track]}
-        onPlay={jest.fn()}
-      />,
-    );
+    render(<TrackDetailAside selectedTrackId="cloudinary:asset-1" />);
 
     expect(mockGetCachedTrack).toHaveBeenCalledWith("cloudinary:asset-1");
     expect(await screen.findByText("Cached Track")).toBeInTheDocument();
@@ -64,30 +58,21 @@ describe("TrackDetailAside", () => {
     expect(screen.getByText("Audio visualizer")).toBeInTheDocument();
   });
 
-  it("plays the cached track with the visible queue", async () => {
-    const onPlay = jest.fn();
-    const queue = [track];
+  it("does not render a play/pause control in the aside", async () => {
     mockGetCachedTrack.mockResolvedValue(track);
 
-    render(
-      <TrackDetailAside
-        selectedTrackId="cloudinary:asset-1"
-        queue={queue}
-        onPlay={onPlay}
-      />,
-    );
+    render(<TrackDetailAside selectedTrackId="cloudinary:asset-1" />);
 
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Play Cached Track" }),
-    );
-
-    expect(onPlay).toHaveBeenCalledWith(track, queue);
+    expect(await screen.findByText("Cached Track")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^(play|pause) /i }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows details unavailable when cached metadata is missing", async () => {
     mockGetCachedTrack.mockResolvedValue(undefined);
 
-    render(<TrackDetailAside selectedTrackId="missing:track" queue={[]} />);
+    render(<TrackDetailAside selectedTrackId="missing:track" />);
 
     expect(await screen.findByText("Details unavailable")).toBeInTheDocument();
     expect(screen.getByText(/missing:track/i)).toBeInTheDocument();

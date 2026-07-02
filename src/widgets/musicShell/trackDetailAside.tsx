@@ -2,7 +2,7 @@
 
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useScrollAtBottom } from "@/shared/hooks/useScrollAtBottom";
-import { Disc3, Link, Maximize2, Music2, Pause, Play, Radio } from "lucide-react";
+import { Disc3, Link, Maximize2, Music2, Radio } from "lucide-react";
 import type { Track } from "@/entities/track";
 import { AudioVisualizer, EqualizerPanel } from "@/features/audio";
 import { getCachedTrack } from "@/shared/db";
@@ -14,8 +14,6 @@ import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 type TrackDetailAsideProps = {
   selectedTrackId: string | null;
   fallbackTrack?: Track | null;
-  queue: Track[];
-  onPlay?: (track: Track, queue?: Track[]) => void;
   isWaitingForSelectionSeed?: boolean;
 };
 
@@ -50,8 +48,6 @@ function DetailLine({ label, value }: DetailLineProps) {
 export function TrackDetailAside({
   selectedTrackId,
   fallbackTrack = null,
-  queue,
-  onPlay,
   isWaitingForSelectionSeed = false,
 }: TrackDetailAsideProps) {
   const [cachedTrack, setCachedTrack] = useState<Track | null>(null);
@@ -170,7 +166,7 @@ export function TrackDetailAside({
       <aside
         aria-label="Track details"
         data-at-bottom={isScrolledToBottom ? "true" : "false"}
-        className="scroll-fade-bottom scroll-fade-bottom--aside flex h-full min-h-0 flex-col rounded-lg border border-white/10 bg-[#0b0609] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)]"
+        className="scroll-fade-bottom scroll-fade-bottom--desktop scroll-fade-bottom--aside flex h-full min-h-0 flex-col rounded-lg border border-white/10 bg-[#0b0609] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)]"
       >
         <p className="inline-flex items-center gap-2 mb-4 text-xs font-black uppercase text-[#ff98a2]">
           <Radio size={15} strokeWidth={2.1} aria-hidden="true" />
@@ -207,7 +203,7 @@ export function TrackDetailAside({
           ) : null}
 
           {track ? (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {canOpenArtworkFullscreen ? (
                 <button
                   type="button"
@@ -278,24 +274,6 @@ export function TrackDetailAside({
                 </p>
               </div>
 
-              <button
-                type="button"
-                aria-label={
-                  isCurrentTrack && isPlaying
-                    ? `Pause ${track.title}`
-                    : `Play ${track.title}`
-                }
-                onClick={() => onPlay?.(track, queue)}
-                disabled={!onPlay || !track.streamUrl}
-                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#ff98a2] px-4 text-sm font-black text-black transition-transform hover:scale-[1.01] disabled:pointer-events-none disabled:opacity-45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb8c0]"
-              >
-                {isCurrentTrack && isPlaying ? (
-                  <Pause size={18} fill="currentColor" strokeWidth={2.1} aria-hidden="true" />
-                ) : (
-                  <Play size={18} fill="currentColor" strokeWidth={2.1} aria-hidden="true" />
-                )}
-                {isCurrentTrack && isPlaying ? "Pause selected" : "Play selected"}
-              </button>
               <EqualizerPanel />
 
               <dl className="grid gap-2">
