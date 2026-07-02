@@ -59,6 +59,10 @@ export const setupAudioEventListeners = (actions: AudioEventManagerActions) => {
     actions.isSeekingRef.current = false;
   };
 
+  if (!isNaN(audio.duration) && isFinite(audio.duration)) {
+    handleDurationChange();
+  }
+
   audio.addEventListener("timeupdate", handleTimeUpdate);
   audio.addEventListener("durationchange", handleDurationChange);
   audio.addEventListener("loadedmetadata", handleDurationChange);
