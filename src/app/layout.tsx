@@ -1,8 +1,15 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "@/shared/styles/global.css";
 import { HYDRATION_EXTENSION_ATTRIBUTE_GUARD_SCRIPT } from "@/shared/lib/hydrationExtensionAttributeGuard";
 import { AppProviders } from "./appProviders";
+
+// 다크 스킴 명시 선언 — 삼성 인터넷 등의 강제 다크 모드(웹사이트를 어둡게)가
+// 페이지 색상을 임의 변환하지 않도록 옵트아웃한다 (아이덴티티 핑크가 붉게 왜곡되던 원인).
+export const viewport: Viewport = {
+  colorScheme: "dark",
+  themeColor: "#07040a",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://edmm.vercel.app"),
@@ -50,8 +57,7 @@ const RootLayout = ({ children }: { children: React.ReactNode }) => {
     <html lang="ko" suppressHydrationWarning={true}>
       <head>
         <link rel="manifest" href="/manifest.webmanifest" />
-        <meta name="theme-color" content="#111827" />
-        <meta name="msapplication-TileColor" content="#111827" />
+        <meta name="msapplication-TileColor" content="#07040a" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta

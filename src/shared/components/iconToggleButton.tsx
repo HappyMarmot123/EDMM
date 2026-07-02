@@ -14,6 +14,10 @@ interface IconToggleButtonProps {
   iconProps?: React.SVGProps<SVGSVGElement>;
   className?: string;
   disabled?: boolean;
+  title?: string;
+  hoverSurface?: boolean;
+  pressFeedback?: boolean;
+  blurOnPointerClick?: boolean;
 }
 
 export const IconToggleButton: React.FC<IconToggleButtonProps> = ({
@@ -26,6 +30,10 @@ export const IconToggleButton: React.FC<IconToggleButtonProps> = ({
   iconProps = {},
   className,
   disabled,
+  title,
+  hoverSurface,
+  pressFeedback,
+  blurOnPointerClick,
 }) => {
   const commonIconProps = {
     className:
@@ -41,8 +49,12 @@ export const IconToggleButton: React.FC<IconToggleButtonProps> = ({
       id={id}
       onClick={onClick}
       aria-label={label}
+      title={title}
       className={className}
       disabled={disabled}
+      hoverSurface={hoverSurface}
+      pressFeedback={pressFeedback}
+      blurOnPointerClick={blurOnPointerClick}
     >
       {condition ? (
         <IconOnTrue {...commonIconProps} />

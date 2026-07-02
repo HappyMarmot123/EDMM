@@ -24,7 +24,7 @@ const createAudioState = () => ({
   currentTime: 50,
   currentTrack: {
     id: "track-1",
-    source: "cloudinary",
+    source: "cloudinary" as const,
     title: "Track One",
     artistId: "artist-1",
     artistName: "Artist",
@@ -68,6 +68,9 @@ function KeyboardShortcutHarness() {
       <div contentEditable role="textbox" aria-label="Editable title" />
       <div role="slider" aria-label="Custom progress" tabIndex={0} />
       <input type="range" aria-label="Native progress" />
+      <button type="button" aria-label="Focused control">
+        Control
+      </button>
     </div>
   );
 }
@@ -113,6 +116,26 @@ describe("useAudioKeyboardShortcuts", () => {
     expect(audioState.setLiveVolume).toHaveBeenNthCalledWith(2, 0.45);
   });
 
+  it("skips to the next track with N", () => {
+    const audioState = createAudioState();
+    mockUseAudioPlayer.mockReturnValue(audioState);
+
+    render(<KeyboardShortcutHarness />);
+    fireEvent.keyDown(window, { code: "KeyN" });
+
+    expect(audioState.nextTrack).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips to the previous track with P", () => {
+    const audioState = createAudioState();
+    mockUseAudioPlayer.mockReturnValue(audioState);
+
+    render(<KeyboardShortcutHarness />);
+    fireEvent.keyDown(window, { code: "KeyP" });
+
+    expect(audioState.prevTrack).toHaveBeenCalledTimes(1);
+  });
+
   it("ignores shortcuts while typing in inputs", () => {
     const audioState = createAudioState();
     mockUseAudioPlayer.mockReturnValue(audioState);
@@ -124,6 +147,37 @@ describe("useAudioKeyboardShortcuts", () => {
     });
 
     expect(audioState.togglePlayPause).not.toHaveBeenCalled();
+  });
+
+  it("allows playback shortcuts while a control button is focused", () => {
+    const audioState = createAudioState();
+    mockUseAudioPlayer.mockReturnValue(audioState);
+
+    render(<KeyboardShortcutHarness />);
+    const button = screen.getByRole("button", { name: "Focused control" });
+    button.focus();
+
+    fireEvent.keyDown(button, { code: "Space" });
+    fireEvent.keyDown(button, { code: "KeyN" });
+
+    expect(audioState.togglePlayPause).toHaveBeenCalledTimes(1);
+    expect(audioState.nextTrack).toHaveBeenCalledTimes(1);
+  });
+
+  it("allows non-arrow shortcuts from sliders while blocking arrows", () => {
+    const audioState = createAudioState();
+    mockUseAudioPlayer.mockReturnValue(audioState);
+
+    render(<KeyboardShortcutHarness />);
+    const slider = screen.getByRole("slider", { name: "Custom progress" });
+
+    fireEvent.keyDown(slider, { code: "Space" });
+    fireEvent.keyDown(slider, { code: "ArrowRight" });
+    fireEvent.keyDown(slider, { code: "ArrowUp" });
+
+    expect(audioState.togglePlayPause).toHaveBeenCalledTimes(1);
+    expect(audioState.seek).not.toHaveBeenCalled();
+    expect(audioState.setVolume).not.toHaveBeenCalled();
   });
 
   it("ignores shortcuts from editable and slider controls", () => {

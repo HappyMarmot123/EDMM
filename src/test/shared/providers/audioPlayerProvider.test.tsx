@@ -15,7 +15,20 @@ const mockAudioContext = {
   resume: jest.fn(),
 } as unknown as AudioContext;
 
-const defaultAudioStoreState = {
+type MockAudioStoreState = {
+  audioInstance: HTMLAudioElement | null;
+  audioContext: AudioContext | null;
+  audioAnalyser: AnalyserNode | null;
+  audioCapabilities: {
+    audioElementAvailable: boolean;
+    audioContextAvailable: boolean;
+    analyserAvailable: boolean;
+    initializationError: string | null;
+  };
+  cleanAudioInstance: jest.Mock;
+};
+
+const defaultAudioStoreState: MockAudioStoreState = {
   audioInstance: mockAudio,
   audioContext: mockAudioContext,
   audioAnalyser: null,
@@ -28,7 +41,7 @@ const defaultAudioStoreState = {
   cleanAudioInstance: mockCleanAudioInstance,
 };
 
-let mockAudioStoreState = defaultAudioStoreState;
+let mockAudioStoreState: MockAudioStoreState = defaultAudioStoreState;
 
 jest.mock("@/app/store/audioInstanceStore", () => ({
   __esModule: true,
@@ -38,6 +51,15 @@ jest.mock("@/app/store/audioInstanceStore", () => ({
 
 jest.mock("@/shared/lib/audioEventManager", () => ({
   setupAudioEventListeners: jest.fn(() => mockDetachAudioListeners),
+}));
+
+// 재생 소스 전환은 오디오 엔진 API(transitionAudioTrack)를 경유한다 (AE8).
+const mockTransitionAudioTrack = jest.fn<Promise<void>, unknown[]>(
+  async () => undefined,
+);
+jest.mock("@/shared/lib/audioInstance", () => ({
+  setMasterAudioVolume: jest.fn(),
+  transitionAudioTrack: (...args: unknown[]) => mockTransitionAudioTrack(...args),
 }));
 
 jest.mock("@/shared/db", () => ({
@@ -130,6 +152,7 @@ function CurrentTrackConsumer() {
 describe("AudioPlayerProvider", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockTransitionAudioTrack.mockImplementation(async () => undefined);
     mockAudioStoreState = defaultAudioStoreState;
     Object.defineProperty(mockAudio, "play", {
       configurable: true,
@@ -181,11 +204,8 @@ describe("AudioPlayerProvider", () => {
 
   it("stores playbackError and restores isPlaying when audio playback rejects", async () => {
     jest.spyOn(console, "warn").mockImplementation(() => {});
-    Object.defineProperty(mockAudio, "play", {
-      configurable: true,
-      value: jest.fn(async () => {
-        throw new DOMException("blocked", "NotAllowedError");
-      }),
+    mockTransitionAudioTrack.mockImplementation(async () => {
+      throw new DOMException("blocked", "NotAllowedError");
     });
 
     render(

@@ -3,8 +3,7 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Disc3, Link, Maximize2, Music2, Pause, Play, Radio } from "lucide-react";
 import type { Track } from "@/entities/track";
-import { AudioVisualizer } from "@/features/audio";
-import EqualizerPanel from "@/features/audio/components/equalizerPanel";
+import { AudioVisualizer, EqualizerPanel } from "@/features/audio";
 import { getCachedTrack } from "@/shared/db";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import { dispatchEdmmEvent, EDMM_EVENTS } from "@/shared/lib/edmmEvents";
@@ -292,7 +291,6 @@ export function TrackDetailAside({
               <EqualizerPanel />
 
               <dl className="grid gap-2">
-                {track.albumName ? <DetailLine label="Album" value={track.albumName} /> : null}
                 <DetailLine label="Duration" value={formatDuration(track.durationMs)} />
                 <DetailLine label="Source" value={track.source} />
                 <DetailLine

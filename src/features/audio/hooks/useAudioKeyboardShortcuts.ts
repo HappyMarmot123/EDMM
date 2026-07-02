@@ -7,25 +7,36 @@ import { CLAMP_VOLUME } from "@/shared/lib/util";
 const SEEK_STEP_SECONDS = 10;
 const VOLUME_STEP = 0.05;
 
-const isShortcutBlockedTarget = (target: EventTarget | null) => {
+type ShortcutBlockLevel = "all" | "arrows" | "none";
+
+// 타이핑 컨텍스트만 전면 차단하고, 슬라이더류는 고유 조작인 화살표 키만 차단한다.
+// 버튼은 차단하지 않는다 — 중복 활성화는 PlayerControlButton의
+// blurOnPointerClick(포인터 클릭 후 포커스 해제)이 방지한다.
+const getShortcutBlockLevel = (
+  target: EventTarget | null,
+): ShortcutBlockLevel => {
   if (!(target instanceof HTMLElement)) {
-    return false;
+    return "none";
+  }
+
+  if (target instanceof HTMLInputElement) {
+    return target.type === "range" ? "arrows" : "all";
   }
 
   if (
-    target instanceof HTMLInputElement ||
     target instanceof HTMLTextAreaElement ||
     target instanceof HTMLSelectElement ||
-    target.isContentEditable
+    target.isContentEditable ||
+    target.closest("textarea, select, [contenteditable='true']")
   ) {
-    return true;
+    return "all";
   }
 
-  return Boolean(
-    target.closest(
-      "button, a, input, textarea, select, [contenteditable='true'], [role='button'], [role='slider']",
-    ),
-  );
+  if (target.closest("input[type='range'], [role='slider']")) {
+    return "arrows";
+  }
+
+  return "none";
 };
 
 export function useAudioKeyboardShortcuts() {
@@ -33,6 +44,8 @@ export function useAudioKeyboardShortcuts() {
     currentTrack,
     currentTime,
     duration,
+    nextTrack,
+    prevTrack,
     seek,
     setLiveVolume,
     setVolume,
@@ -46,13 +59,21 @@ export function useAudioKeyboardShortcuts() {
         event.defaultPrevented ||
         event.altKey ||
         event.ctrlKey ||
-        event.metaKey ||
-        isShortcutBlockedTarget(event.target)
+        event.metaKey
       ) {
         return;
       }
 
+      const blockLevel = getShortcutBlockLevel(event.target);
+      if (blockLevel === "all") {
+        return;
+      }
+
       const shortcutKey = event.code || event.key;
+      if (blockLevel === "arrows" && shortcutKey.startsWith("Arrow")) {
+        return;
+      }
+
       const hasPlayableTrack = Boolean(currentTrack?.streamUrl);
 
       switch (shortcutKey) {
@@ -89,6 +110,22 @@ export function useAudioKeyboardShortcuts() {
           setLiveVolume(nextVolume);
           break;
         }
+        case "KeyN":
+        case "n":
+        case "N": {
+          if (!hasPlayableTrack || event.repeat) return;
+          event.preventDefault();
+          nextTrack();
+          break;
+        }
+        case "KeyP":
+        case "p":
+        case "P": {
+          if (!hasPlayableTrack || event.repeat) return;
+          event.preventDefault();
+          prevTrack();
+          break;
+        }
         default:
           break;
       }
@@ -103,6 +140,8 @@ export function useAudioKeyboardShortcuts() {
     currentTime,
     currentTrack?.streamUrl,
     duration,
+    nextTrack,
+    prevTrack,
     seek,
     setLiveVolume,
     setVolume,

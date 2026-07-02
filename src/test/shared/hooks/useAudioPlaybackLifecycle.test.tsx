@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { useAudioPlaybackLifecycle } from "@/shared/hooks/useAudioPlaybackLifecycle";
 
@@ -31,20 +31,16 @@ const TestHost = ({
 const createAudioContextMock = () =>
   ({
     state: "suspended" as AudioContextState,
-    resume: jest.fn<() => Promise<void>>(() => Promise.resolve()),
-  } as AudioContext);
+    resume: jest.fn(() => Promise.resolve()),
+  } as unknown as AudioContext);
 
 const createAudioMock = () =>
   ({
     paused: true,
     currentTime: 0,
-    play: jest.fn<() => Promise<void>>(() => Promise.resolve()),
+    play: jest.fn(() => Promise.resolve()),
     pause: jest.fn(),
-  } as Partial<
-    HTMLAudioElement & {
-      paused: boolean;
-    }
-  > as HTMLAudioElement);
+  } as unknown as HTMLAudioElement);
 
 const setVisibilityState = (value: DocumentVisibilityState) => {
   Object.defineProperty(document, "visibilityState", {
@@ -90,12 +86,11 @@ describe("useAudioPlaybackLifecycle", () => {
     );
 
     document.dispatchEvent(new Event("pagehide"));
-    await window.dispatchEvent(new Event("pageshow"));
+    window.dispatchEvent(new Event("pageshow"));
 
-    await Promise.resolve();
-
-    expect(onResume).toHaveBeenCalledTimes(1);
-    expect(onPlay).toHaveBeenCalledTimes(2);
+    // context-first 전략: resume 1회 → play 1회
+    await waitFor(() => expect(onResume).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(onPlay).toHaveBeenCalledTimes(1));
   });
 
   it("resumes playback on visibilitychange visibility restore", async () => {
@@ -111,26 +106,27 @@ describe("useAudioPlaybackLifecycle", () => {
     setVisibilityState("visible");
     document.dispatchEvent(new Event("visibilitychange"));
 
-    await Promise.resolve();
-
-    expect(onResume).toHaveBeenCalledTimes(1);
-    expect(onPlay).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onResume).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(onPlay).toHaveBeenCalledTimes(1));
   });
 
   it("uses media-element-first restore strategy when configured", async () => {
-    const audioContext = createAudioContextMock();
     const callOrder: string[] = [];
+    const audioContext = {
+      state: "suspended" as AudioContextState,
+      resume: jest.fn(() => {
+        callOrder.push("resume");
+        return Promise.resolve();
+      }),
+    } as unknown as AudioContext;
     const audio = {
-      ...createAudioMock(),
-      play: jest.fn<() => Promise<void>>(() => {
+      ...(createAudioMock() as Partial<HTMLAudioElement>),
+      paused: true,
+      play: jest.fn(() => {
         callOrder.push("play");
         return Promise.resolve();
       }),
-    } as Partial<
-      HTMLAudioElement & {
-        paused: boolean;
-      }
-    > as HTMLAudioElement;
+    } as unknown as HTMLAudioElement;
     const onResume = audioContext.resume;
     const onPlay = audio.play as jest.Mock;
 
@@ -144,13 +140,12 @@ describe("useAudioPlaybackLifecycle", () => {
     );
 
     document.dispatchEvent(new Event("pagehide"));
-    await window.dispatchEvent(new Event("pageshow"));
+    window.dispatchEvent(new Event("pageshow"));
 
-    await Promise.resolve();
-
-    expect(onPlay).toHaveBeenCalledTimes(1);
+    // media-element-first 전략: play → resume → play (mock의 paused가 true로 유지되므로 재시도 play 발생)
+    await waitFor(() => expect(callOrder).toEqual(["play", "resume", "play"]));
+    expect(onPlay).toHaveBeenCalledTimes(2);
     expect(onResume).toHaveBeenCalledTimes(1);
-    expect(callOrder).toEqual(["play", "resume", "play"]);
   });
 
   it("does not resume when hidden then shown while not playing", async () => {

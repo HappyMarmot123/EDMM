@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { AudioVisualizer } from "@/features/audio";
 
 const fillRect = jest.fn();
@@ -71,6 +71,32 @@ describe("AudioVisualizer", () => {
 
     expect(window.requestAnimationFrame).not.toHaveBeenCalled();
     expect(getByteFrequencyData).not.toHaveBeenCalled();
+  });
+
+  it("keeps the live drawing loop briefly when playback becomes inactive", () => {
+    jest.useFakeTimers();
+    jest.spyOn(window, "requestAnimationFrame").mockReturnValue(7);
+    jest.spyOn(window, "cancelAnimationFrame").mockImplementation(jest.fn());
+
+    const { rerender } = render(
+      <AudioVisualizer analyser={analyser} isActive />
+    );
+
+    expect(window.requestAnimationFrame).toHaveBeenCalled();
+
+    jest.mocked(window.cancelAnimationFrame).mockClear();
+
+    rerender(<AudioVisualizer analyser={analyser} isActive={false} />);
+
+    expect(window.cancelAnimationFrame).not.toHaveBeenCalled();
+
+    act(() => {
+      jest.advanceTimersByTime(280);
+    });
+
+    expect(window.cancelAnimationFrame).toHaveBeenCalledWith(7);
+
+    jest.useRealTimers();
   });
 
   it("syncs canvas size on window resize when ResizeObserver is unavailable", async () => {

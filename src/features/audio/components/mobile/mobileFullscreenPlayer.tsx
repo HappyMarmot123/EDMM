@@ -1,13 +1,12 @@
 "use client";
 
-import { useRef, useState, type MouseEvent, type PointerEvent } from "react";
+import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import Image from "next/image";
 import {
   ChevronDown,
   Music2,
   Pause,
   Play,
-  Shuffle,
   SkipBack,
   SkipForward,
 } from "lucide-react";
@@ -16,26 +15,36 @@ import type { Track } from "@/entities/track";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { IconToggleButton } from "@/shared/components/iconToggleButton";
 import { PlayerControlButton } from "@/shared/components/playerControlBtn";
-import { formatTime } from "@/shared/lib/util";
+import MSeekBar from "@/features/audio/components/mobile/mSeekBar";
+import MFullscreenBackdrop from "@/features/audio/components/mobile/mFullscreenBackdrop";
+import { useAlbumColorPalette } from "@/features/audio/components/visualizers/albumColorPalette";
+import { useArtworkCrossfade } from "@/features/audio/hooks/useArtworkCrossfade";
 
 type MobileFullscreenPlayerProps = {
   currentTrackInfo: Track | null;
-  currentProgress: number;
   duration: number;
   seek: (time: number) => void;
   onClose: () => void;
 };
 
+// 데스크톱 풀스크린과 동일한 전환 정책: 아트워크는 스냅 아웃 후 빠른 페이드 인,
+// backdrop(저주파)은 느린 크로스페이드.
+const ARTWORK_FADE_MS = 280;
+const BACKDROP_FADE_MS = 450;
+
+const fadeStyle = (opacity: number, durationMs: number): CSSProperties => ({
+  opacity,
+  transition: `opacity ${durationMs}ms ease-out`,
+});
+
 export default function MobileFullscreenPlayer({
   currentTrackInfo,
-  currentProgress,
   duration,
   seek,
   onClose,
 }: MobileFullscreenPlayerProps) {
-  const { isPlaying, togglePlayPause, prevTrack, nextTrack } = useAudioPlayer();
-  const { isShuffleEnabled, toggleShuffle, currentTime } = useAudioPlayer();
-  const seekBarRef = useRef<HTMLDivElement>(null);
+  const { isPlaying, togglePlayPause, prevTrack, nextTrack, currentTime } =
+    useAudioPlayer();
   const dragStartYRef = useRef(0);
   const dragStartTimeRef = useRef(0);
   const [dragY, setDragY] = useState(0);
@@ -43,14 +52,14 @@ export default function MobileFullscreenPlayer({
   const [isClosing, setIsClosing] = useState(false);
   const hasPlayableTrack = Boolean(currentTrackInfo?.streamUrl);
   const artworkSrc = currentTrackInfo?.artworkUrl?.trim() ?? "";
-
-  const handleSeek = (event: MouseEvent<HTMLDivElement>) => {
-    if (!seekBarRef.current || !duration) return;
-
-    const rect = seekBarRef.current.getBoundingClientRect();
-    const seekFraction = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
-    seek(seekFraction * duration);
-  };
+  const { palette, resolvedSrc } = useAlbumColorPalette(artworkSrc);
+  const { layers, completeLayer } = useArtworkCrossfade({
+    artworkSrc,
+    palette,
+    resolvedSrc,
+    fadeDurationMs: BACKDROP_FADE_MS,
+  });
+  const topArtworkLayer = layers.length ? layers[layers.length - 1] : null;
 
   const closeWithSlide = () => {
     setIsClosing(true);
@@ -123,16 +132,44 @@ export default function MobileFullscreenPlayer({
       role="dialog"
       aria-modal="true"
       aria-label="Mobile fullscreen player"
-      className="fixed inset-0 z-[90] flex flex-col bg-[linear-gradient(180deg,#2c1720_0%,#0b070b_52%,#050305_100%)] text-white md:hidden"
+      className="fixed inset-0 z-[90] flex flex-col overflow-hidden bg-[#050305] text-white md:hidden"
       style={{
         opacity: isClosing ? 0 : Math.max(0.72, 1 - dragY / 720),
         transform: `translateY(${isClosing ? "100%" : `${dragY}px`})`,
         transition: isDragging ? "none" : "transform 180ms ease-out, opacity 180ms ease-out",
       }}
     >
+      {/* 앨범 팔레트 연동 백드롭 — backdrop은 크로스페이드, 완료 판정도 여기(가장 느린 레이어) 기준 */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        {layers.map((layer) => (
+          <div
+            key={layer.key}
+            className="absolute inset-0"
+            style={fadeStyle(layer.opacity, BACKDROP_FADE_MS)}
+            onTransitionEnd={(event) => {
+              if (
+                event.propertyName === "opacity" &&
+                event.target === event.currentTarget
+              ) {
+                completeLayer(layer.key);
+              }
+            }}
+          >
+            <MFullscreenBackdrop
+              artworkSrc={layer.artworkSrc}
+              hasArtwork={layer.hasArtwork}
+              palette={layer.palette}
+            />
+          </div>
+        ))}
+        <div
+          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.16),rgba(0,0,0,0.48)_56%,rgba(0,0,0,0.8))]"
+        />
+      </div>
+
       <button
         type="button"
-        className="flex min-h-14 w-full touch-none items-center justify-center px-5 text-white/86 transition-colors hover:text-white"
+        className="relative z-[1] flex min-h-14 w-full touch-none items-center justify-center px-5 text-white/86 transition-colors hover:text-white"
         onClick={() => {
           if (dragY > 8) return;
           closeWithSlide();
@@ -146,18 +183,26 @@ export default function MobileFullscreenPlayer({
         <ChevronDown size={28} strokeWidth={2.2} aria-hidden="true" />
       </button>
 
-      <div className="flex min-h-0 flex-1 flex-col justify-center px-6 pb-[calc(28px+max(env(safe-area-inset-bottom),12px))]">
+      <div className="relative z-[1] flex min-h-0 flex-1 flex-col justify-center px-6 pb-[calc(28px+max(env(safe-area-inset-bottom),12px))]">
         <div className="relative mx-auto aspect-square w-full max-w-[300px] overflow-hidden rounded-lg bg-white/10 shadow-[0_34px_90px_rgba(0,0,0,0.5)]">
-          {artworkSrc && currentTrackInfo ? (
-            <Image
-              src={artworkSrc}
-              alt={currentTrackInfo.albumName ?? currentTrackInfo.source}
-              fill
-              sizes="300px"
-              unoptimized={shouldUnoptimizeArtworkImage(artworkSrc)}
-              className="object-cover"
-              draggable={false}
-            />
+          {/* 스냅 아웃: top 레이어만 렌더 — key 교체로 이전 아트워크는 즉시 제거되고
+              새 레이어만 짧게 페이드 인한다 (겹침 블렌딩 없음) */}
+          {topArtworkLayer?.hasArtwork && currentTrackInfo ? (
+            <div
+              key={topArtworkLayer.key}
+              className="absolute inset-0"
+              style={fadeStyle(topArtworkLayer.opacity, ARTWORK_FADE_MS)}
+            >
+              <Image
+                src={topArtworkLayer.artworkSrc}
+                alt={currentTrackInfo.albumName ?? currentTrackInfo.source}
+                fill
+                sizes="300px"
+                unoptimized={shouldUnoptimizeArtworkImage(topArtworkLayer.artworkSrc)}
+                className="object-cover"
+                draggable={false}
+              />
+            </div>
           ) : (
             <div className="flex h-full w-full items-center justify-center text-[#fd6d94]">
               <Music2 size={56} strokeWidth={1.8} aria-hidden="true" />
@@ -174,46 +219,20 @@ export default function MobileFullscreenPlayer({
           </p>
         </div>
 
-        <div
-          ref={seekBarRef}
-          className="mt-7 h-7 cursor-pointer py-3"
-          onClick={handleSeek}
-          aria-label="Track progress"
-        >
-          <div className="h-1.5 overflow-hidden rounded-full bg-white/22">
-            <div
-              className="h-full rounded-full bg-white transition-[width] duration-150 ease-out"
-              style={{ width: `${currentProgress}%` }}
-            />
-          </div>
-        </div>
-        <div className="mt-1 flex items-center justify-between text-xs font-semibold tabular-nums text-white/54">
-          <span>{formatTime(currentTime)}</span>
-          <span>{formatTime(duration)}</span>
+        <div className="mt-6" aria-label="Track progress">
+          <MSeekBar currentTime={currentTime} duration={duration} seek={seek} />
         </div>
 
         <section
-          className="mt-4 flex items-center justify-center gap-5"
+          className="mt-4 flex items-center justify-center gap-6"
           aria-label={`${currentTrackInfo?.title ?? "Current track"} fullscreen controls`}
         >
-          <PlayerControlButton
-            id="mobile-fullscreen-shuffle"
-            onClick={toggleShuffle}
-            aria-label={
-              isShuffleEnabled ? "Disable shuffle playback" : "Enable shuffle playback"
-            }
-            title={isShuffleEnabled ? "Shuffle on" : "Shuffle off"}
-            className={`h-11 w-11 ${
-              isShuffleEnabled ? "text-[#ff98a2]" : "text-white/58 hover:text-white"
-            }`}
-            disabled={!hasPlayableTrack}
-          >
-            <Shuffle className="m-auto block" size={22} fill="currentColor" aria-hidden="true" />
-          </PlayerControlButton>
+          {/* shuffle은 모바일뷰에서 비활성화 (사용자 결정) — 전역 shuffle 상태 자체는 유지 */}
           <PlayerControlButton
             id="mobile-fullscreen-previous"
             onClick={prevTrack}
             aria-label="Previous track"
+            pressFeedback
             className="h-12 w-12 text-white/78 hover:text-white"
             disabled={!hasPlayableTrack}
           >
@@ -226,7 +245,9 @@ export default function MobileFullscreenPlayer({
             IconOnFalse={Play}
             onClick={togglePlayPause}
             label={isPlaying ? "Pause" : "Play"}
-            className="bg-white text-black hover:bg-[#ffd6e1]"
+            hoverSurface={false}
+            pressFeedback
+            className="bg-white text-black"
             disabled={!hasPlayableTrack}
             iconProps={{
               width: 34,
@@ -239,6 +260,7 @@ export default function MobileFullscreenPlayer({
             id="mobile-fullscreen-next"
             onClick={nextTrack}
             aria-label="Next track"
+            pressFeedback
             className="h-12 w-12 text-white/78 hover:text-white"
             disabled={!hasPlayableTrack}
           >

@@ -1,6 +1,7 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import { fireEvent } from "@testing-library/react";
 import { AudioPlayer, MobileAudioPlayer } from "@/features/audio";
+import AudioPlayerWidget from "@/widgets/audioPlayer";
 import type { Track } from "@/entities/track";
 
 const track: Track = {
@@ -56,7 +57,9 @@ const mockRouterReplace = jest.fn();
 
 const mockFullscreenViewport = (matches: boolean) => {
   window.matchMedia = jest.fn().mockImplementation((query: string) => ({
-    matches,
+    // 풀스크린 뷰포트 쿼리에만 매치를 적용한다. 전 쿼리 true로 하면
+    // prefers-reduced-motion까지 걸려 fade 경로가 생략되기 때문.
+    matches: query === "(min-width: 768px)" ? matches : false,
     media: query,
     onchange: null,
     addEventListener: jest.fn(),
@@ -151,7 +154,8 @@ describe("AudioPlayer", () => {
     expect(seekSlider).toHaveAttribute("aria-valuenow", "12");
     expect(seekSlider).toHaveAttribute("aria-valuemax", "180");
     expect(volumeZone).toHaveClass("flex");
-    expect(volumeSlider).toHaveValue("0.7");
+    expect(volumeSlider).toHaveAttribute("aria-valuenow", "70");
+    expect(within(volumeZone).queryByText("EQ Presets")).not.toBeInTheDocument();
   });
 
   it("fires previous and next actions from desktop controls", () => {
@@ -171,11 +175,37 @@ describe("AudioPlayer", () => {
       name: "Volume",
     });
 
-    fireEvent.change(volumeSlider, { target: { value: "0.2" } });
-    fireEvent.mouseUp(volumeSlider);
+    // 상세 드래그 동작은 volumeBar 단위 테스트가 담당 — 여기서는 배선 확인
+    fireEvent.keyDown(volumeSlider, { key: "ArrowUp" });
 
-    expect(mockAudioPlayerState.setLiveVolume).toHaveBeenCalledWith(0.2);
-    expect(mockAudioPlayerState.setVolume).toHaveBeenCalledWith(0.2);
+    expect(mockAudioPlayerState.setLiveVolume).toHaveBeenCalledWith(0.75);
+    expect(mockAudioPlayerState.setVolume).toHaveBeenCalledWith(0.75);
+  });
+
+  it("restores a minimum audible volume when unmuting from zero", () => {
+    mockAudioPlayerState.isMuted = true;
+    mockAudioPlayerState.volume = 0;
+
+    render(<AudioPlayer />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Unmute" }));
+
+    expect(mockAudioPlayerState.setLiveVolume).toHaveBeenCalledWith(0.1);
+    expect(mockAudioPlayerState.setVolume).toHaveBeenCalledWith(0.1);
+    // setVolume(0.1)이 provider에서 자동 unmute하므로 toggleMute는 호출하지 않는다
+    expect(mockAudioPlayerState.toggleMute).not.toHaveBeenCalled();
+  });
+
+  it("keeps plain toggle behavior when unmuting with an audible volume", () => {
+    mockAudioPlayerState.isMuted = true;
+    mockAudioPlayerState.volume = 0.7;
+
+    render(<AudioPlayer />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Unmute" }));
+
+    expect(mockAudioPlayerState.toggleMute).toHaveBeenCalledTimes(1);
+    expect(mockAudioPlayerState.setVolume).not.toHaveBeenCalled();
   });
 
   it("does not rotate persistent desktop artwork while playback is active", () => {
@@ -217,6 +247,7 @@ describe("AudioPlayer", () => {
     });
     expect(fullscreenDialog).toBeInTheDocument();
     expect(fullscreenDialog).toHaveClass("min-h-screen", "min-h-dvh");
+    expect(fullscreenDialog).toHaveAttribute("tabindex", "-1");
     expect(screen.getByAltText("Track One fullscreen artwork")).toBeInTheDocument();
     expect(screen.getByTestId("fullscreen-audio-visualizer-canvas")).toHaveAttribute(
       "data-visualizer-renderer",
@@ -225,16 +256,186 @@ describe("AudioPlayer", () => {
     expect(screen.getByLabelText("Audio Player")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Track One" })).not.toBeInTheDocument();
     expect(mockAudioPlayerState.togglePlayPause).not.toHaveBeenCalled();
-
-    fireEvent.click(
-      within(fullscreenDialog).getByRole("button", {
+    expect(
+      within(fullscreenDialog).queryByRole("button", {
         name: "Exit fullscreen view",
       }),
+    ).not.toBeInTheDocument();
+
+    jest.useFakeTimers();
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    // fade-out 동안에는 마운트가 유지되고 입력은 차단된다
+    expect(screen.getByTestId("fullscreen-fade-layer")).toHaveClass(
+      "pointer-events-none",
+      "opacity-0",
     );
 
+    act(() => {
+      jest.advanceTimersByTime(260);
+    });
     expect(
       screen.queryByRole("dialog", { name: "Fullscreen player" }),
     ).not.toBeInTheDocument();
+    jest.useRealTimers();
+  });
+
+  it("fades the fullscreen player in on open", () => {
+    jest.useFakeTimers();
+    try {
+      render(<AudioPlayer />);
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Toggle fullscreen view" }),
+      );
+
+      const fadeLayer = screen.getByTestId("fullscreen-fade-layer");
+      expect(fadeLayer).toHaveClass("opacity-0");
+
+      act(() => {
+        jest.advanceTimersByTime(25);
+      });
+      expect(fadeLayer).toHaveClass("opacity-100");
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("keeps Tab from moving focus while desktop fullscreen is open", async () => {
+    render(<AudioPlayer />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Toggle fullscreen view" }));
+
+    const fullscreenDialog = screen.getByRole("dialog", {
+      name: "Fullscreen player",
+    });
+    await waitFor(() => expect(fullscreenDialog).toHaveFocus());
+
+    const tabEvent = new KeyboardEvent("keydown", {
+      key: "Tab",
+      code: "Tab",
+      bubbles: true,
+      cancelable: true,
+    });
+
+    expect(window.dispatchEvent(tabEvent)).toBe(false);
+    expect(tabEvent.defaultPrevented).toBe(true);
+    expect(fullscreenDialog).toHaveFocus();
+  });
+
+  // 단축키 힌트는 Radix 툴팁(controlled)으로 렌더된다 — focus/hover로 열리고 blur로 닫힌다
+  it("shows fullscreen keyboard guidance while the shortcut button is focused", async () => {
+    render(<AudioPlayer />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Toggle fullscreen view" }));
+
+    const fullscreenDialog = screen.getByRole("dialog", {
+      name: "Fullscreen player",
+    });
+    const shortcutButton = within(fullscreenDialog).getByRole("button", {
+      name: "Show fullscreen shortcuts",
+    });
+
+    expect(screen.queryAllByText("Keyboard controls")).toHaveLength(0);
+
+    act(() => shortcutButton.focus());
+
+    // Radix 툴팁은 콘텐츠를 가시 본문 + 접근성용 숨김 사본으로 두 번 렌더한다
+    expect((await screen.findAllByText("Keyboard controls")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Space").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Previous track").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Next track").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Close shortcuts / exit fullscreen").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Tab is locked/i).length).toBeGreaterThan(0);
+
+    act(() => shortcutButton.blur());
+
+    await waitFor(() =>
+      expect(screen.queryAllByText("Keyboard controls")).toHaveLength(0),
+    );
+  });
+
+  it("keeps playback shortcuts active after opening fullscreen keyboard guidance", async () => {
+    render(<AudioPlayerWidget />);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Toggle fullscreen view" }),
+    );
+
+    const fullscreenDialog = screen.getByRole("dialog", {
+      name: "Fullscreen player",
+    });
+    const shortcutButton = within(fullscreenDialog).getByRole("button", {
+      name: "Show fullscreen shortcuts",
+    });
+
+    shortcutButton.focus();
+    fireEvent.click(shortcutButton);
+
+    // 힌트가 열려 트리거에 포커스가 남아 있어도 재생 단축키는 동작해야 한다
+    // (버튼은 더 이상 단축키를 차단하지 않음)
+    fireEvent.keyDown(document.activeElement ?? fullscreenDialog, {
+      code: "KeyN",
+    });
+
+    expect(mockAudioPlayerState.nextTrack).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes fullscreen keyboard guidance when focus leaves the shortcut button", async () => {
+    render(<AudioPlayer />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Toggle fullscreen view" }));
+
+    const fullscreenDialog = screen.getByRole("dialog", {
+      name: "Fullscreen player",
+    });
+    const shortcutButton = within(fullscreenDialog).getByRole("button", {
+      name: "Show fullscreen shortcuts",
+    });
+
+    act(() => shortcutButton.focus());
+    expect((await screen.findAllByText("Keyboard controls")).length).toBeGreaterThan(0);
+
+    act(() => shortcutButton.blur());
+
+    await waitFor(() =>
+      expect(screen.queryAllByText("Keyboard controls")).toHaveLength(0),
+    );
+    expect(fullscreenDialog).toBeInTheDocument();
+  });
+
+  it("closes fullscreen keyboard guidance before closing fullscreen with Escape", async () => {
+    render(<AudioPlayer />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Toggle fullscreen view" }));
+
+    const fullscreenDialog = screen.getByRole("dialog", {
+      name: "Fullscreen player",
+    });
+    const shortcutButton = within(fullscreenDialog).getByRole("button", {
+      name: "Show fullscreen shortcuts",
+    });
+    act(() => shortcutButton.focus());
+
+    expect((await screen.findAllByText("Keyboard controls")).length).toBeGreaterThan(0);
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    await waitFor(() =>
+      expect(screen.queryAllByText("Keyboard controls")).toHaveLength(0),
+    );
+    expect(fullscreenDialog).toBeInTheDocument();
+
+    jest.useFakeTimers();
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    act(() => {
+      jest.advanceTimersByTime(260);
+    });
+    expect(
+      screen.queryByRole("dialog", { name: "Fullscreen player" }),
+    ).not.toBeInTheDocument();
+    jest.useRealTimers();
   });
 
   it("does not expose fullscreen controls below the 768px viewport", () => {

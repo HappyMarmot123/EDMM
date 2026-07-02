@@ -40,8 +40,10 @@ self.addEventListener("fetch", (event) => {
           return response;
         }
 
+        const responseToCache = response.clone();
+
         const cachePromise = caches.open(CACHE_NAME).then((cache) => {
-          return cache.put(request, response.clone());
+          return cache.put(request, responseToCache);
         });
         event.waitUntil(cachePromise);
 

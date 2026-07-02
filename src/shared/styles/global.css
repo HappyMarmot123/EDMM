@@ -12,6 +12,8 @@
 }
 
 :root {
+  /* 다크 스킴 선언 — 브라우저 강제 다크 모드의 색 변환 옵트아웃 + 폼 컨트롤 다크 렌더링 */
+  color-scheme: dark;
   --background: #000000;
   --foreground: #ededed;
   --color-bg-light: #ffffff;
@@ -57,6 +59,21 @@ body {
 ol,
 ul {
   list-style: none;
+}
+
+/* 뷰포트 높이 고정 — Tailwind 폴백 페어(h-screen h-[100dvh])는 컴파일 순서에 따라
+   100vh가 이겨 모바일 URL 바 높이만큼 overflow될 수 있다. @supports 오버라이드는
+   케스케이드 순서와 무관하게 결정적이다. */
+.app-viewport-height {
+  height: 100vh;
+  max-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  .app-viewport-height {
+    height: 100dvh;
+    max-height: 100dvh;
+  }
 }
 
 a {
@@ -576,23 +593,6 @@ h1 {
   }
 }
 
-#seek-bar-container::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: var(--seek-hover-width, 0px);
-  background-color: #3b3d50;
-  opacity: 0.2;
-  z-index: 2;
-  pointer-events: none;
-}
-
-#seek-time::before {
-  content: attr(data-seek-time);
-}
-
 .music-shell-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
@@ -861,29 +861,51 @@ h1 {
 }
 */
 
-/* Radix UI Tooltip Custom Gradient Theme */
-.radix-tooltip-content-gradient {
-  /* New gradient: Soft Violet to Light Pinkish-Purple */
-  background-image: linear-gradient(to right, #a78bfa, #f472b6);
-  color: white;
-  font-weight: 600; /* Slightly bolder for better readability on lighter gradient */
-  padding: 8px 12px;
-  border-radius: 6px; /* Slightly more rounded */
-  font-size: 0.875rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Softer shadow */
-  z-index: 50;
+/* Radix UI Tooltip EDMM Theme */
+.radix-tooltip-content-edmm {
+  max-width: min(360px, calc(100vw - 32px));
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 152, 162, 0.55);
+  outline: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(8, 5, 9, 0.96);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0;
+  text-align: left;
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.56),
+    0 0 30px rgba(253, 109, 148, 0.18);
+  backdrop-filter: blur(24px);
+  z-index: 100;
   transform-origin: var(--radix-tooltip-content-transform-origin);
-  animation: scaleIn 0.1s ease-out forwards, fadeIn 0.1s ease-out forwards;
+  animation: edmmTooltipIn 160ms ease-out forwards;
+  will-change: opacity, transform;
 }
 
-.radix-tooltip-arrow-gradient {
-  fill: #a78bfa; /* Match the start of the new gradient */
+.radix-tooltip-content-edmm[data-state="closed"] {
+  animation: edmmTooltipOut 110ms ease-in forwards;
 }
 
-@keyframes scaleIn {
+.radix-tooltip-arrow-edmm {
+  fill: rgba(8, 5, 9, 0.96);
+  filter:
+    drop-shadow(0 1px 0 rgba(255, 152, 162, 0.3))
+    drop-shadow(0 3px 8px rgba(0, 0, 0, 0.35));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .radix-tooltip-content-edmm {
+    animation: none;
+  }
+}
+
+@keyframes edmmTooltipIn {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.96) translateY(2px);
   }
   to {
     opacity: 1;
@@ -891,12 +913,14 @@ h1 {
   }
 }
 
-@keyframes fadeIn {
+@keyframes edmmTooltipOut {
   from {
-    opacity: 0;
+    opacity: 1;
+    transform: scale(1);
   }
   to {
-    opacity: 1;
+    opacity: 0;
+    transform: scale(0.98) translateY(1px);
   }
 }
 

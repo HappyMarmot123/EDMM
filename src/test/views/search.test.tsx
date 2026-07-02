@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import type { JSX } from "react";
 import type { Track } from "@/entities/track";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import { useRecentPlays } from "@/features/library";
@@ -17,6 +18,7 @@ jest.mock("@/shared/providers/audioPlayerProvider", () => ({
 }));
 jest.mock("@/features/audio", () => ({
   AudioVisualizer: () => <div>Audio visualizer</div>,
+  EqualizerPanel: () => <div>Equalizer panel</div>,
 }));
 jest.mock("react-virtuoso", () => ({
   Virtuoso: ({
@@ -88,7 +90,6 @@ describe("SearchView", () => {
       duration: 0,
       volume: 1,
       isMuted: false,
-      queue: [],
       audioCapabilities: {
         audioElementAvailable: true,
         audioContextAvailable: true,
@@ -115,6 +116,8 @@ describe("SearchView", () => {
       nextTrack: jest.fn(),
       prevTrack: jest.fn(),
       setLiveVolume: jest.fn(),
+      isShuffleEnabled: false,
+      toggleShuffle: jest.fn(),
     });
     mockUseCloudinaryTracks.mockReturnValue({
       data: [wrapperTrack],

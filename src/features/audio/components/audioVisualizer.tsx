@@ -81,7 +81,7 @@ export function AudioVisualizer({
 
   return (
     <section
-      className="pointer-events-none absolute inset-x-0 bottom-0 p-4 h-1/2 bg-transparent"
+      className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-transparent p-4 transition-opacity duration-200 ease-out"
       aria-label="Audio visualizer"
       aria-labelledby={visualizerTitle}
       style={{ opacity: visualizerOpacity, mixBlendMode: blendMode }}

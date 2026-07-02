@@ -1,12 +1,18 @@
-/* eslint-disable @next/next/no-img-element -- Fullscreen artwork receives dynamic CDN hosts. */
-import { type CSSProperties, useEffect } from "react";
-import Image from "next/image";
-import { Minimize2, Music2 } from "lucide-react";
-import { shouldUnoptimizeArtworkImage } from "@/features/audio/components/artworkImage";
-import FullscreenAlbumDisc from "@/features/audio/components/fullscreenAlbumDisc";
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { Keyboard } from "lucide-react";
+import FullscreenArtworkStage from "@/features/audio/components/fullscreenArtworkStage";
 import FullscreenAudioVisualizer from "@/features/audio/components/fullscreenAudioVisualizer";
+import FullscreenBackdrop from "@/features/audio/components/fullscreenBackdrop";
 import { useAlbumColorPalette } from "@/features/audio/components/visualizers/albumColorPalette";
+import { useArtworkCrossfade } from "@/features/audio/hooks/useArtworkCrossfade";
 import type { Track } from "@/entities/track";
+import MyTooltip from "@/shared/components/myTooltip";
 
 type DesktopFullscreenPlayerProps = {
   currentTrackInfo: Track | null;
@@ -15,95 +21,118 @@ type DesktopFullscreenPlayerProps = {
   onClose: () => void;
 };
 
+// 아트워크는 겹침 없이 스냅 아웃 후 빠르게 페이드 인, backdrop(저주파 그라데이션)은
+// 느린 크로스페이드 유지 — 이미지 두 장이 블렌딩되며 생기는 시각 피로를 제거한다.
+const ARTWORK_FADE_MS = 280;
+const BACKDROP_FADE_MS = 450;
+
 export default function DesktopFullscreenPlayer({
   currentTrackInfo,
   analyser,
   isPlaying,
   onClose,
 }: DesktopFullscreenPlayerProps) {
+  const dialogRef = useRef<HTMLElement>(null);
+  const [showShortcutHint, setShowShortcutHint] = useState(false);
   const artworkSrc = currentTrackInfo?.artworkUrl?.trim() ?? "";
   const trackTitle = currentTrackInfo?.title ?? "No track selected";
-  const hasArtwork = Boolean(artworkSrc);
-  const albumPalette = useAlbumColorPalette(artworkSrc);
+  const { palette, resolvedSrc } = useAlbumColorPalette(artworkSrc);
+  const { layers, topPalette, completeLayer } = useArtworkCrossfade({
+    artworkSrc,
+    palette,
+    resolvedSrc,
+    fadeDurationMs: BACKDROP_FADE_MS,
+  });
+  const topArtworkLayer = layers.length ? layers[layers.length - 1] : null;
+
   const albumPaletteStyle = {
-    "--album-primary-rgb": albumPalette.primary,
-    "--album-secondary-rgb": albumPalette.secondary,
-    "--album-accent-rgb": albumPalette.accent,
+    "--album-primary-rgb": topPalette.primary,
+    "--album-secondary-rgb": topPalette.secondary,
+    "--album-accent-rgb": topPalette.accent,
   } as CSSProperties;
 
+  const focusDialog = useCallback(() => {
+    dialogRef.current?.focus({ preventScroll: true });
+  }, []);
+
   useEffect(() => {
+    // 힌트가 열려 있을 때 다이얼로그로 포커스를 가져가면 Radix 툴팁이
+    // 트리거 blur로 즉시 닫혀 버린다 — 닫힘 상태에서만 재포커스한다.
+    if (!showShortcutHint) {
+      focusDialog();
+    }
+
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") {
+      if (event.key === "Tab") {
+        event.preventDefault();
+        focusDialog();
         return;
       }
 
+      if (event.key !== "Escape") {
+        return;
+      }
       event.preventDefault();
+      if (showShortcutHint) {
+        setShowShortcutHint(false);
+        focusDialog();
+        return;
+      }
+
       onClose();
     };
 
     window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [focusDialog, onClose, showShortcutHint]);
 
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [onClose]);
+  const fadeStyle = (opacity: number, durationMs: number): CSSProperties => ({
+    opacity,
+    transition: `opacity ${durationMs}ms ease-out`,
+  });
 
   return (
     <section
+      ref={dialogRef}
       role="dialog"
+      aria-modal="true"
       aria-label="Fullscreen player"
+      tabIndex={-1}
       className="fixed inset-0 z-[60] min-h-screen min-h-dvh overflow-hidden bg-[#050306] text-white"
       style={albumPaletteStyle}
     >
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-[#050306]"
-      />
-      {hasArtwork ? (
-        <>
-          <img
-            src={artworkSrc}
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-[-18%] h-[136%] w-[136%] scale-105 object-cover opacity-42 blur-[72px] saturate-[1.28]"
-            draggable={false}
-          />
-          <img
-            src={artworkSrc}
-            alt=""
-            aria-hidden="true"
-            className="absolute left-1/2 top-[43%] h-[56vmin] w-[56vmin] -translate-x-1/2 -translate-y-1/2 rounded-full object-cover opacity-24 blur-[92px] saturate-[1.55]"
-            draggable={false}
-          />
-        </>
-      ) : (
-        <div
-          aria-hidden="true"
-          className="absolute left-1/2 top-[43%] h-[56vmin] w-[56vmin] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fd6d94]/20 blur-[100px]"
-          style={{
-            background: `rgba(${albumPalette.primary}, 0.20)`,
-          }}
-        />
-      )}
+      <div aria-hidden="true" className="absolute inset-0 bg-[#050306]" />
 
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-[radial-gradient(circle_at_50%_34%,rgba(255,255,255,0.14),rgba(8,8,8,0.42)_30%,rgba(5,3,6,0.90)_74%,rgba(0,0,0,0.98)_100%)]"
-        style={{
-          backgroundImage: `radial-gradient(circle at 50% 34%, rgba(${albumPalette.accent}, 0.16), rgba(${albumPalette.primary}, 0.12) 26%, rgba(5, 3, 6, 0.90) 74%, rgba(0, 0, 0, 0.98) 100%)`,
-        }}
-      />
+      {layers.map((layer) => (
+        <div
+          key={layer.key}
+          aria-hidden="true"
+          className="absolute inset-0"
+          style={fadeStyle(layer.opacity, BACKDROP_FADE_MS)}
+          onTransitionEnd={(event) => {
+            // 전환 완료 판정은 가장 느린 backdrop 기준 — 아트워크(280ms)에 걸면
+            // backdrop 크로스페이드가 중도 절단된다.
+            if (
+              event.propertyName === "opacity" &&
+              event.target === event.currentTarget
+            ) {
+              completeLayer(layer.key);
+            }
+          }}
+        >
+          <FullscreenBackdrop
+            artworkSrc={layer.artworkSrc}
+            hasArtwork={layer.hasArtwork}
+            palette={layer.palette}
+          />
+        </div>
+      ))}
+
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.20),rgba(0,0,0,0.50)_54%,rgba(0,0,0,0.82))]"
       />
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-[9vw] bottom-[calc(122px+max(env(safe-area-inset-bottom),12px))] h-36 rounded-full bg-[linear-gradient(90deg,transparent,rgba(253,109,148,0.13),rgba(255,255,255,0.10),rgba(253,109,148,0.12),transparent)] opacity-70 blur-3xl"
-        style={{
-          backgroundImage: `linear-gradient(90deg, transparent, rgba(${albumPalette.secondary}, 0.12), rgba(${albumPalette.accent}, 0.16), rgba(${albumPalette.primary}, 0.12), transparent)`,
-        }}
-      />
+
       <div
         aria-hidden="true"
         aria-label="liquid-glass-panel"
@@ -114,64 +143,83 @@ export default function DesktopFullscreenPlayer({
             analyser={analyser}
             isActive={isPlaying}
             isCurrentTrack={Boolean(currentTrackInfo)}
-            palette={albumPalette}
+            palette={topPalette}
           />
         </div>
       </div>
-      {/* <div
-        aria-hidden="true"
-        className="absolute inset-0 opacity-[0.10] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:88px_88px]"
-      /> */}
 
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Exit fullscreen view"
-        title="Exit fullscreen view"
-        className="group absolute right-8 top-8 z-[2] grid h-11 w-11 place-items-center rounded-full border border-white/12 bg-black/38 text-white/78 backdrop-blur-md transition-colors hover:bg-white/12 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+      <MyTooltip
+        open={showShortcutHint}
+        onOpenChange={setShowShortcutHint}
+        side="bottom"
+        align="end"
+        sideOffset={8}
+        tooltipText={
+          <>
+          <p className="text-xs font-black uppercase text-[#ff98a2]">
+            Keyboard controls
+          </p>
+          <div className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs font-bold text-white/82">
+            <kbd className="rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white">
+              Space
+            </kbd>
+            <span>Play / pause</span>
+            <kbd className="rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white">
+              Left / Right
+            </kbd>
+            <span>Seek 10 seconds</span>
+            <kbd className="rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white">
+              Up / Down
+            </kbd>
+            <span>Volume</span>
+            <kbd className="rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white">
+              P
+            </kbd>
+            <span>Previous track</span>
+            <kbd className="rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white">
+              N
+            </kbd>
+            <span>Next track</span>
+            <kbd className="rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white">
+              Esc
+            </kbd>
+            <span>Close shortcuts / exit fullscreen</span>
+          </div>
+          <p className="mt-2 text-xs font-semibold text-white/62">
+            Tab is locked while fullscreen is open.
+          </p>
+          </>
+        }
       >
-        <Minimize2 size={21} strokeWidth={2.3} aria-hidden="true" />
-        <span className="pointer-events-none absolute right-0 top-[calc(100%+10px)] whitespace-nowrap rounded-md border border-white/10 bg-black/76 px-3 py-1.5 text-xs font-bold text-white/82 opacity-0 shadow-[0_12px_36px_rgba(0,0,0,0.35)] backdrop-blur-md transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
-          Exit fullscreen
-        </span>
-      </button>
+        <button
+          type="button"
+          aria-label="Show fullscreen shortcuts"
+          className="absolute right-8 top-8 z-[2] grid h-9 w-9 place-items-center rounded-full border border-[#ff98a2]/45 bg-black/38 text-white/78 backdrop-blur-md transition-colors hover:border-[#ff98a2]/75 hover:bg-white/12 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        >
+          <Keyboard size={18} strokeWidth={2.25} aria-hidden="true" />
+        </button>
+      </MyTooltip>
 
       <div className="relative z-[1] flex min-h-screen min-h-dvh flex-col items-center justify-center px-12 pb-[calc(130px+max(env(safe-area-inset-bottom),12px))] pt-20">
         <div className="grid w-full max-w-[560px] justify-items-center">
           <div className="relative">
-            <FullscreenAlbumDisc
-              artworkSrc={artworkSrc}
-              trackTitle={trackTitle}
-              isPlaying={isPlaying}
-            />
-            <div
-              className="relative z-[1] aspect-square w-[min(42vw,400px)] overflow-hidden rounded-xl bg-white/8 shadow-[0_40px_120px_rgba(0,0,0,0.58)] ring-1 ring-white/12"
-              style={{
-                clipPath: "polygon(0 0, 100% 0, 100% 0, 60% 50%, 100% 100%, 100% 100%, 0 100%)",
-              }}
-            >
-            {hasArtwork ? (
-              <Image
-                src={artworkSrc}
-                alt={`${trackTitle} fullscreen artwork`}
-                fill
-                sizes="(min-width: 1024px) 400px, 42vw"
-                unoptimized={shouldUnoptimizeArtworkImage(artworkSrc)}
-                className="object-cover"
-                draggable={false}
-              />
-            ) : (
+            {/* 스냅 아웃: top 레이어만 렌더한다. key가 바뀌면 이전 아트워크는
+                즉시 unmount되고, 새 레이어는 훅의 활성화 타이머로 페이드 인한다. */}
+            {topArtworkLayer ? (
               <div
-                className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(253,109,148,0.22),rgba(255,255,255,0.06))] text-[#fd6d94]"
-                style={{
-                  backgroundImage: `linear-gradient(135deg, rgba(${albumPalette.primary}, 0.22), rgba(255, 255, 255, 0.06))`,
-                  color: `rgb(${albumPalette.accent})`,
-                }}
+                key={topArtworkLayer.key}
+                className="relative z-[1]"
+                style={fadeStyle(topArtworkLayer.opacity, ARTWORK_FADE_MS)}
               >
-                <Music2 size={96} strokeWidth={1.4} aria-hidden="true" />
+                <FullscreenArtworkStage
+                  artworkSrc={topArtworkLayer.artworkSrc}
+                  trackTitle={trackTitle}
+                  hasArtwork={topArtworkLayer.hasArtwork}
+                  isPlaying={isPlaying}
+                  palette={topArtworkLayer.palette}
+                />
               </div>
-            )}
-            </div>
+            ) : null}
           </div>
         </div>
       </div>

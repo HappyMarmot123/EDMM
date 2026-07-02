@@ -10,8 +10,8 @@ import PlayerControlsSection, {
   PlayerVolumeControls,
 } from "@/features/audio/components/playerControlsSection";
 import AlbumArtwork from "@/features/audio/components/albumArtwork";
-import EqualizerPanel from "@/features/audio/components/equalizerPanel";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
+import { useFadePresence } from "@/shared/hooks/useFadePresence";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import {
   addEdmmEventListener,
@@ -21,6 +21,7 @@ import {
 import type { Track } from "@/entities/track";
 
 const FULLSCREEN_VIEWPORT_QUERY = "(min-width: 768px)";
+const FULLSCREEN_EXIT_MS = 250;
 
 function useCanUseFullscreenViewport() {
   return useMediaQuery(FULLSCREEN_VIEWPORT_QUERY, false);
@@ -44,8 +45,10 @@ export default function AudioPlayer() {
   const [fullscreenTrackOverride, setFullscreenTrackOverride] =
     useState<Track | null>(null);
   const canUseFullscreen = useCanUseFullscreenViewport();
-  const seekBarContainerRef = useRef<HTMLDivElement>(null);
-  const currentProgress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const fullscreenPresence = useFadePresence(
+    isFullscreenOpen && canUseFullscreen,
+    FULLSCREEN_EXIT_MS,
+  );
   const currentTrackId = currentTrack?.id;
   const fullscreenTrackInfo = fullscreenTrackOverride ?? currentTrack;
   const isFullscreenTrackCurrent =
@@ -68,6 +71,20 @@ export default function AudioPlayer() {
       setFullscreenTrackOverride(null);
     }
   }, [canUseFullscreen]);
+
+  const previousCurrentTrackIdRef = useRef(currentTrackId);
+  useEffect(() => {
+    if (previousCurrentTrackIdRef.current === currentTrackId) {
+      return;
+    }
+    previousCurrentTrackIdRef.current = currentTrackId;
+    // Playback moved to a different track (prev/next, autoplay) while fullscreen
+    // is open. Stop pinning to the previewed override track: otherwise the
+    // fullscreen keeps showing the old artwork/palette and, because the shown
+    // track no longer matches the playing one, the analyser is nulled and the
+    // visualizer freezes. Following the current track re-syncs all three.
+    setFullscreenTrackOverride(null);
+  }, [currentTrackId]);
 
   useEffect(() => {
     const cleanup = addEdmmEventListener(
@@ -111,13 +128,22 @@ export default function AudioPlayer() {
 
   return (
     <>
-      {isFullscreenOpen && canUseFullscreen ? (
-        <DesktopFullscreenPlayer
-          currentTrackInfo={fullscreenTrackInfo}
-          analyser={isFullscreenTrackCurrent ? audioAnalyser : null}
-          isPlaying={isFullscreenTrackCurrent && isPlaying}
-          onClose={closeFullscreen}
-        />
+      {fullscreenPresence.mounted ? (
+        <div
+          data-testid="fullscreen-fade-layer"
+          className={
+            fullscreenPresence.visible
+              ? "opacity-100 transition-opacity duration-300 ease-out"
+              : "pointer-events-none opacity-0 transition-opacity duration-[250ms] ease-in"
+          }
+        >
+          <DesktopFullscreenPlayer
+            currentTrackInfo={fullscreenTrackInfo}
+            analyser={isFullscreenTrackCurrent ? audioAnalyser : null}
+            isPlaying={isFullscreenTrackCurrent && isPlaying}
+            onClose={closeFullscreen}
+          />
+        </div>
       ) : null}
 
       <aside
@@ -162,11 +188,8 @@ export default function AudioPlayer() {
               isFullscreenOpen={isFullscreenOpen}
             />
             <PlayerTrackDetails
-              isPlaying={isPlaying}
               currentTime={currentTime}
               duration={duration}
-              currentProgress={currentProgress}
-              seekBarContainerRef={seekBarContainerRef}
               seek={seek}
               currentTrackInfo={currentTrack}
             />
@@ -177,7 +200,6 @@ export default function AudioPlayer() {
             aria-label="Volume zone"
           >
             <PlayerVolumeControls />
-            <EqualizerPanel />
           </section>
         </div>
       </aside>
