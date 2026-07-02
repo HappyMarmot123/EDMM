@@ -11,6 +11,7 @@ import PlayerControlsSection, {
 } from "@/features/audio/components/playerControlsSection";
 import AlbumArtwork from "@/features/audio/components/albumArtwork";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
+import { useFadePresence } from "@/shared/hooks/useFadePresence";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import {
   addEdmmEventListener,
@@ -20,6 +21,7 @@ import {
 import type { Track } from "@/entities/track";
 
 const FULLSCREEN_VIEWPORT_QUERY = "(min-width: 768px)";
+const FULLSCREEN_EXIT_MS = 250;
 
 function useCanUseFullscreenViewport() {
   return useMediaQuery(FULLSCREEN_VIEWPORT_QUERY, false);
@@ -43,6 +45,10 @@ export default function AudioPlayer() {
   const [fullscreenTrackOverride, setFullscreenTrackOverride] =
     useState<Track | null>(null);
   const canUseFullscreen = useCanUseFullscreenViewport();
+  const fullscreenPresence = useFadePresence(
+    isFullscreenOpen && canUseFullscreen,
+    FULLSCREEN_EXIT_MS,
+  );
   const currentTrackId = currentTrack?.id;
   const fullscreenTrackInfo = fullscreenTrackOverride ?? currentTrack;
   const isFullscreenTrackCurrent =
@@ -122,13 +128,22 @@ export default function AudioPlayer() {
 
   return (
     <>
-      {isFullscreenOpen && canUseFullscreen ? (
-        <DesktopFullscreenPlayer
-          currentTrackInfo={fullscreenTrackInfo}
-          analyser={isFullscreenTrackCurrent ? audioAnalyser : null}
-          isPlaying={isFullscreenTrackCurrent && isPlaying}
-          onClose={closeFullscreen}
-        />
+      {fullscreenPresence.mounted ? (
+        <div
+          data-testid="fullscreen-fade-layer"
+          className={
+            fullscreenPresence.visible
+              ? "opacity-100 transition-opacity duration-300 ease-out"
+              : "pointer-events-none opacity-0 transition-opacity duration-[250ms] ease-in"
+          }
+        >
+          <DesktopFullscreenPlayer
+            currentTrackInfo={fullscreenTrackInfo}
+            analyser={isFullscreenTrackCurrent ? audioAnalyser : null}
+            isPlaying={isFullscreenTrackCurrent && isPlaying}
+            onClose={closeFullscreen}
+          />
+        </div>
       ) : null}
 
       <aside

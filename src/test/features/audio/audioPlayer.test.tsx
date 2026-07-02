@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import { fireEvent } from "@testing-library/react";
 import { AudioPlayer, MobileAudioPlayer } from "@/features/audio";
 import AudioPlayerWidget from "@/widgets/audioPlayer";
@@ -57,7 +57,9 @@ const mockRouterReplace = jest.fn();
 
 const mockFullscreenViewport = (matches: boolean) => {
   window.matchMedia = jest.fn().mockImplementation((query: string) => ({
-    matches,
+    // 풀스크린 뷰포트 쿼리에만 매치를 적용한다. 전 쿼리 true로 하면
+    // prefers-reduced-motion까지 걸려 fade 경로가 생략되기 때문.
+    matches: query === "(min-width: 768px)" ? matches : false,
     media: query,
     onchange: null,
     addEventListener: jest.fn(),
@@ -234,11 +236,43 @@ describe("AudioPlayer", () => {
       }),
     ).not.toBeInTheDocument();
 
+    jest.useFakeTimers();
     fireEvent.keyDown(window, { key: "Escape" });
 
+    // fade-out 동안에는 마운트가 유지되고 입력은 차단된다
+    expect(screen.getByTestId("fullscreen-fade-layer")).toHaveClass(
+      "pointer-events-none",
+      "opacity-0",
+    );
+
+    act(() => {
+      jest.advanceTimersByTime(260);
+    });
     expect(
       screen.queryByRole("dialog", { name: "Fullscreen player" }),
     ).not.toBeInTheDocument();
+    jest.useRealTimers();
+  });
+
+  it("fades the fullscreen player in on open", () => {
+    jest.useFakeTimers();
+    try {
+      render(<AudioPlayer />);
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Toggle fullscreen view" }),
+      );
+
+      const fadeLayer = screen.getByTestId("fullscreen-fade-layer");
+      expect(fadeLayer).toHaveClass("opacity-0");
+
+      act(() => {
+        jest.advanceTimersByTime(25);
+      });
+      expect(fadeLayer).toHaveClass("opacity-100");
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it("keeps Tab from moving focus while desktop fullscreen is open", async () => {
@@ -373,11 +407,16 @@ describe("AudioPlayer", () => {
     expect(screen.queryByText("Keyboard controls")).not.toBeInTheDocument();
     expect(fullscreenDialog).toBeInTheDocument();
 
+    jest.useFakeTimers();
     fireEvent.keyDown(window, { key: "Escape" });
 
+    act(() => {
+      jest.advanceTimersByTime(260);
+    });
     expect(
       screen.queryByRole("dialog", { name: "Fullscreen player" }),
     ).not.toBeInTheDocument();
+    jest.useRealTimers();
   });
 
   it("does not expose fullscreen controls below the 768px viewport", () => {
