@@ -78,7 +78,7 @@ export default function EqualizerPanel() {
               <button
                 type="button"
                 onClick={() => applyPreset(preset)}
-                className={`rounded-full border px-3 py-1.5 text-xs font-black transition-all duration-150 ${
+                className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-black transition-all duration-150 ${
                   currentPreset === preset
                     ? "bg-[#ff98a2] text-black"
                     : "border-white/25 bg-white/10 text-white/80 hover:border-[#ff98a2]/55 hover:text-white"

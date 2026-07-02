@@ -12,6 +12,7 @@ import FullscreenBackdrop from "@/features/audio/components/fullscreenBackdrop";
 import { useAlbumColorPalette } from "@/features/audio/components/visualizers/albumColorPalette";
 import { useArtworkCrossfade } from "@/features/audio/hooks/useArtworkCrossfade";
 import type { Track } from "@/entities/track";
+import MyTooltip from "@/shared/components/myTooltip";
 
 type DesktopFullscreenPlayerProps = {
   currentTrackInfo: Track | null;
@@ -32,8 +33,6 @@ export default function DesktopFullscreenPlayer({
   onClose,
 }: DesktopFullscreenPlayerProps) {
   const dialogRef = useRef<HTMLElement>(null);
-  const shortcutButtonRef = useRef<HTMLButtonElement>(null);
-  const shortcutHintRef = useRef<HTMLElement>(null);
   const [showShortcutHint, setShowShortcutHint] = useState(false);
   const artworkSrc = currentTrackInfo?.artworkUrl?.trim() ?? "";
   const trackTitle = currentTrackInfo?.title ?? "No track selected";
@@ -83,33 +82,6 @@ export default function DesktopFullscreenPlayer({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [focusDialog, onClose, showShortcutHint]);
 
-  useEffect(() => {
-    if (!showShortcutHint) {
-      return;
-    }
-
-    const handleMouseDown = (event: MouseEvent) => {
-      const target = event.target;
-
-      if (!(target instanceof Node)) {
-        return;
-      }
-
-      if (
-        shortcutButtonRef.current?.contains(target) ||
-        shortcutHintRef.current?.contains(target)
-      ) {
-        return;
-      }
-
-      setShowShortcutHint(false);
-      focusDialog();
-    };
-
-    window.addEventListener("mousedown", handleMouseDown);
-    return () => window.removeEventListener("mousedown", handleMouseDown);
-  }, [focusDialog, showShortcutHint]);
-
   const fadeStyle = (opacity: number, durationMs: number): CSSProperties => ({
     opacity,
     transition: `opacity ${durationMs}ms ease-out`,
@@ -121,7 +93,6 @@ export default function DesktopFullscreenPlayer({
       role="dialog"
       aria-modal="true"
       aria-label="Fullscreen player"
-      aria-describedby={showShortcutHint ? "fullscreen-keyboard-hint" : undefined}
       tabIndex={-1}
       className="fixed inset-0 z-[60] min-h-screen min-h-dvh overflow-hidden bg-[#050306] text-white"
       style={albumPaletteStyle}
@@ -173,33 +144,14 @@ export default function DesktopFullscreenPlayer({
         </div>
       </div>
 
-      <button
-        ref={shortcutButtonRef}
-        type="button"
-        onClick={() => {
-          setShowShortcutHint((isVisible) => !isVisible);
-          focusDialog();
-        }}
-        aria-label={
-          showShortcutHint
-            ? "Hide fullscreen shortcuts"
-            : "Show fullscreen shortcuts"
-        }
-        aria-expanded={showShortcutHint}
-        aria-controls="fullscreen-keyboard-hint"
-        className="absolute right-8 top-8 z-[2] grid h-9 w-9 place-items-center rounded-full border border-[#ff98a2]/45 bg-black/38 text-white/78 backdrop-blur-md transition-colors hover:border-[#ff98a2]/75 hover:bg-white/12 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-      >
-        <Keyboard size={18} strokeWidth={2.25} aria-hidden="true" />
-      </button>
-
-      {showShortcutHint ? (
-        <aside
-          ref={shortcutHintRef}
-          id="fullscreen-keyboard-hint"
-          role="status"
-          aria-live="polite"
-          className="absolute right-8 top-[calc(2rem+44px)] z-[2] max-w-[360px] rounded-lg border border-[#ff98a2]/55 bg-[#080509]/96 px-4 py-3 text-white shadow-[0_18px_48px_rgba(0,0,0,0.56),0_0_30px_rgba(253,109,148,0.18)] outline outline-1 outline-white/8 backdrop-blur-xl"
-        >
+      <MyTooltip
+        open={showShortcutHint}
+        onOpenChange={setShowShortcutHint}
+        side="bottom"
+        align="end"
+        sideOffset={8}
+        tooltipText={
+          <>
           <p className="text-xs font-black uppercase text-[#ff98a2]">
             Keyboard controls
           </p>
@@ -232,8 +184,17 @@ export default function DesktopFullscreenPlayer({
           <p className="mt-2 text-xs font-semibold text-white/62">
             Tab is locked while fullscreen is open.
           </p>
-        </aside>
-      ) : null}
+          </>
+        }
+      >
+        <button
+          type="button"
+          aria-label="Show fullscreen shortcuts"
+          className="absolute right-8 top-8 z-[2] grid h-9 w-9 place-items-center rounded-full border border-[#ff98a2]/45 bg-black/38 text-white/78 backdrop-blur-md transition-colors hover:border-[#ff98a2]/75 hover:bg-white/12 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        >
+          <Keyboard size={18} strokeWidth={2.25} aria-hidden="true" />
+        </button>
+      </MyTooltip>
 
       <div className="relative z-[1] flex min-h-screen min-h-dvh flex-col items-center justify-center px-12 pb-[calc(130px+max(env(safe-area-inset-bottom),12px))] pt-20">
         <div className="grid w-full max-w-[560px] justify-items-center">
