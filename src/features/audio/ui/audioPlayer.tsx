@@ -43,8 +43,6 @@ export default function AudioPlayer() {
   const [fullscreenTrackOverride, setFullscreenTrackOverride] =
     useState<Track | null>(null);
   const canUseFullscreen = useCanUseFullscreenViewport();
-  const seekBarContainerRef = useRef<HTMLDivElement>(null);
-  const currentProgress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const currentTrackId = currentTrack?.id;
   const fullscreenTrackInfo = fullscreenTrackOverride ?? currentTrack;
   const isFullscreenTrackCurrent =
@@ -175,11 +173,8 @@ export default function AudioPlayer() {
               isFullscreenOpen={isFullscreenOpen}
             />
             <PlayerTrackDetails
-              isPlaying={isPlaying}
               currentTime={currentTime}
               duration={duration}
-              currentProgress={currentProgress}
-              seekBarContainerRef={seekBarContainerRef}
               seek={seek}
               currentTrackInfo={currentTrack}
             />
