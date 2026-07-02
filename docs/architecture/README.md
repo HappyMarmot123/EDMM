@@ -1,211 +1,444 @@
 ﻿# EDMM 아키텍처 현행 문서
 
-기준일: 2026-06-28
+기준일: 2026-07-02
 
-## 1. 런타임 진입점
+## 1) 개요
 
-- `/`는 `src/app/page.tsx`에서 `src/widgets/landing`을 렌더링한다.
-- `/search`는 현재 음악 탐색과 플레이어 선택의 주 진입점이다.
-- `/search?view=all|recent`만 유효한 검색 뷰로 처리한다. 그 외 값은 `all`로 정규화된다.
-- `/search?track=<trackId>`는 특정 트랙을 초기 선택 대상으로 전달한다.
-- `/track/[id]`는 트랙 상세 페이지를 직접 렌더링하지 않고, id를 디코딩한 뒤 `/search?track=<id>`로 리다이렉트한다.
-- `src/views/library`와 favorites 저장소는 코드에 남아 있지만 현재 `src/app` 아래의 `/library` 라우트에는 연결되어 있지 않다.
+EDMM은 **Next.js 16 App Router 웹 앱**을 중심으로 동작하며, 음원 재생을 위한 상태 중심 아키텍처와 Cloudinary 데이터 계층을 결합한 서비스입니다. 본 문서는 `web` 런타임 기준의 최신 구조를 기준으로 작성됩니다.
 
-## 2. 최상위 구성
+- 런타임 핵심: Next.js App Router + React 19
+- 도메인 경계: FSD(Feature-Sliced Design) 구조
+- 상태/캐시: TanStack Query + Dexie + Provider 중심 재생 상태
+- 오디오 코어: `shared/providers/audioPlayerProvider.tsx` 기반 Provider 단일 소유
+- 오디오 엔진: `shared/lib/audioInstance.ts` 중심의 dual-slot 전환, EQ 필터 체인, analyser 그래프
+- 외부 데이터: Cloudinary API Route 계층
+- UI 정책: desktop/mobile player 분기, 모바일 `recent` 뷰 제거, 공용 Radix tooltip surface 사용
+
+---
+
+## 2) 루트 진입점과 실행 흐름
+
+### 2.1 라우트 진입점
+
+- `/` → `src/app/page.tsx` → 랜딩 화면 렌더
+- `/search` → 검색/목록/재생 오케스트레이션 핵심 진입점
+- `/search?view=all|recent`
+  - `all`: 전체 트랙 목록
+  - `recent`: 데스크톱에서만 최근 재생 기반 목록
+  - 그 외 값은 `all`로 정규화
+  - 모바일(768px 미만)에서는 `recent` 딥링크 포함 모든 뷰가 `all`로 고정
+- `/search?track=<trackId>`: 초기 시드 트랙 ID 전달
+- `/track/[id]` → `src/app/track/[id]/trackId.ts` 디코딩 후 `/search?track=<id>`로 리다이렉트
+- `/api/cloudinary/tracks*`: Cloudinary 조회 API(서버 라우트)
+- API 레이어 바깥에 별도 모바일 라우트는 없음
+
+### 2.2 부팅/레이어 초기화
+
+- `layout.tsx`가 Provider 레이어(`appProviders`)와 앱 셸을 구성
+- 루트 레이아웃은 `viewport`에서 `colorScheme: "dark"`와 `themeColor`를 선언해 삼성 인터넷 등 브라우저 강제 다크 모드 색 변환을 피함
+- 오디오 캐싱용 service worker(`/sw.js`)는 루트 레이아웃에서 등록
+- `appProviders.tsx`가 전역 의존성을 조립:
+  - `TanStackProvider`
+  - `AudioPlayerProvider`
+  - `ToggleProvider`
+  - `widgets/audioPlayer`
+- 앱 진입 시 라우트 단위 컴포넌트만 렌더하고, 오디오와 재생 상태는 Provider가 계속 소유
 
 ```mermaid
 flowchart TD
-  Root[src/app/layout.tsx] --> Providers[src/app/appProviders.tsx]
-  Providers --> Tanstack[TanstackProvider]
-  Providers --> AudioProvider[AudioPlayerProvider]
-  Providers --> ToggleProvider[ToggleProvider]
-  Providers --> PlayerWidget[src/widgets/audioPlayer]
-
-  HomeRoute[src/app/page.tsx] --> Landing[src/widgets/landing]
-
-  SearchRoute[src/app/search/page.tsx] --> SearchClient[src/app/search/searchPageClient.tsx]
-  SearchClient --> AudioShell[src/widgets/audioPlayer/audioPlayerShell.tsx]
-  AudioShell --> SearchView[src/views/search/index.tsx]
-  SearchView --> MusicShell[src/widgets/musicShell/index.tsx]
-
-  TrackRoute[src/app/track/[id]/page.tsx] --> Decode[src/app/track/[id]/trackId.ts]
-  Decode --> Redirect[/search?track=id]
+  Root["src/app/layout.tsx"] --> Providers["src/app/appProviders.tsx"]
+  Providers --> Tanstack["TanStackProvider"]
+  Providers --> AudioProvider["AudioPlayerProvider"]
+  Providers --> Toggle["ToggleProvider"]
+  Providers --> PlayerWidget["widgets/audioPlayer"]
+  Home["src/app/page.tsx"] --> Landing["widgets/landing"]
+  SearchPage["src/app/search/page.tsx"] --> SearchClient["search/searchPageClient.tsx"]
+  SearchClient --> AudioShell["widgets/audioPlayer/audioPlayerShell.tsx"]
+  AudioShell --> SearchView["views/search/index.tsx"]
+  SearchView --> MusicShell["widgets/musicShell/index.tsx"]
+  TrackRoute["src/app/track/[id]/page.tsx"] --> Decode["src/app/track/[id]/trackId.ts"]
+  Decode --> Redirect["/search?track=<id>"]
 ```
 
-## 3. Search/MusicShell 구성
+---
+
+## 3) 기능 경계와 책임
 
 ```mermaid
-flowchart TD
-  MusicShell[src/widgets/musicShell/index.tsx]
-  MusicShell --> Header[musicShellHeader.tsx]
-  MusicShell --> List[musicTrackList.tsx]
-  MusicShell --> Detail[trackDetailAside.tsx]
-  MusicShell --> Seed[useMusicShellTrackSeed.ts]
-  MusicShell --> SeedUtils[trackSeedUtils.ts]
-
-  MusicShell --> CloudHook[useCloudinaryTracks]
-  MusicShell --> RecentHook[useRecentPlays]
-  MusicShell --> TrackCache[trackCacheRepo]
-  Detail --> TrackCache
-  Detail --> AudioProvider[useAudioPlayer]
+flowchart LR
+  subgraph App["App Shell"]
+    A["routes/app"] --> B["widgets"]
+    B --> C["features"]
+    C --> D["shared"]
+    D --> E["entities"]
+  end
+  subgraph Domain["기능 오케스트레이션"]
+    B["widgets"] --> MusicShell["musicShell"]
+    B --> AudioWidget["audioPlayer"]
+    C["features"] --> AudioFeature["audio"]
+    C --> SearchFeature["landing, cloudinary, library"]
+  end
 ```
 
-- `MusicShellHeader`는 `all`, `recent` 두 뷰만 노출한다.
-- `all` 뷰는 `useCloudinaryTracks(query, { resourceType: "all" })` 결과를 사용한다.
-- `recent` 뷰는 `useRecentPlays()`에서 id 목록을 받고 `getCachedTracks(ids)`로 표시 가능한 트랙을 복원한다.
-- `MusicShell`은 `selectedTrackId`, `selectionSource`, `visibleTracks`, `currentTrackId`를 조합해 리스트 선택과 상세 패널 선택을 동기화한다.
-- 768px 미만 모바일에서는 리스트 row select가 즉시 재생까지 수행하고, 768px 이상에서는 row select가 상세 선택만 수행한다.
-- 모바일에서는 `TrackDetailAside`를 렌더링하지 않고, `MusicShellHeader`의 `Music views` nav 대신 하단 `bottom-tab-navigation`에서 `All`, `Recent`를 전환한다.
-- 768px~1024px 구간에서는 aside를 열고 닫을 수 있고, 1025px 이상 데스크탑에서는 aside를 상시 표시한다.
-- `queueForTrack(track)`은 트랙이 현재 visible 목록에 있으면 `visibleTracks` 전체를 큐로 넘기고, 딥링크/캐시 트랙처럼 보이지 않는 트랙이면 단일 트랙 큐를 넘긴다.
-- `useMusicShellTrackSeed`는 초기 딥링크 트랙과 최근 재생 트랙의 자동 시드 부수효과를 담당한다.
-- `trackSeedUtils`는 선택 트랙, visible match, cache match, first playable fallback 우선순위를 순수 함수로 제공한다.
+### 3.1 `src/app`
 
-## 4. 초기 트랙 시드 흐름
+- 라우팅, 로딩/에러/404 처리, API Route, 페이지 쿼리 해석 책임
+- `search/page.tsx`는 핵심 화면으로 진입하면서 클라이언트 뷰 조립 책임을 `searchPageClient.tsx`에 위임
+- `/track/[id]`는 canonical URL 정책상 상세 라우트에서 검색 흐름으로 정규화
+
+### 3.2 `src/entities`
+
+- 순수 도메인 모델/타입 담당
+- `track`, `album`, `artist`, `User`, `ToggleFavorite` 중심 타입 정렬
+- 외부 입력 정규화/도메인 변환의 기준점
+
+### 3.3 `src/features`
+
+- 기능 단위 UI/동작 캡슐화
+- `features/audio`: 플레이어 UI, visualizer, 키보드 제어, desktop/mobile fullscreen, EQ preset UI
+- `features/cloudinary`: 트랙 조회 훅과 어댑터 연동
+- `features/landing`: 랜딩 페이지 연출 컴포넌트
+- `features/library`: 최근 재생/즐겨찾기/플레이리스트 훅
+
+### 3.4 `src/widgets`
+
+- 화면 조립 단위
+- `widgets/musicShell`: 목록/상세/시드의 오케스트레이션(핵심)
+- `widgets/audioPlayer`: desktop/mobile 플레이어 전환 및 하단 player shell 조립
+- `widgets/trackList`, `widgets/navSidebar`, `widgets/landing`
+
+### 3.5 `src/shared`
+
+- 공통 인프라 레이어
+- `shared/api`: Cloudinary Adapter/HTTP client
+- `shared/lib`: 오디오 인스턴스, 오디오 이벤트, EQ, 트랙 아티팩트 처리
+- `shared/db`: Dexie, repository 계층
+- `shared/providers`: 오디오, 토글, 쿼리, hydration, audio helper provider
+- `shared/components/myTooltip.tsx`: Radix 기반 공용 tooltip 컴포넌트. EQ preset tooltip과 desktop fullscreen shortcut hint가 같은 surface를 공유
+
+### 3.6 `src/views`
+
+- 화면 단위 조합 뷰: `home`, `search`, `trackDetail`, `library`, `youtubeAltLab`
+- `search`가 사실상 메인 운영 플로우
+
+---
+
+## 4) 검색 및 음악 셸(MusicShell) 흐름
+
+1. `search/page.tsx`에서 쿼리 파라미터 파싱
+2. `searchPageClient.tsx`가 초기 뷰와 초기 트랙 ID를 계산
+3. `AudioPlayerShell`이 `useAudioPlayer().playTrack`을 `SearchView`에 전달
+4. `views/search/index.tsx`에서 `MusicShell` 렌더
+5. `MusicShell`은 아래 상태를 결합:
+   - `selectedTrackId`
+   - `selectionSource` (`initial`/`visible`/`none`)
+   - `visibleTracks`
+   - `currentTrackId`
+6. `musicShellHeader`에서 데스크톱 뷰(`all`, `recent`)와 검색어를 제어
+7. `musicTrackList`는 결과 목록 렌더와 사용자 선택 이벤트 전달
+8. `trackDetailAside`는 선택된 ID 기준의 상세 렌더를 담당
+9. 모바일에서는 `TrackDetailAside`와 `Music views` header nav를 렌더링하지 않고, 뷰를 `all`로 고정
+10. 모바일 row select는 즉시 재생까지 수행하고, 데스크톱 row select는 상세 선택만 수행
 
 ```mermaid
 sequenceDiagram
-  autonumber
-  participant Route as /search page
-  participant Shell as MusicShell
-  participant Seed as useMusicShellTrackSeed
-  participant Cache as trackCacheRepo
-  participant Player as AudioPlayerProvider
-  participant Detail as TrackDetailAside
-
-  Route->>Shell: initialView, initialTrackId 전달
-  Shell->>Shell: selectionSource = initial 또는 null
-  Shell->>Seed: selectedTrackId, selectedTrack, visibleTracks 전달
-  Seed->>Cache: 필요 시 getCachedTrack(trackId)
-  Seed->>Shell: resolve 성공 시 activateTrackInPlayer(track)
-  Shell->>Player: onPlay(track, queue, false)
-  Shell->>Detail: detailSelectedTrackId, fallbackTrack, isWaitingForSelectionSeed 전달
-  Detail->>Cache: getCachedTrack(selectedTrackId)
+autonumber
+participant Route as "/search route"
+participant Client as "searchPageClient"
+participant AudioShell as "AudioPlayerShell"
+participant Shell as "MusicShell"
+participant Seed as "useMusicShellTrackSeed"
+participant Tracks as "useCloudinaryTracks/useRecentPlays"
+participant Detail as "TrackDetailAside"
+Route->>Client: parse query(track/view)
+Client->>AudioShell: initialTrackId, initialView
+AudioShell->>Shell: onPlay adapter
+Shell->>Tracks: fetch tracks/recent ids
+Tracks-->>Shell: visibleTracks
+Shell->>Seed: evaluate seed + selectionSource
+Seed-->>Shell: selectedTrackId + candidate queue
+Shell->>Detail: detailSelectedTrackId + loading state
 ```
 
-현재 `/search?track=...` 첫 진입에서 `visibleTracks`가 아직 비어 있고 캐시도 즉시 준비되지 않은 경우가 있다. 이때 `useMusicShellTrackSeed`는 성급하게 첫 곡 fallback 또는 선택 해제를 하지 않고, visible 데이터가 준비되는 다음 렌더에서 다시 평가한다. `TrackDetailAside`도 이 초기 대기 구간에서는 `Details unavailable` 대신 로딩 상태를 유지한다.
+---
 
-## 5. 플레이어 경계
+## 5) 초기 시드/딥링크 처리
 
-- `AudioPlayerShell`은 `useAudioPlayer().playTrack`을 `SearchView`에 콜백으로 전달하는 얇은 어댑터다.
-- 실제 오디오 부수효과는 `AudioPlayerProvider`가 소유한다.
-- `AudioPlayerProvider`는 재생 트랙, 큐, 재생 상태, duration/currentTime, volume/mute, analyser 상태를 관리한다.
-- 트랙 재생 시 `trackCacheRepo.cacheTrack`과 `recentPlaysRepo.addRecentPlay`로 캐시와 최근 재생 목록을 갱신한다.
-- 오디오 인스턴스와 이벤트 리스너 관리는 `audioInstanceStore`, `audioEventManager`, `audioInstance` 계층에 분리되어 있다.
-- `prevTrack`/`nextTrack`은 `playbackQueue`가 있으면 이를 우선 사용하고, 없으면 기본 `queue`를 사용한다. active queue가 2곡 미만이면 이동하지 않는다.
-- 초기 seed dedupe fingerprint는 트랙 id, artwork, queue id 목록을 포함한다. 같은 곡이라도 새로고침 후 단일 큐에서 full visible queue로 바뀌면 player queue를 다시 주입한다.
+- `/search?track=<id>`에서 진입하면 URL 초기 선택값이 `initialTrackId`로 들어옴
+- 초기 `visibleTracks`가 비어 있거나 캐시 조회가 늦는 구간은 2단계로 처리:
+  - 후보가 없으면 즉시 강제 fallback를 피하고 대기 상태 유지
+  - 데이터 준비 완료 후 동일 TrackID를 다시 평가해 큐 동기화 재반영
+- `trackSeedUtils`는 시드 우선순위를 정의:
+  - `selectedTrack` 우선
+  - visible match 우선
+  - cache match
+  - first playable fallback
+- seed fingerprint는 트랙 id, artwork, queue id 목록을 포함
+- 같은 곡이라도 새로고침 직후 단일 큐에서 전체 visible queue로 바뀌면 `onPlay(track, queue, false)`가 다시 호출됨
+- route initial track은 `initialTrackId`가 바뀔 때만 다시 적용하고, 이후 실제 player `currentTrackId` 변경은 selected/detail 상태에 반영
+- `TrackDetailAside`는 `isWaitingForSelectionSeed`가 true인 동안 오류 UI 대신 로딩 UI를 유지
 
-## 6. 플레이어 UI와 비주얼라이저
+---
+
+## 6) 오디오 플레이어 경계
+
+- `AudioPlayerShell`은 플레이어 화면 구성의 얇은 어댑터
+- 실제 음원 부수효과, 큐 상태 변화, playback lifecycle은 `shared/providers/audioPlayerProvider.tsx`에서 단일 관리
+- 핵심 상태:
+  - `currentTrack` / `currentTrackId`
+  - `queue` / `playbackQueue`
+  - `isPlaying`, `duration`, `currentTime`, `volume`, `isMuted`
+  - `analyser`, `playbackError`, `audioCapabilities`
+- Provider 내부 로직은 훅으로 분리:
+  - `useAudioElementSync`: 소스/볼륨 동기화
+  - `useMediaSession`: OS 미디어 세션 메타데이터와 컨트롤
+  - `useAudioPlaybackLifecycle`: pagehide/visibility 복원
+- 재생 액션은 `useAudioPlayer().playTrack(...)` API를 통해 들어오며, Provider 내부에서 상태 동기화 및 사이드이펙트(캐시/이력 반영)를 수행
+- `audioInstance.ts`, `audioEventManager.tsx`, `audioInstanceStore`는 Browser Audio API 조작 책임을 분리
+- 재생 소스 전환은 `transitionAudioTrack`이 소유하고, sync 훅은 `audio.src`를 직접 할당하지 않음
+- `audioInstance.ts`는 dual-slot 오디오 그래프, 크로스페이드, EQ 필터 체인을 포함
+- `setVolume(v)`은 `isMuted := (v === 0)`으로 뮤트를 자동 갱신하므로, 소비처에서 `setVolume(v > 0)`와 `toggleMute`를 겹쳐 부르지 않음
+- `prevTrack`/`nextTrack`은 `playbackQueue`가 있으면 이를 우선 사용하고, 없으면 기본 `queue`를 사용
+- 전역 키보드 단축키(`useAudioKeyboardShortcuts`)는 타이핑 컨텍스트와 slider/range만 차단하고, 버튼은 차단하지 않음
 
 ```mermaid
 flowchart TD
-  AudioWidget[src/widgets/audioPlayer] --> DesktopAudio[src/features/audio/ui/audioPlayer.tsx]
-  AudioWidget --> MobileAudio[src/features/audio/ui/mobileAudioPlayer.tsx]
-  DesktopAudio --> Controls[playerControlsSection.tsx]
-  DesktopAudio --> DesktopFullscreen[desktopFullscreenPlayer.tsx]
-  DesktopFullscreen --> FullscreenViz[fullscreenAudioVisualizer.tsx]
-  DesktopFullscreen --> FullscreenDisc[fullscreenAlbumDisc.tsx]
-  MobileAudio --> MobileFullscreen[mobile/mobileFullscreenPlayer.tsx]
-  FullscreenViz --> VizLoop[visualizers/useCanvasAudioVisualizer.ts]
-  FullscreenViz --> SegmentRenderer[visualizers/segmentedBarRenderer.ts]
-  DesktopFullscreen --> AlbumPalette[visualizers/albumColorPalette.ts]
-  RegularViz[audioVisualizer.tsx] --> VizLoop
-  RegularViz --> SegmentRenderer
+  UIPlay["MusicShell row click / player controls"] --> Provider["AudioPlayerProvider.playTrack"]
+  Provider --> Queue["queue / playbackQueue update"]
+  Provider --> Engine["transitionAudioTrack / audioInstance.ts"]
+  Engine --> Graph["dual-slot graph / EQ filters / analyser"]
+  Provider --> CacheWrite["trackCacheRepo / recentPlaysRepo"]
+  Provider --> Viz["analyser + visualizer states"]
+  Provider --> UI["features/audio widgets"]
 ```
 
-- `src/widgets/audioPlayer`는 768px 이상에서 데스크탑 `AudioPlayer`, 768px 미만에서 `MobileAudioPlayer`를 렌더링한다.
-- 데스크탑 `AudioPlayer`는 하단 플레이어 shell과 데스크탑 fullscreen overlay 상태를 소유한다.
-- 데스크탑 fullscreen 버튼은 hydration mismatch를 피하기 위해 클라이언트 mount 이후 `matchMedia("(min-width: 768px)")` 결과가 true일 때만 렌더링한다.
-- 데스크탑 fullscreen overlay는 페이지를 덮지만 하단 플레이어는 유지한다. 하단 플레이어의 fullscreen 버튼은 열린 상태에서 다시 누르면 닫는 toggle로 동작한다.
-- 데스크탑 fullscreen artwork 영역은 최대 400x400 앨범 이미지와 앨범 기반 CD 요소를 조합한다.
-- fullscreen visualizer는 `liquid-glass-panel` 내부에서 동작하며, 일반 visualizer와 같은 segmented bar renderer 및 canvas loop를 공유한다.
-- 일반 visualizer는 기존 플레이어 톤을 유지하고, fullscreen visualizer는 `albumColorPalette`가 canvas pixel sampling으로 추출한 앨범 색상을 적용한다.
-- 모바일 mini player는 앨범 이미지, 곡 제목/아티스트, play/pause, 읽기 전용 progress bar만 노출한다.
-- 모바일 mini player를 누르면 모바일 fullscreen player가 열리고, fullscreen에서는 shuffle, prev, play/pause, next, seek, current/duration time을 제어한다.
-- 모바일 fullscreen player는 상단 close bar 클릭 또는 아래 방향 drag-to-dismiss로 닫힌다. 비주얼라이저와 기기 연결 기능은 포함하지 않는다.
+---
 
-## 7. 데이터 계층
+## 7) 데이터 계층과 API
 
-- `src/shared/db/edmmDB.ts`가 Dexie 스키마를 정의한다.
-- `trackCacheRepo`는 Cloudinary/API에서 얻은 `Track` 메타데이터를 캐시하고 상세 패널/최근 목록 복원에 사용한다.
-- `recentPlaysRepo`는 최근 재생 id를 최신순으로 저장하고 중복을 정리하며 최대 10개까지만 유지한다.
-- `favoritesRepo`와 `useFavorites`는 `TrackList`, `LibraryView` 등에서 사용 가능하지만 현재 `MusicShell`의 뷰 전환 축에는 포함되지 않는다.
+### 7.1 API 라우트
 
-## 8. API와 외부 데이터
+- `src/app/api/cloudinary/tracks/route.ts`: 통합 트랙 조회
+- `src/app/api/cloudinary/tracks/image/route.ts`: 이미지 리소스 전용 조회
+- `src/app/api/cloudinary/tracks/video/route.ts`: 비디오 리소스 전용 조회
 
-- `src/app/api/cloudinary/tracks/route.ts`는 통합 트랙 조회 엔드포인트다.
-- `src/app/api/cloudinary/tracks/video/route.ts`와 `image/route.ts`는 리소스 타입별 조회를 담당한다.
-- `useCloudinaryTracks`는 React Query로 API 결과를 가져오고, `resourceType: "all"`일 때 비디오 트랙에 이미지 트랙을 artwork fallback으로 병합한다.
-- 조회된 트랙은 가능한 경우 `trackCacheRepo.cacheTrack`으로 저장된다.
+### 7.2 어댑터 및 API Client
 
-## 9. 결합도와 변경 위험
+- `features/cloudinary/hooks/useCloudinaryTracks.ts`가 쿼리 타입(`all`, `video`, `image`)에 따라 결과 결합 및 변환 수행
+- `resourceType: "all"`에서는 비디오 트랙에 이미지 트랙을 artwork fallback으로 병합
+- `shared/api/cloudinary/cloudinaryClient.ts`에서 Cloudinary 응답 정규화
+- `axiosInstance.ts`, `httpClient.ts`에서 요청/응답 인터셉트와 에러 경로 관리
+- 조회 결과는 `trackCacheRepo`를 통해 캐시 저장
+- Cloudinary 트랙 조회는 Next 데이터 캐시로도 캐싱됨
 
-| 영역 | 결합도 | 근거 | 주요 영향 |
-| --- | ---: | --- | --- |
-| `MusicShell` ↔ `AudioPlayerProvider` | 5 | `onPlay`, 큐, 현재 트랙 상태가 핵심 UX를 결정 | 검색, 상세, 하단 플레이어 |
-| `AudioPlayerProvider` 내부 오디오 제어 | 5 | DOM Audio/API와 이벤트 상태를 직접 관리 | 재생/일시정지/seek/volume |
-| `MusicShell` ↔ `useMusicShellTrackSeed` | 4 | 초기 진입, 최근 재생, 딥링크 선택을 조정 | `/search?track=...`, 최근 재생 복원 |
-| `MusicShell` ↔ `trackCacheRepo` | 4 | 최근 목록과 초기 트랙 복구가 캐시에 의존 | Detail 표시, Recent 뷰 |
-| desktop fullscreen player ↔ visualizer/color extraction | 3 | fullscreen overlay가 analyser, artwork pixel sampling, shared renderer를 함께 사용 | fullscreen UI, visualizer 색상 |
-| mobile player ↔ fullscreen overlay | 3 | mini player와 fullscreen player가 같은 `useAudioPlayer` 상태를 공유 | 모바일 재생 제어, drag close |
-| `TrackDetailAside` ↔ `trackCacheRepo/useAudioPlayer` | 3 | 캐시, fallback, 현재 재생 트랙을 조합 | 상세 패널 메타데이터 |
-| `trackSeedUtils` | 2 | 순수 함수 중심 | 시드 우선순위 규칙 |
-| `trackArtwork` | 2 | artwork fallback 정규화 | 썸네일 일관성 |
+### 7.3 영구 저장소
 
-## 10. 리팩터링 가드레일
+- Dexie 스키마: `shared/db/edmmDB.ts`
+- repositories:
+  - `trackCacheRepo`: 트랙 메타 캐시
+  - `recentPlaysRepo`: 최근 재생 ID/타임스탬프 정리, 최대 10개 유지
+  - `favoritesRepo`, `playlistsRepo`, `audioSettingsRepo`
+  - EQ preset repo: 이퀄라이저 프리셋 영속화
+- repository 계층은 Dexie 실패를 도메인 기본값(`undefined`/`[]`/무시)으로 흡수
+- service worker(`/sw.js`)가 오디오 재생 캐싱을 담당
 
-- 오디오 DOM/API 조작은 `AudioPlayerProvider` 밖으로 옮기지 않는다.
-- 라우트 컴포넌트는 쿼리 파싱과 초기 prop 전달까지만 담당한다.
-- `MusicShell`은 선택/뷰/시드 상태를 오케스트레이션하되 실제 미디어 부수효과를 직접 수행하지 않는다.
-- 캐시 조회는 렌더 중 실행하지 않고 hook/effect에서 취소 가드와 함께 처리한다.
-- 초기 딥링크 선택(`selectionSource="initial"`)과 사용자의 직접 선택(`selectionSource="visible"`)을 섞지 않는다.
-- `visibleTracks`가 비동기로 비어 있는 로딩 구간과 실제 빈 결과를 구분한다.
-- fullscreen 버튼처럼 viewport에 의존하는 UI는 서버 렌더에서 조건부 분기하지 않고, 클라이언트 mount 이후 상태로 렌더링 여부를 결정한다.
-- visualizer 구현은 `useCanvasAudioVisualizer`와 `drawSegmentedBars`를 공유하고, 일반/풀스크린별 차이는 컴포넌트 props와 palette 계산으로 제한한다.
-- 모바일 mini player의 progress bar는 읽기 전용이며, seek는 모바일 fullscreen에서만 허용한다.
-- 모바일 전용 UX는 768px 미만으로 제한하고, 768px~1024px 태블릿 구간은 데스크탑 플레이어와 접이식 aside를 사용한다.
+---
 
-## 11. 현재 보완된 초기 진입 이슈
+## 8) 플레이어 UI(Desktop/Mobile)와 반응형 정책
 
-문제 경로:
+- `widgets/audioPlayer`에서 viewport 기준 분기:
+  - `< 768px`: `mobileAudioPlayer` + `MobileFullscreenPlayer`
+  - `>= 768px`: `audioPlayer` + desktop fullscreen overlay
+- 데스크탑 fullscreen은 `matchMedia("(min-width: 768px)")` 기반으로 클라이언트 마운트 후 노출 (SSR 미스매치 방지)
+- 데스크탑 `AudioPlayer`는 하단 플레이어 shell과 desktop fullscreen overlay 상태를 소유
+- 컨트롤 버튼 공통 베이스(`PlayerControlButton`/`IconToggleButton`)는 opt-in prop 체계 사용:
+  - `hoverSurface`
+  - `pressFeedback`
+  - `blurOnPointerClick`
+- seek bar:
+  - 데스크톱 `SeekBar`: hover preview, 시간 tooltip, thumb, pink fill
+  - 모바일 `MSeekBar`: 사이즈업 바, 상시 thumb, 드래그 중 시간 라벨 강조
+  - 공통 `useSeekDrag`가 pointer capture, release 시 seek 1회 commit, Escape 취소를 담당
+- volume bar:
+  - 데스크톱 전용 `VolumeBar`
+  - 드래그 중 live volume 반영, release 시 영속화
+  - wheel/arrow 조작 지원
+  - 모바일은 하드웨어 볼륨 관례로 미노출
+- desktop fullscreen:
+  - `useFadePresence`로 fade in/out 처리
+  - `FullscreenBackdrop`, `fullscreenAudioVisualizer`, `albumColorPalette`, `useArtworkCrossfade` 사용
+  - 아트워크는 top layer만 렌더해 스냅 아웃 후 280ms fade in
+  - backdrop은 450ms crossfade
+  - 키보드 단축키 힌트는 수동 `aside`가 아니라 공용 Radix `MyTooltip` controlled 모드로 표시
+- mobile mini player:
+  - 트랙 제목/아티스트/아트워크
+  - play/pause
+  - progress(읽기 전용)
+  - mini player tap으로 fullscreen open
+- mobile fullscreen:
+  - prev/play-pause/next
+  - 터치 드래그 seek
+  - 상단 close bar 클릭 또는 아래 방향 drag-to-dismiss
+  - shuffle 버튼은 모바일에서 제거
+- `app-viewport-height` 클래스가 모바일 viewport 높이 고정을 담당하며, Tailwind `vh/dvh` 폴백 클래스 페어의 cascade 문제를 피함
 
-- `/search?track=<id>`로 처음 진입한다.
-- `selectedTrackId`는 먼저 세팅되지만 Cloudinary 목록과 IndexedDB 캐시 조회가 아직 완료되지 않았다.
-- 이전 흐름에서는 `visibleTracks=[]`인 순간에 fallback이 먼저 실행되어 선택이 해제되거나 상세 패널이 `Details unavailable`로 전환될 수 있었다.
-- 또는 player에는 단일 트랙 큐가 먼저 주입되고, 이후 카탈로그 목록이 로드되어도 같은 곡 seed로 dedupe되어 full queue가 다시 주입되지 않을 수 있었다. 이 경우 하단 플레이어의 prev/next가 active queue 1곡 조건에 걸려 동작하지 않았다.
-- 초기 route selection이 있는 상태에서 다른 곡을 재생하면, 이전에는 route selection 보호 로직이 `currentTrackId` 변경을 계속 막아 리스트 선택과 Track Detail 동기화가 늦어질 수 있었다.
+```mermaid
+flowchart TD
+  Widget["widgets/audioPlayer"] --> DesktopPath[">=768: audioPlayer"]
+  Widget --> MobilePath["<768: mobileAudioPlayer"]
+  DesktopPath --> DesktopShell["audioPlayerShell"]
+  DesktopShell --> DesktopFullscreen["desktopFullscreenPlayer"]
+  DesktopFullscreen --> DesktopViz["fullscreenAudioVisualizer"]
+  DesktopFullscreen --> DesktopTooltip["MyTooltip shortcut hint"]
+  MobilePath --> MobileShell["mobileAudioPlayer + mobileFullscreenPlayer"]
+  MobileShell --> Drag["drag-to-dismiss"]
+  DesktopFullscreen --> Crossfade["useArtworkCrossfade"]
+  MobileShell --> Crossfade
+```
 
-현재 대응:
+---
 
-- `useMusicShellTrackSeed`는 `visibleTracks`가 아직 비어 있고 `selectedTrack`도 없으면 초기 fallback을 보류한다.
-- 초기 시드 fingerprint에 visible 준비 상태를 포함해, 목록이 준비된 뒤 같은 `selectedTrackId`를 다시 평가한다.
-- `MusicShell.activateTrackInPlayer`의 seed fingerprint에는 queue id 목록도 포함한다. 따라서 같은 트랙이라도 단일 큐에서 visible full queue로 바뀌면 `onPlay(track, queue, false)`가 다시 호출된다.
-- route initial track은 `initialTrackId`가 바뀔 때만 다시 적용하고, 이후 실제 player `currentTrackId` 변경은 selected/detail 상태에 반영한다.
-- `TrackDetailAside`는 `isWaitingForSelectionSeed`가 true인 동안 오류 UI 대신 로딩 UI를 유지한다.
-- `MusicShell`은 이 대기 상태를 `selectionSource === "initial" && !selectedTrack && isVisibleLoading`일 때만 전달한다.
+## 9) 에러/로딩/회복 정책
 
-## 12. 검증 우선순위
+### 9.1 라우트 계층
 
-1. `/search?track=<id>` 첫 진입 중 캐시 미스와 카탈로그 로딩이 겹쳐도 Detail이 선택을 잃지 않는지 확인한다.
-2. 새로고침 직후 단일 큐 seed 이후 카탈로그가 로드되면 full queue가 다시 주입되어 prev/next가 동작하는지 확인한다.
-3. `/search?track=<id>`로 들어온 뒤 다른 곡을 재생하면 리스트 selected와 Track Detail이 현재 재생 곡으로 갱신되는지 확인한다.
-4. `/search` 기본 진입에서 첫 visible track이 컨트롤러 대상이 되는지 확인한다.
-5. `Recent` 뷰에서 캐시 트랙을 표시하고, `All`로 전환할 때 보이지 않는 선택 상세가 정리되는지 확인한다.
-6. 768px 미만 row select는 즉시 재생하고, 768px 이상 row select는 상세 선택만 수행하는지 확인한다.
-7. 모바일에서는 aside와 `Music views` header nav가 사라지고, `bottom-tab-navigation`으로 `All`/`Recent` 전환이 가능한지 확인한다.
-8. 768px~1024px에서 aside 열기/닫기 버튼이 보이고 실제로 접히는지 확인한다.
-9. 데스크탑 fullscreen 버튼은 768px 이상에서만 보이고, 열린 상태에서 같은 버튼으로 닫히는지 확인한다.
-10. 모바일 fullscreen은 mini player에서 열리고, 상단 close bar 클릭과 drag-to-dismiss로 닫히는지 확인한다.
-11. Recent 기록은 10개까지만 유지되는지 확인한다.
-12. `/track/[id]`가 `/search?track=<id>`로 정규화되는지 확인한다.
+- `loading.tsx`: 라우트별 사용자 체감 완충
+- `error.tsx`: 런타임 오류 fallback
+- `not-found.tsx`: 라우트 미발견 처리
 
-## 13. 롤백 포인트
+### 9.2 기능 계층
 
-- 초기 시드 문제가 생기면 `useMusicShellTrackSeed.ts`의 initial branch부터 확인한다.
-- 새로고침 후 prev/next가 멈추면 `MusicShell.activateTrackInPlayer`의 seed fingerprint와 `queueForTrack(track)` 결과를 먼저 확인한다.
-- 상세 패널이 오래 로딩되면 `MusicShell`의 `isWaitingForSelectionSeed` 조건과 `isVisibleLoading` 계산을 확인한다.
-- Recent 뷰가 비면 `useRecentPlays` 결과와 `getCachedTracks(ids)` 호출 순서를 확인한다.
-- 재생 자체가 실패하면 `MusicShell`보다 먼저 `AudioPlayerProvider.playTrack`과 오디오 인스턴스 상태를 확인한다.
-- fullscreen 버튼 hydration 문제가 재발하면 `AudioPlayer`의 클라이언트 mount 이후 viewport gating 로직을 확인한다.
-- 모바일 player가 보이지 않으면 `src/widgets/audioPlayer`의 `md` breakpoint 분기와 `MobileAudioPlayer` mount 여부를 확인한다.
-- 모바일 fullscreen drag 닫기가 오작동하면 `mobileFullscreenPlayer.tsx`의 pointer capture, drag threshold, click guard를 확인한다.
+- 검색/플레이 목록: 상태 기반 렌더 fallback
+- 상세 패널: 초기 시드 대기 중에는 `Details unavailable` 대신 로딩 유지
+- 오디오: 재생 실패 시 `playbackError` 상태로 바인딩 후 재시도 경로 제공
+- 브라우저/저장소: Dexie 실패는 repository 기본값으로 흡수
+- tooltip: EQ preset과 fullscreen shortcut hint는 공용 `MyTooltip`으로 표시하고, Radix의 focus/hover/blur/Escape 동작을 활용
+
+### 9.3 기본 재시도 포인트
+
+- 시드 재평가: `selectionSource`, `visibleTracks`, queue fingerprint 변화 감지 시 재적용
+- 캐시 재조회: `Dexie` read 미스 시 트랙 미리보기 소스 변경
+- 플레이어 동작: UI에서 재생 재시도 시 Provider로 재진입
+- 오디오 전환: `transitionAudioTrack`과 audio graph 상태 우선 확인
+- fullscreen 전환: `useFadePresence`와 `useArtworkCrossfade` 레이어 상태 우선 확인
+
+---
+
+## 10) 기능 상태 전이 예시 (공통 템플릿)
+
+### 10.1 검색 기능
+
+```mermaid
+stateDiagram-v2
+  [*] --> SEARCH_ROUTE
+  SEARCH_ROUTE --> PARSE_QUERY
+  PARSE_QUERY --> NORMALIZE_VIEW
+  NORMALIZE_VIEW --> LOAD_TRACKS
+  LOAD_TRACKS --> LIST_SUCCESS
+  LOAD_TRACKS --> LIST_EMPTY
+  LOAD_TRACKS --> LIST_ERROR
+  LIST_ERROR --> RETRY_SEARCH
+  RETRY_SEARCH --> LOAD_TRACKS
+  LIST_SUCCESS --> USER_READY
+  LIST_EMPTY --> USER_READY
+```
+
+### 10.2 재생 기능
+
+```mermaid
+stateDiagram-v2
+  [*] --> PLAY_INTENT
+  PLAY_INTENT --> STATE_PREPARE
+  STATE_PREPARE --> TRACK_TRANSITION
+  TRACK_TRANSITION --> PLAYING
+  TRACK_TRANSITION --> PLAY_FAIL
+  PLAY_FAIL --> PLAY_RETRY
+  PLAY_RETRY --> PLAY_INTENT
+  PLAYING --> PAUSED
+  PLAYING --> STOPPED
+  PAUSED --> PLAYING
+  STOPPED --> [*]
+```
+
+### 10.3 시드/딥링크 기능
+
+```mermaid
+stateDiagram-v2
+  [*] --> TRACK_ID_PARSED
+  TRACK_ID_PARSED --> WAIT_TRACK_DATA
+  WAIT_TRACK_DATA --> SEED_CANDIDATE
+  WAIT_TRACK_DATA --> WAIT_MORE
+  WAIT_MORE --> SEED_CANDIDATE
+  WAIT_MORE --> WAIT_TIMEOUT
+  SEED_CANDIDATE --> QUEUE_APPLY
+  QUEUE_APPLY --> PLAYER_SYNC
+  PLAYER_SYNC --> STABLE
+  SEED_CANDIDATE --> NO_MATCH
+  NO_MATCH --> FALLBACK
+```
+
+### 10.4 라이브러리/캐시 기능
+
+```mermaid
+stateDiagram-v2
+  [*] --> RECENT_OPEN
+  RECENT_OPEN --> RECENT_IDS
+  RECENT_IDS --> TRACKS_RESOLVE
+  TRACKS_RESOLVE --> RECENT_RENDER
+  TRACKS_RESOLVE --> CACHE_MISS
+  CACHE_MISS --> RECENT_RENDER_EMPTY
+  RECENT_RENDER --> RECENT_FAVORITE_TOGGLE
+  RECENT_FAVORITE_TOGGLE --> FAVORITE_OK
+  RECENT_FAVORITE_TOGGLE --> FAVORITE_FAIL
+  FAVORITE_FAIL --> FAVORITE_RETRY
+  FAVORITE_RETRY --> RECENT_FAVORITE_TOGGLE
+```
+
+### 10.5 UI(Desktop/Mobile) 기능
+
+```mermaid
+stateDiagram-v2
+  [*] --> PLAYER_RENDER
+  PLAYER_RENDER --> DESKTOP_IF_768_PLUS
+  PLAYER_RENDER --> MOBILE_IF_UNDER_768
+  MOBILE_IF_UNDER_768 --> MOBILE_MINI_PLAYER
+  MOBILE_MINI_PLAYER --> MOBILE_FULLSCREEN_OPEN
+  MOBILE_FULLSCREEN_OPEN --> MOBILE_FULLSCREEN_PLAY
+  MOBILE_FULLSCREEN_OPEN --> MOBILE_FULLSCREEN_SEEK
+  DESKTOP_IF_768_PLUS --> DESKTOP_PLAYER
+  DESKTOP_PLAYER --> FULLSCREEN_OPEN
+  FULLSCREEN_OPEN --> FULLSCREEN_PLAY
+  FULLSCREEN_OPEN --> SHORTCUT_TOOLTIP_OPEN
+  SHORTCUT_TOOLTIP_OPEN --> SHORTCUT_TOOLTIP_CLOSE
+  MOBILE_FULLSCREEN_OPEN --> MOBILE_FULLSCREEN_CLOSE
+  FULLSCREEN_OPEN --> FULLSCREEN_CLOSE
+```
+
+### 10.6 API/저장소 기능
+
+```mermaid
+stateDiagram-v2
+  [*] --> API_REQUEST
+  API_REQUEST --> CLOUDINARY_ROUTE
+  CLOUDINARY_ROUTE --> API_SUCCESS
+  CLOUDINARY_ROUTE --> API_FAIL
+  API_SUCCESS --> CACHE_PERSIST
+  CACHE_PERSIST --> CACHE_OK
+  CACHE_PERSIST --> CACHE_FAIL
+  CACHE_FAIL --> CACHE_IGNORE_WITH_DEFAULT
+  API_FAIL --> USER_RETRY
+  USER_RETRY --> API_REQUEST
+```
+
+### 10.7 테스트/검증 기능
+
+```mermaid
+stateDiagram-v2
+  [*] --> TEST_PLAN
+  TEST_PLAN --> RUN_TESTS
+  RUN_TESTS --> TEST_PASS
+  RUN_TESTS --> TEST_FAIL
+  TEST_FAIL --> FIX_AND_RERUN
+  FIX_AND_RERUN --> RUN_TESTS
+  TEST_PASS --> RELEASE_READY
+```
