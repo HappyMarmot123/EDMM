@@ -12,8 +12,8 @@
 }
 
 :root {
-  /* 다크 스킴 선언 — 브라우저 강제 다크 모드의 색 변환 옵트아웃 + 폼 컨트롤 다크 렌더링 */
-  color-scheme: dark;
+  /* 모바일 강제 다크 보정에 의한 컬러 왜곡을 막기 위한 명시 */
+  color-scheme: light;
   --background: #000000;
   --foreground: #ededed;
   --color-bg-light: #ffffff;
@@ -38,6 +38,29 @@
   --rose-gold: #ffd6a5;
   --font-display: "Segoe UI Variable Display", "SF Pro Display", "Inter", Arial, sans-serif;
   --font-body: "Segoe UI", "Inter", Arial, sans-serif;
+}
+
+/* 강제 색 보정 모드에서 색상 힌트를 유지 */
+@media (hover: none) {
+  :root {
+    forced-color-adjust: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --pink-main: #ff98a2;
+    --pink-shadow-1: #ff98a2b3;
+    --pink-shadow-2: #ff98a280;
+    --bubble-button-bg: #ff98a2;
+    --rose-primary: #ff98a2;
+    --rose-primary-soft: #ffb8c0;
+    --rose-primary-glow: rgba(255, 152, 162, 0.58);
+    --rose-primary-dim: rgba(255, 152, 162, 0.16);
+    --rose-hot: #ff4f87;
+    --rose-deep: #a8184f;
+    --rose-gold: #ffd6a5;
+  }
 }
 
 *,
@@ -669,7 +692,7 @@ h1 {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 80px;
+  height: 60px;
   border-radius: inherit;
   pointer-events: none;
   z-index: 5;

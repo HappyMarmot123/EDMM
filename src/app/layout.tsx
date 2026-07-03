@@ -4,10 +4,9 @@ import "@/shared/styles/global.css";
 import { HYDRATION_EXTENSION_ATTRIBUTE_GUARD_SCRIPT } from "@/shared/lib/hydrationExtensionAttributeGuard";
 import { AppProviders } from "./appProviders";
 
-// 다크 스킴 명시 선언 — 삼성 인터넷 등의 강제 다크 모드(웹사이트를 어둡게)가
-// 페이지 색상을 임의 변환하지 않도록 옵트아웃한다 (아이덴티티 핑크가 붉게 왜곡되던 원인).
+// 라이트 컬러 스킴을 명시해 모바일의 자동 다크 보정이 페이지 색상 해석에 개입하지 않도록 한다.
 export const viewport: Viewport = {
-  colorScheme: "dark",
+  colorScheme: "light",
   themeColor: "#07040a",
 };
 
