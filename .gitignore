@@ -19,6 +19,8 @@ middleware.ts
 .tmp-*
 docs/mockups/
 docs/superpowers/
+.lighthouseci/
+docs/performance/lighthouse-reports/*
 skills-lock.json
 .agents/
 .claude/

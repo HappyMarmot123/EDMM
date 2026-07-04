@@ -1,0 +1,45 @@
+{
+  "mode": "baseline",
+  "runDate": "2026-07-04",
+  "rows": [
+    {
+      "route": "/",
+      "url": "http://localhost:3999/",
+      "performance": 59,
+      "accessibility": 100,
+      "bestPractices": 96,
+      "seo": 100,
+      "lcpMs": 3997,
+      "lcpDisplay": "4.0 s",
+      "cls": 0,
+      "htmlReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\-2026_07_04_07_23_23-report.html",
+      "jsonReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\-2026_07_04_07_23_23-report.json"
+    },
+    {
+      "route": "/search?view=all",
+      "url": "http://localhost:3999/search?view=all",
+      "performance": 68,
+      "accessibility": 95,
+      "bestPractices": 96,
+      "seo": 100,
+      "lcpMs": 3683,
+      "lcpDisplay": "3.7 s",
+      "cls": 0,
+      "htmlReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_04_07_27_18-report.html",
+      "jsonReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_04_07_27_18-report.json"
+    },
+    {
+      "route": "/search?view=recent",
+      "url": "http://localhost:3999/search?view=recent",
+      "performance": 96,
+      "accessibility": 95,
+      "bestPractices": 96,
+      "seo": 100,
+      "lcpMs": 2363,
+      "lcpDisplay": "2.4 s",
+      "cls": 0,
+      "htmlReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_04_07_29_25-report.html",
+      "jsonReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_04_07_29_25-report.json"
+    }
+  ]
+}

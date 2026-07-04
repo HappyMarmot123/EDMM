@@ -15,7 +15,12 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "perf:lighthouse": "npm run build && lhci autorun --config=./lighthouserc.cjs",
+    "perf:lighthouse:collect": "lhci collect --config=./lighthouserc.cjs",
+    "perf:lighthouse:assert": "lhci assert --config=./lighthouserc.cjs",
+    "perf:summary:baseline": "node scripts/write-lighthouse-summary.mjs baseline",
+    "perf:summary:after": "node scripts/write-lighthouse-summary.mjs after"
   },
   "browserslist": [
     "defaults",
@@ -28,6 +33,7 @@
     "@types/lodash.debounce": "^4.0.9",
     "@types/lodash.isempty": "^4.4.9",
     "@types/lodash.isnumber": "^3.0.9",
+    "@vercel/speed-insights": "^2.0.0",
     "axios": "^1.9.0",
     "clsx": "^2.1.1",
     "cobe": "^2.0.1",
@@ -49,6 +55,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@eslint/js": "^10.0.1",
+    "@lhci/cli": "^0.15.1",
     "@tailwindcss/postcss": "^4.3.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
