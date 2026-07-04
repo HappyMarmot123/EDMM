@@ -1,25 +1,7 @@
-"use client";
-
-import Link from "next/link";
-import dynamic from "next/dynamic";
-import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
-
-const LandingCobeOrbit = dynamic(() => import("./landingCobeOrbit"), {
-  ssr: false,
-  loading: () => (
-    <div className="rose-cobe-orbit" aria-hidden="true">
-      <span className="rose-cobe-orbit__halo" />
-      <span className="rose-cobe-orbit__label">PLUM BLOSSOM</span>
-    </div>
-  ),
-});
+import { DeferredCobeOrbit } from "./deferredCobeOrbit";
+import { LandingStartLink } from "./landingStartLink";
 
 export default function Hero() {
-  const currentTrackId = useAudioPlayer().currentTrack?.id ?? "";
-  const searchHref = currentTrackId
-    ? `/search?track=${encodeURIComponent(currentTrackId)}`
-    : "/search";
-
   return (
     <section className="rose-hero" aria-labelledby="rose-hero-title">
       <div className="rose-hero__inner">
@@ -27,19 +9,14 @@ export default function Hero() {
           <h1 id="rose-hero-title" className="rose-hero__title">
             EDMM
           </h1>
-          <p className="rose-hero__kicker">
-            Electronic dance music
-          </p>
+          <p className="rose-hero__kicker">Electronic dance music</p>
           <p className="rose-hero__copy">
             All you need to enjoy the show is the groove. Search late-night music, and keep the whole session inside a plum-blossom signal.
           </p>
           <div className="rose-hero__actions">
-            <Link
-              className="rose-hero__cta rose-hero__cta--primary"
-              href={searchHref}
-            >
+            <LandingStartLink className="rose-hero__cta rose-hero__cta--primary">
               Start listening
-            </Link>
+            </LandingStartLink>
           </div>
           <div className="rose-hero__meta" aria-label="EDMM landing signals">
             <span>Tech House</span>
@@ -48,7 +25,7 @@ export default function Hero() {
           </div>
         </div>
 
-        <LandingCobeOrbit />
+        <DeferredCobeOrbit />
       </div>
     </section>
   );

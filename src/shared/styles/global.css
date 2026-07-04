@@ -1036,3 +1036,48 @@ h1 {
   }
 }
 
+
+.parallax {
+  --marquee-duration: 36s;
+}
+
+.parallax .scroller {
+  animation: rose-marquee var(--marquee-duration) linear infinite;
+}
+
+.parallax[data-direction="reverse"] .scroller {
+  animation-direction: reverse;
+}
+
+.rose-cobe-orbit--shell {
+  pointer-events: none;
+}
+
+.rose-cobe-orbit__canvas--shell {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.18), transparent 52%),
+    radial-gradient(circle at 50% 50%, rgba(244, 114, 182, 0.16), transparent 66%);
+  opacity: 0.72;
+}
+
+@keyframes rose-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rose-star {
+    animation: none;
+    transform: translate3d(0, 0, 0) scale(var(--scale, 1));
+  }
+
+  .parallax .scroller {
+    animation: none;
+    transform: none;
+  }
+}
