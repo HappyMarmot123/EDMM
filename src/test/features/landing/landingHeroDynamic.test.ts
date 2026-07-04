@@ -14,6 +14,7 @@ const deferredOrbitSource = fs.readFileSync(
 describe("LandingHero dynamic loading", () => {
   it("keeps the hero server-safe while deferring Cobe through next/dynamic", () => {
     expect(heroSource).not.toContain('from "next/dynamic"');
+    expect(heroSource).not.toContain("landingStartLink");
     expect(heroSource).toContain("<DeferredCobeOrbit />");
     expect(deferredOrbitSource).toContain('from "next/dynamic"');
     expect(deferredOrbitSource).toContain('import("./landingCobeOrbit")');

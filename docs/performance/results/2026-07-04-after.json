@@ -5,41 +5,41 @@
     {
       "route": "/",
       "url": "http://localhost:3999/",
-      "performance": 77,
+      "performance": 86,
       "accessibility": 100,
       "bestPractices": 96,
       "seo": 100,
-      "lcpMs": 3509,
-      "lcpDisplay": "3.5 s",
+      "lcpMs": 3783,
+      "lcpDisplay": "3.8 s",
       "cls": 0,
-      "htmlReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\-2026_07_04_07_57_50-report.html",
-      "jsonReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\-2026_07_04_07_57_50-report.json"
+      "htmlReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\-2026_07_04_08_25_42-report.html",
+      "jsonReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\-2026_07_04_08_25_42-report.json"
     },
     {
       "route": "/search?view=all",
       "url": "http://localhost:3999/search?view=all",
-      "performance": 90,
+      "performance": 82,
       "accessibility": 95,
       "bestPractices": 96,
       "seo": 100,
-      "lcpMs": 3464,
-      "lcpDisplay": "3.5 s",
+      "lcpMs": 4479,
+      "lcpDisplay": "4.5 s",
       "cls": 0,
-      "htmlReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_04_07_58_57-report.html",
-      "jsonReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_04_07_58_57-report.json"
+      "htmlReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_04_08_25_54-report.html",
+      "jsonReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_04_08_25_54-report.json"
     },
     {
       "route": "/search?view=recent",
       "url": "http://localhost:3999/search?view=recent",
-      "performance": 97,
+      "performance": 93,
       "accessibility": 95,
       "bestPractices": 96,
       "seo": 100,
-      "lcpMs": 2034,
-      "lcpDisplay": "2.0 s",
+      "lcpMs": 3001,
+      "lcpDisplay": "3.0 s",
       "cls": 0,
-      "htmlReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_04_07_59_25-report.html",
-      "jsonReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_04_07_59_25-report.json"
+      "htmlReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_04_08_26_37-report.html",
+      "jsonReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_04_08_26_37-report.json"
     }
   ]
 }

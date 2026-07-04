@@ -1,5 +1,4 @@
 import { DeferredCobeOrbit } from "./deferredCobeOrbit";
-import { LandingStartLink } from "./landingStartLink";
 
 export default function Hero() {
   return (
@@ -14,9 +13,9 @@ export default function Hero() {
             All you need to enjoy the show is the groove. Search late-night music, and keep the whole session inside a plum-blossom signal.
           </p>
           <div className="rose-hero__actions">
-            <LandingStartLink className="rose-hero__cta rose-hero__cta--primary">
+            <a className="rose-hero__cta rose-hero__cta--primary" href="/search">
               Start listening
-            </LandingStartLink>
+            </a>
           </div>
           <div className="rose-hero__meta" aria-label="EDMM landing signals">
             <span>Tech House</span>

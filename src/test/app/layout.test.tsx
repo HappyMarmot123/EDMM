@@ -12,7 +12,7 @@ jest.mock("@/app/performanceInsights", () => ({
 }));
 
 describe("RootLayout", () => {
-  it("mounts the persistent app provider shell", () => {
+  it("keeps landing outside the persistent app provider shell", () => {
     const html = renderToStaticMarkup(
       <RootLayout>
         <main data-testid="layout-child">Landing</main>
@@ -20,7 +20,7 @@ describe("RootLayout", () => {
     );
 
     expect(html).toContain('data-testid="layout-child"');
-    expect(html).toContain('data-testid="app-providers"');
+    expect(html).not.toContain('data-testid="app-providers"');
     expect(html).toContain('data-testid="performance-insights"');
   });
 });
