@@ -40,6 +40,7 @@ const formatDuration = (durationMs: number) => {
 };
 
 const getTrackKey = (_: number, track: Track) => track.id;
+const PRIORITY_ARTWORK_COUNT = 8;
 
 const trackScrollerComponents = {
   Scroller: (
@@ -73,7 +74,40 @@ export function MusicTrackList({
   const scrollerRef = useRef<HTMLElement | Window | null>(null);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
   const [isScrolledToTop, setIsScrolledToTop] = useState(true);
+  const [shouldLoadArtwork, setShouldLoadArtwork] = useState(false);
   const scrollTopButtonPresence = useFadePresence(!isScrolledToTop, 200);
+
+  useEffect(() => {
+    if (shouldLoadArtwork) {
+      return undefined;
+    }
+
+    const loadArtwork = () => {
+      setShouldLoadArtwork(true);
+    };
+
+    const interactionEvents = [
+      "keydown",
+      "pointerdown",
+      "touchstart",
+      "wheel",
+    ] as const;
+    const timeoutHandle = window.setTimeout(loadArtwork, 8000);
+
+    interactionEvents.forEach((eventName) => {
+      window.addEventListener(eventName, loadArtwork, {
+        once: true,
+        passive: true,
+      });
+    });
+
+    return () => {
+      window.clearTimeout(timeoutHandle);
+      interactionEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, loadArtwork);
+      });
+    };
+  }, [shouldLoadArtwork]);
 
   useEffect(() => {
     if (!scrollToTrackId || scrollToTrackRequest === undefined) {
@@ -220,6 +254,9 @@ export function MusicTrackList({
           const isCurrentTrackActive = isCurrentTrack && isCurrentTrackPlaying;
           const selectActionLabel =
             playOnSelect && isTrackPlayable ? "Select and play" : "Select";
+          const hasArtwork = Boolean(track.artworkUrl);
+          const shouldShowArtwork =
+            hasArtwork && (index < PRIORITY_ARTWORK_COUNT || shouldLoadArtwork);
 
           const handlePlay = (event: MouseEvent<HTMLButtonElement>) => {
             event.stopPropagation();
@@ -255,15 +292,21 @@ export function MusicTrackList({
                   </span>
                   <span
                     aria-hidden="true"
+                    data-track-artwork-id={track.id}
                     className="grid aspect-square place-items-center overflow-hidden rounded-md border border-white/10 bg-[#16080f] bg-cover bg-center text-[#ffb8c0]"
                     style={
-                      track.artworkUrl
+                      shouldShowArtwork
                         ? { backgroundImage: `url(${track.artworkUrl})` }
                         : undefined
                     }
                   >
-                    {track.artworkUrl ? (
+                    {shouldShowArtwork ? (
                       <span className="h-full w-full bg-black/10" />
+                    ) : hasArtwork ? (
+                      <span
+                        className="h-6 w-6 animate-pulse rounded-full bg-[#ff98a2]/20 shadow-[0_0_18px_rgba(255,152,162,0.16)]"
+                        data-track-artwork-skeleton
+                      />
                     ) : (
                       <Disc3 size={21} strokeWidth={1.8} />
                     )}

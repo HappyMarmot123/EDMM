@@ -58,6 +58,12 @@ export function useAudioElementSync({
       return;
     }
 
+    if (!isPlaying && audio.src !== trackUrl) {
+      setIsBuffering(false);
+      setPlaybackError(null);
+      return;
+    }
+
     if (audio.src !== trackUrl) {
       setCurrentTime(0);
     }

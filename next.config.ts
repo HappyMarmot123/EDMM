@@ -12,5 +12,9 @@ const nextConfig: NextConfig = {
 };
 
 export default withSentryConfig(nextConfig, {
+  bundleSizeOptimizations: {
+    excludeReplayIframe: true,
+    excludeReplayShadowDom: true,
+  },
   silent: !process.env.CI,
 });

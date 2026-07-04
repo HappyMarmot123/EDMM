@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { JSX } from "react";
 import type { Track } from "@/entities/track";
@@ -127,6 +127,10 @@ describe("MusicShell", () => {
     );
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it("renders the EDMM catalog heading and loads blank-query Cloudinary tracks", () => {
     const { container } = render(<MusicShell />);
 
@@ -140,6 +144,48 @@ describe("MusicShell", () => {
     expect(mockUseCloudinaryTracks).toHaveBeenLastCalledWith("", { resourceType: "all" });
     expect(screen.getByRole("button", { name: "Select Cloud Track One" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Select Cloud Track Two" })).toBeInTheDocument();
+  });
+
+  it("loads initial viewport artwork immediately and defers the rest", () => {
+    const artworkTracks = Array.from({ length: 9 }, (_, index) => ({
+      ...track(`cloudinary:artwork-${index + 1}`, `Artwork Track ${index + 1}`),
+      artworkUrl: `https://cdn.example.com/artwork-${index + 1}.jpg`,
+    }));
+    const priorityTrack = artworkTracks[0];
+    const deferredTrack = artworkTracks[8];
+
+    mockUseCloudinaryTracks.mockReturnValue({
+      data: artworkTracks,
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+
+    const { container } = render(<MusicShell />);
+    const priorityArtwork = container.querySelector(
+      `[data-track-artwork-id="${priorityTrack.id}"]`,
+    );
+    const deferredArtwork = container.querySelector(
+      `[data-track-artwork-id="${deferredTrack.id}"]`,
+    );
+
+    expect(priorityArtwork).toHaveStyle({
+      backgroundImage: `url(${priorityTrack.artworkUrl})`,
+    });
+    expect(deferredArtwork).not.toHaveStyle({
+      backgroundImage: `url(${deferredTrack.artworkUrl})`,
+    });
+    expect(
+      deferredArtwork?.querySelector("[data-track-artwork-skeleton]"),
+    ).toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(new Event("pointerdown"));
+    });
+
+    expect(deferredArtwork).toHaveStyle({
+      backgroundImage: `url(${deferredTrack.artworkUrl})`,
+    });
   });
 
   it("renders the decorative search backdrop behind the shell content", () => {

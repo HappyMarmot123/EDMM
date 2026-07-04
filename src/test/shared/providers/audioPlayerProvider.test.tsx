@@ -242,4 +242,24 @@ describe("AudioPlayerProvider", () => {
       expect(screen.getByTestId("current-track-title")).toHaveTextContent("Track One");
     });
   });
+
+  it("does not load a media source when a track is queued without playback", async () => {
+    render(
+      <AudioPlayerProvider>
+        <CurrentTrackConsumer />
+      </AudioPlayerProvider>,
+    );
+    mockTransitionAudioTrack.mockClear();
+
+    fireEvent.click(screen.getByRole("button", { name: "Queue track" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("current-track-id")).toHaveTextContent("track-1");
+    });
+    expect(
+      mockTransitionAudioTrack.mock.calls.some(
+        ([source]) => source === playableTrack.streamUrl,
+      ),
+    ).toBe(false);
+  });
 });
