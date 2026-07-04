@@ -3,7 +3,7 @@ import Landing from "@/widgets/landing";
 
 jest.mock("cobe", () => ({
   __esModule: true,
-  default: jest.fn(() => ({ destroy: jest.fn() })),
+  default: jest.fn(() => ({ destroy: jest.fn(), update: jest.fn() })),
 }));
 
 jest.mock("@/features/landing/components/parallax", () => ({

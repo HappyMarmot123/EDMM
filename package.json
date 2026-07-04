@@ -23,6 +23,7 @@
   ],
   "dependencies": {
     "@radix-ui/react-tooltip": "^1.2.7",
+    "@sentry/nextjs": "^10.63.0",
     "@tanstack/react-query": "^5.101.1",
     "@types/lodash.debounce": "^4.0.9",
     "@types/lodash.isempty": "^4.4.9",
