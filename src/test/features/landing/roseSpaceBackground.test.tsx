@@ -57,6 +57,23 @@ describe("DustySnow", () => {
     expect(starfield.querySelectorAll(".rose-star")).toHaveLength(42);
   });
 
+  it("provides the CSS variables required by the rose-star animations", () => {
+    render(<DustySnow count={1} />);
+
+    const star = screen
+      .getByTestId("rose-starfield")
+      .querySelector<HTMLElement>(".rose-star");
+
+    expect(star).not.toBeNull();
+    expect(star).toHaveClass("rose-star--far");
+    expect(star?.style.getPropertyValue("--start-y")).toBeTruthy();
+    expect(star?.style.getPropertyValue("--twinkle-duration")).toBeTruthy();
+    expect(star?.style.getPropertyValue("--glow-size")).toBeTruthy();
+    expect(star?.style.getPropertyValue("--blur")).toBeTruthy();
+    expect(star?.style.getPropertyValue("--sway-x")).toBeTruthy();
+    expect(star?.style.getPropertyValue("--fall-distance")).toBeTruthy();
+  });
+
   it("keeps the starfield right aligned at 80 percent width", () => {
     const starfieldRule = extractRule(".rose-starfield");
 
