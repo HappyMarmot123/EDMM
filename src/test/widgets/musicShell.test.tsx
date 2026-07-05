@@ -644,24 +644,23 @@ describe("MusicShell", () => {
 
   it("keeps the list usable when a deep-linked selected track cannot be restored", async () => {
     const pendingSeedLookup = deferred<Track | undefined>();
-    mockGetCachedTrack.mockImplementation(async (trackId: string) => {
-      const callStack = new Error().stack ?? "";
-
-      if (
-        trackId === "cloudinary:missing-track" &&
-        callStack.includes("useMusicShellTrackSeed")
-      ) {
-        return pendingSeedLookup.promise;
-      }
-
-      return undefined;
-    });
+    mockGetCachedTrack
+      .mockResolvedValueOnce(undefined)
+      .mockReturnValueOnce(pendingSeedLookup.promise);
 
     render(<MusicShell initialTrackId="cloudinary:missing-track" />);
 
     await waitFor(() => {
-      expect(mockGetCachedTrack).toHaveBeenCalledWith("cloudinary:missing-track");
+      expect(mockGetCachedTrack).toHaveBeenCalledTimes(2);
     });
+    expect(mockGetCachedTrack).toHaveBeenNthCalledWith(
+      1,
+      "cloudinary:missing-track",
+    );
+    expect(mockGetCachedTrack).toHaveBeenNthCalledWith(
+      2,
+      "cloudinary:missing-track",
+    );
 
     expect(
       await screen.findByText("선택한 정보를 불러올 수 없습니다"),
