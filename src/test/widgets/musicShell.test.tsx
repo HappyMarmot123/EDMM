@@ -642,6 +642,35 @@ describe("MusicShell", () => {
     );
   });
 
+  it("keeps the list usable when a deep-linked selected track cannot be restored", async () => {
+    const pendingSeedLookup = deferred<Track | undefined>();
+    mockGetCachedTrack.mockImplementation(async (trackId: string) => {
+      const callStack = new Error().stack ?? "";
+
+      if (
+        trackId === "cloudinary:missing-track" &&
+        callStack.includes("useMusicShellTrackSeed")
+      ) {
+        return pendingSeedLookup.promise;
+      }
+
+      return undefined;
+    });
+
+    render(<MusicShell initialTrackId="cloudinary:missing-track" />);
+
+    await waitFor(() => {
+      expect(mockGetCachedTrack).toHaveBeenCalledWith("cloudinary:missing-track");
+    });
+
+    expect(
+      await screen.findByText("선택한 정보를 불러올 수 없습니다"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Select Cloud Track One" }),
+    ).toBeInTheDocument();
+  });
+
   it("keeps an initial track detail loading while catalog data is still resolving", async () => {
     const onPlay = jest.fn();
     mockUseCloudinaryTracks.mockReturnValue({
@@ -662,8 +691,15 @@ describe("MusicShell", () => {
     await waitFor(() => {
       expect(mockGetCachedTrack).toHaveBeenCalledTimes(2);
     });
-    expect(screen.getByText("Loading details...")).toBeInTheDocument();
-    expect(screen.queryByText("Details unavailable")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("선택한 정보를 불러오는 중입니다"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("카탈로그와 로컬 캐시를 확인하고 있습니다."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("선택한 정보를 불러올 수 없습니다"),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Select a track" }),
     ).not.toBeInTheDocument();

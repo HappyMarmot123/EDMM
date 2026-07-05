@@ -144,6 +144,20 @@ export function TrackDetailAside({
   const canOpenArtworkFullscreen = Boolean(
     canUseArtworkFullscreen && track?.artworkUrl,
   );
+  const hasVisibleFallbackCandidate = Boolean(
+    fallbackTrack && fallbackTrack.id !== selectedTrackId,
+  );
+  const shouldShowLoadingState = Boolean(
+    selectedTrackId &&
+      !track &&
+      (isLoading || (isWaitingForSelectionSeed && !hasVisibleFallbackCandidate)),
+  );
+  const shouldShowUnavailableState = Boolean(
+    selectedTrackId &&
+      !track &&
+      !isLoading &&
+      (!isWaitingForSelectionSeed || hasVisibleFallbackCandidate),
+  );
   const githubUrl =
     (typeof process !== "undefined" &&
       process.env.NEXT_PUBLIC_GITHUB_URL?.trim()) ||
@@ -176,20 +190,30 @@ export function TrackDetailAside({
             </div>
           ) : null}
 
-          {selectedTrackId && !track && (isLoading || isWaitingForSelectionSeed) ? (
+          {shouldShowLoadingState ? (
             <div role="status" className="space-y-4 text-sm text-white/62">
-              <span>Loading details...</span>
+              <div className="space-y-2">
+                <h2 className="text-lg font-black text-white">
+                  선택한 정보를 불러오는 중입니다
+                </h2>
+                <p className="mt-2 text-sm font-semibold text-white/58">
+                  카탈로그와 로컬 캐시를 확인하고 있습니다.
+                </p>
+              </div>
               <div className="aspect-square animate-pulse rounded-md bg-white/10" />
               <div className="h-6 animate-pulse rounded bg-white/10" />
               <div className="h-4 w-2/3 animate-pulse rounded bg-white/10" />
             </div>
           ) : null}
 
-          {selectedTrackId && !track && !isLoading && !isWaitingForSelectionSeed ? (
+          {shouldShowUnavailableState ? (
             <div className="rounded-md border border-white/10 bg-white/[0.04] p-5">
-              <h2 className="text-lg font-black text-white">Details unavailable</h2>
-              <p className="mt-2 break-all text-sm leading-6 text-white/58">
-                Cached metadata was not found for {selectedTrackId}.
+              <h2 className="text-lg font-black text-white">
+                선택한 정보를 불러올 수 없습니다
+              </h2>
+              <p className="mt-2 text-sm font-semibold text-white/58">
+                선택한 트랙은 현재 카탈로그와 로컬 캐시에 없습니다. 목록에서 다른 트랙을
+                선택해 주세요.
               </p>
             </div>
           ) : null}
