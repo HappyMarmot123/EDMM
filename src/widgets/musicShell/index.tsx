@@ -6,6 +6,7 @@ import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTr
 import { useRecentPlays } from "@/features/library";
 import { getCachedTracksResult } from "@/shared/db/repositories/trackCacheRepo";
 import { addEdmmEventListener, EDMM_EVENTS } from "@/shared/lib/edmmEvents";
+import { captureSearchFallbackEvent } from "@/shared/lib/sentry/searchFallbackEvents";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import MusicShellHeader, { type MusicView } from "./musicShellHeader";
@@ -98,6 +99,7 @@ export function MusicShell({
     : null;
 
   const [query, setQuery] = useState("");
+  const searchQuery = query;
   const setSearchQuery = setQuery;
   const [view, setView] = useState<MusicView>(
     isMobileView ? "all" : normalizedInitialView,
@@ -122,6 +124,7 @@ export function MusicShell({
   const ignoredInitialCurrentTrackIdRef = useRef<string | null>(
     normalizedInitialTrackId ? currentTrackId : null,
   );
+  const reportedFallbackRef = useRef<string | null>(null);
   const isCurrentTrackPlaying = Boolean(currentTrackId && isPlaying);
   const shouldPlayOnTrackSelect = isMobileView;
   const activeView = useMemo<MusicView>(() => {
@@ -236,6 +239,44 @@ export function MusicShell({
       normalizedQuery,
     ],
   );
+
+  useEffect(() => {
+    const eventKey = `${catalogFallbackState.status}:${activeView}:${searchQuery.length}`;
+    if (reportedFallbackRef.current === eventKey) {
+      return;
+    }
+
+    if (
+      catalogFallbackState.status === "catalog_error_empty" ||
+      catalogFallbackState.status === "catalog_error_with_stale_data"
+    ) {
+      reportedFallbackRef.current = eventKey;
+      captureSearchFallbackEvent({
+        type: "catalog_fetch_failed",
+        route: "/search",
+        view: activeView,
+        queryLength: searchQuery.length,
+        hasQuery: searchQuery.length > 0,
+        hasStaleData: catalogFallbackState.isShowingStaleData,
+      });
+      return;
+    }
+
+    if (catalogFallbackState.status === "recent_unavailable") {
+      reportedFallbackRef.current = eventKey;
+      captureSearchFallbackEvent({
+        type: "indexeddb_unavailable",
+        route: "/search",
+        view: activeView,
+        operation: "recent_plays_read",
+      });
+    }
+  }, [
+    activeView,
+    catalogFallbackState.isShowingStaleData,
+    catalogFallbackState.status,
+    searchQuery.length,
+  ]);
 
   const visibleTracks = useMemo(() => {
     if (catalogFallbackState.visibleTracks.length > 0) {
