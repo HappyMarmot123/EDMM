@@ -3,6 +3,11 @@ import { logger } from "@/shared/lib/logger";
 
 const RECENT_PLAYS_LIMIT = 10;
 
+export type RecentPlaysResult = {
+  recentPlays: RecentPlayRow[];
+  unavailable: boolean;
+};
+
 export async function addRecentPlay(trackId: string): Promise<void> {
   try {
     await db.transaction("rw", db.recentPlays, async () => {
@@ -28,9 +33,20 @@ export async function addRecentPlay(trackId: string): Promise<void> {
 }
 
 export async function getRecentPlays(): Promise<RecentPlayRow[]> {
+  const result = await getRecentPlaysResult();
+  return result.recentPlays;
+}
+
+export async function getRecentPlaysResult(): Promise<RecentPlaysResult> {
   try {
-    return await db.recentPlays.orderBy("playedAt").reverse().toArray();
+    return {
+      recentPlays: await db.recentPlays.orderBy("playedAt").reverse().toArray(),
+      unavailable: false,
+    };
   } catch {
-    return [];
+    return {
+      recentPlays: [],
+      unavailable: true,
+    };
   }
 }

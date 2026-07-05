@@ -2,6 +2,11 @@ import type { Track } from "@/entities/track";
 import { db } from "@/shared/db/edmmDB";
 import { logger } from "@/shared/lib/logger";
 
+export type CachedTracksResult = {
+  tracks: Track[];
+  unavailable: boolean;
+};
+
 export async function cacheTrack(track: Track): Promise<void> {
   try {
     await db.trackCache.put({
@@ -26,10 +31,23 @@ export async function getCachedTrack(
 }
 
 export async function getCachedTracks(trackIds: string[]): Promise<Track[]> {
+  const result = await getCachedTracksResult(trackIds);
+  return result.tracks;
+}
+
+export async function getCachedTracksResult(
+  trackIds: string[],
+): Promise<CachedTracksResult> {
   try {
     const rows = await db.trackCache.bulkGet(trackIds);
-    return rows.flatMap((row) => (row ? [row.payload] : []));
+    return {
+      tracks: rows.flatMap((row) => (row ? [row.payload] : [])),
+      unavailable: false,
+    };
   } catch {
-    return [];
+    return {
+      tracks: [],
+      unavailable: true,
+    };
   }
 }

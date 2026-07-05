@@ -4,6 +4,7 @@ import {
   cacheTrack,
   getCachedTrack,
   getCachedTracks,
+  getCachedTracksResult,
 } from "../trackCacheRepo";
 
 afterEach(async () => {
@@ -77,6 +78,17 @@ describe("trackCacheRepo", () => {
       .mockRejectedValueOnce(new Error("IndexedDB unavailable"));
 
     await expect(getCachedTracks(["track-1"])).resolves.toEqual([]);
+  });
+
+  it("returns unavailable true when reading cached tracks result fails", async () => {
+    jest
+      .spyOn(db.trackCache, "bulkGet")
+      .mockRejectedValueOnce(new Error("IndexedDB unavailable"));
+
+    await expect(getCachedTracksResult(["track-1"])).resolves.toEqual({
+      tracks: [],
+      unavailable: true,
+    });
   });
 
   it("does not reject when writing a cached track fails", async () => {

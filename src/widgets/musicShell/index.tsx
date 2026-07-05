@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isPlayable, type Track } from "@/entities/track";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import { useRecentPlays } from "@/features/library";
-import { getCachedTracks } from "@/shared/db";
+import { getCachedTracksResult } from "@/shared/db/repositories/trackCacheRepo";
 import { addEdmmEventListener, EDMM_EVENTS } from "@/shared/lib/edmmEvents";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
@@ -34,6 +34,7 @@ export interface MusicShellProps {
 type CachedTrackState = {
   tracks: Track[];
   isLoading: boolean;
+  isUnavailable: boolean;
 };
 const noop: NonNullable<MusicShellProps["onPlay"]> = () => {};
 const TRACK_SELECT_PLAYBACK_MEDIA_QUERY = "(max-width: 767px)";
@@ -49,26 +50,31 @@ function useCachedTrackList(ids: string[]): CachedTrackState {
   const [state, setState] = useState<CachedTrackState>({
     tracks: [],
     isLoading: false,
+    isUnavailable: false,
   });
 
   useEffect(() => {
     let isActive = true;
 
     if (ids.length === 0) {
-      setState({ tracks: [], isLoading: false });
+      setState({ tracks: [], isLoading: false, isUnavailable: false });
       return;
     }
 
-    setState((current) => ({ ...current, isLoading: true }));
-    getCachedTracks(ids)
-      .then((tracks) => {
+    setState((current) => ({ ...current, isLoading: true, isUnavailable: false }));
+    getCachedTracksResult(ids)
+      .then((result) => {
         if (isActive) {
-          setState({ tracks, isLoading: false });
+          setState({
+            tracks: result.tracks,
+            isLoading: false,
+            isUnavailable: result.unavailable,
+          });
         }
       })
       .catch(() => {
         if (isActive) {
-          setState({ tracks: [], isLoading: false });
+          setState({ tracks: [], isLoading: false, isUnavailable: true });
         }
       });
 
@@ -176,7 +182,7 @@ export function MusicShell({
     useState<Track[]>([]);
   const catalogTracks = useMemo(() => cloudinaryData ?? [], [cloudinaryData]);
 
-  const { recentIds } = useRecentPlays();
+  const { recentIds, isUnavailable: isRecentPlaysUnavailable } = useRecentPlays();
 
   const allRecentTrackIds = useMemo(() => dedupeIds(recentIds), [recentIds]);
   const recentTrackIds = useMemo(
@@ -214,11 +220,15 @@ export function MusicShell({
         isCatalogLoading,
         isCatalogError,
         hasSearchQuery: normalizedQuery.length > 0,
-        recentUnavailable: false,
+        recentUnavailable: Boolean(
+          isRecentPlaysUnavailable || recentState.isUnavailable,
+        ),
       }),
     [
       activeView,
+      isRecentPlaysUnavailable,
       recentState.tracks,
+      recentState.isUnavailable,
       catalogTracks,
       lastSuccessfulCatalogTracks,
       isCatalogLoading,
@@ -465,6 +475,11 @@ export function MusicShell({
               onTrackZoneScrollHandled={handleTrackZoneScrollHandled}
               onRetry={
                 activeView === "all" ? () => void refetch?.() : undefined
+              }
+              onFallbackNoticeSecondaryAction={
+                activeView === "recent"
+                  ? () => handleViewChange("all")
+                  : undefined
               }
             />
           </section>

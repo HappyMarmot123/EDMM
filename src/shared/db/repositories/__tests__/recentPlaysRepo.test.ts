@@ -1,5 +1,9 @@
 import { db } from "../../edmmDB";
-import { addRecentPlay, getRecentPlays } from "../recentPlaysRepo";
+import {
+  addRecentPlay,
+  getRecentPlays,
+  getRecentPlaysResult,
+} from "../recentPlaysRepo";
 
 afterEach(async () => {
   jest.restoreAllMocks();
@@ -47,6 +51,19 @@ describe("recentPlaysRepo", () => {
       });
 
     await expect(getRecentPlays()).resolves.toEqual([]);
+  });
+
+  it("returns unavailable true when reading recent plays result fails", async () => {
+    jest
+      .spyOn(db.recentPlays, "orderBy")
+      .mockImplementationOnce(() => {
+        throw new Error("IndexedDB unavailable");
+      });
+
+    await expect(getRecentPlaysResult()).resolves.toEqual({
+      recentPlays: [],
+      unavailable: true,
+    });
   });
 
   it("does not reject when recording a recent play fails", async () => {
