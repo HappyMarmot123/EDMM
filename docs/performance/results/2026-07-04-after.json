@@ -4,42 +4,42 @@
   "rows": [
     {
       "route": "/",
-      "url": "http://localhost:3999/",
-      "performance": 86,
+      "url": "http://localhost:4011/",
+      "performance": 94,
       "accessibility": 100,
       "bestPractices": 96,
       "seo": 100,
-      "lcpMs": 3783,
-      "lcpDisplay": "3.8 s",
+      "lcpMs": 2962,
+      "lcpDisplay": "3.0 s",
       "cls": 0,
-      "htmlReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\-2026_07_04_08_25_42-report.html",
-      "jsonReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\-2026_07_04_08_25_42-report.json"
+      "htmlReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\-2026_07_05_09_21_59-report.html",
+      "jsonReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\-2026_07_05_09_21_59-report.json"
     },
     {
       "route": "/search?view=all",
-      "url": "http://localhost:3999/search?view=all",
-      "performance": 82,
+      "url": "http://localhost:4011/search?view=all",
+      "performance": 95,
       "accessibility": 95,
       "bestPractices": 96,
       "seo": 100,
-      "lcpMs": 4479,
-      "lcpDisplay": "4.5 s",
+      "lcpMs": 1967,
+      "lcpDisplay": "2.0 s",
       "cls": 0,
-      "htmlReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_04_08_25_54-report.html",
-      "jsonReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_04_08_25_54-report.json"
+      "htmlReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_05_09_22_41-report.html",
+      "jsonReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_05_09_22_41-report.json"
     },
     {
       "route": "/search?view=recent",
-      "url": "http://localhost:3999/search?view=recent",
-      "performance": 93,
+      "url": "http://localhost:4011/search?view=recent",
+      "performance": 96,
       "accessibility": 95,
       "bestPractices": 96,
       "seo": 100,
-      "lcpMs": 3001,
-      "lcpDisplay": "3.0 s",
+      "lcpMs": 1821,
+      "lcpDisplay": "1.8 s",
       "cls": 0,
-      "htmlReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_04_08_26_37-report.html",
-      "jsonReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_04_08_26_37-report.json"
+      "htmlReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_05_09_23_37-report.html",
+      "jsonReport": "C:\\Users\\a6r79\\EDMM\\docs\\performance\\lighthouse-reports\\search-2026_07_05_09_23_37-report.json"
     }
   ]
 }

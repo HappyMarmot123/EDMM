@@ -78,6 +78,19 @@ const rows = entries.map((entry) => {
   };
 });
 
+const measuredPorts = [
+  ...new Set(
+    rows.map((row) => {
+      const url = new URL(row.url);
+      return url.port || (url.protocol === "https:" ? "443" : "80");
+    }),
+  ),
+];
+const measuredPortLabel =
+  measuredPorts.length === 1
+    ? `port \`${measuredPorts[0]}\``
+    : `ports ${measuredPorts.map((port) => `\`${port}\``).join(", ")}`;
+
 fs.mkdirSync(resultsDir, { recursive: true });
 
 const jsonOutputPath = path.join(resultsDir, `${runDate}-${mode}.json`);
@@ -155,7 +168,7 @@ const markdown = `# ${runDate} ${
 
 ## Context
 
-- Environment: local production build served with \`next start\` on port \`3999\`.
+- Environment: local production build served with \`next start\` on ${measuredPortLabel}.
 - Command: \`npm run perf:lighthouse\`.
 - Runs per route: 3.
 - Routes: \`/\`, \`/search?view=all\`, \`/search?view=recent\`.

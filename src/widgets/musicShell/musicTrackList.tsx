@@ -41,6 +41,35 @@ const formatDuration = (durationMs: number) => {
 
 const getTrackKey = (_: number, track: Track) => track.id;
 const PRIORITY_ARTWORK_COUNT = 8;
+const TRACK_ARTWORK_THUMBNAIL_TRANSFORM =
+  "c_fill,w_96,h_96,q_auto,f_auto";
+
+const getTrackArtworkSrc = (artworkUrl: string) => {
+  if (!artworkUrl) {
+    return "";
+  }
+
+  try {
+    const url = new URL(artworkUrl);
+    const segments = url.pathname.split("/");
+    const uploadIndex = segments.findIndex((segment) => segment === "upload");
+
+    if (url.hostname !== "res.cloudinary.com" || uploadIndex < 0) {
+      return artworkUrl;
+    }
+
+    if (segments[uploadIndex + 1] === TRACK_ARTWORK_THUMBNAIL_TRANSFORM) {
+      return artworkUrl;
+    }
+
+    segments.splice(uploadIndex + 1, 0, TRACK_ARTWORK_THUMBNAIL_TRANSFORM);
+    url.pathname = segments.join("/");
+
+    return url.toString();
+  } catch {
+    return artworkUrl;
+  }
+};
 
 const trackScrollerComponents = {
   Scroller: (
@@ -257,6 +286,9 @@ export function MusicTrackList({
           const hasArtwork = Boolean(track.artworkUrl);
           const shouldShowArtwork =
             hasArtwork && (index < PRIORITY_ARTWORK_COUNT || shouldLoadArtwork);
+          const artworkSrc = shouldShowArtwork
+            ? getTrackArtworkSrc(track.artworkUrl)
+            : "";
 
           const handlePlay = (event: MouseEvent<HTMLButtonElement>) => {
             event.stopPropagation();
@@ -295,8 +327,8 @@ export function MusicTrackList({
                     data-track-artwork-id={track.id}
                     className="grid aspect-square place-items-center overflow-hidden rounded-md border border-white/10 bg-[#16080f] bg-cover bg-center text-[#ffb8c0]"
                     style={
-                      shouldShowArtwork
-                        ? { backgroundImage: `url(${track.artworkUrl})` }
+                      artworkSrc
+                        ? { backgroundImage: `url(${artworkSrc})` }
                         : undefined
                     }
                   >

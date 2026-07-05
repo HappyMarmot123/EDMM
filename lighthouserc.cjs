@@ -1,4 +1,4 @@
-const PORT = 3999;
+const PORT = Number(process.env.LIGHTHOUSE_PORT ?? 3999);
 const BASE_URL = `http://localhost:${PORT}`;
 
 module.exports = {
@@ -13,6 +13,16 @@ module.exports = {
       ],
       numberOfRuns: 3,
       settings: {
+        chromeFlags: [
+          "--disable-background-networking",
+          "--disable-component-update",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+          "--disable-sync",
+          "--no-default-browser-check",
+          "--no-first-run",
+          "--no-sandbox",
+        ].join(" "),
         onlyCategories: [
           "performance",
           "accessibility",

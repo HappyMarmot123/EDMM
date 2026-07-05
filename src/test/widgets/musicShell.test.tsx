@@ -149,10 +149,14 @@ describe("MusicShell", () => {
   it("loads initial viewport artwork immediately and defers the rest", () => {
     const artworkTracks = Array.from({ length: 9 }, (_, index) => ({
       ...track(`cloudinary:artwork-${index + 1}`, `Artwork Track ${index + 1}`),
-      artworkUrl: `https://cdn.example.com/artwork-${index + 1}.jpg`,
+      artworkUrl: `https://res.cloudinary.com/demo/image/upload/v171900000${index}/edmm/artwork-${index + 1}.jpg`,
     }));
     const priorityTrack = artworkTracks[0];
     const deferredTrack = artworkTracks[8];
+    const priorityThumbnail =
+      "https://res.cloudinary.com/demo/image/upload/c_fill,w_96,h_96,q_auto,f_auto/v1719000000/edmm/artwork-1.jpg";
+    const deferredThumbnail =
+      "https://res.cloudinary.com/demo/image/upload/c_fill,w_96,h_96,q_auto,f_auto/v1719000008/edmm/artwork-9.jpg";
 
     mockUseCloudinaryTracks.mockReturnValue({
       data: artworkTracks,
@@ -170,10 +174,10 @@ describe("MusicShell", () => {
     );
 
     expect(priorityArtwork).toHaveStyle({
-      backgroundImage: `url(${priorityTrack.artworkUrl})`,
+      backgroundImage: `url(${priorityThumbnail})`,
     });
     expect(deferredArtwork).not.toHaveStyle({
-      backgroundImage: `url(${deferredTrack.artworkUrl})`,
+      backgroundImage: `url(${deferredThumbnail})`,
     });
     expect(
       deferredArtwork?.querySelector("[data-track-artwork-skeleton]"),
@@ -184,7 +188,7 @@ describe("MusicShell", () => {
     });
 
     expect(deferredArtwork).toHaveStyle({
-      backgroundImage: `url(${deferredTrack.artworkUrl})`,
+      backgroundImage: `url(${deferredThumbnail})`,
     });
   });
 
