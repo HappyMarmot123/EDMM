@@ -24,6 +24,7 @@ type MusicTrackListProps = {
   isError?: boolean;
   emptyMessage?: string;
   fallbackNotice?: CatalogFallbackNotice | null;
+  onFallbackNoticeSecondaryAction?: () => void;
   playOnSelect?: boolean;
   onSelect: (track: Track) => void;
   onPlay: (track: Track) => void;
@@ -94,6 +95,7 @@ export function MusicTrackList({
   isError = false,
   emptyMessage = "No tracks in this view.",
   fallbackNotice = null,
+  onFallbackNoticeSecondaryAction,
   playOnSelect = false,
   onSelect,
   onPlay,
@@ -235,6 +237,15 @@ export function MusicTrackList({
           {fallbackNotice.primaryActionLabel}
         </button>
       ) : null}
+      {fallbackNotice.secondaryActionLabel && onFallbackNoticeSecondaryAction ? (
+        <button
+          type="button"
+          onClick={onFallbackNoticeSecondaryAction}
+          className="mt-3 ml-2 rounded-full border border-white/15 px-3 py-1 text-xs font-black text-white/78 transition-colors hover:border-white/30 hover:text-white"
+        >
+          {fallbackNotice.secondaryActionLabel}
+        </button>
+      ) : null}
     </section>
   ) : null;
 
@@ -260,35 +271,37 @@ export function MusicTrackList({
   }
 
   if (isError) {
+    if (fallbackNoticePanel) {
+      return <div className="space-y-3">{fallbackNoticePanel}</div>;
+    }
+
     return (
-      <div className="space-y-3">
-        {fallbackNoticePanel}
-        <div className="rounded-md border border-[#ff98a2]/30 bg-[#ff98a2]/10 p-5">
-          <h2 className="text-lg font-black text-white">Catalog unavailable</h2>
-          <p className="mt-2 text-sm leading-6 text-white/62">
-            The music catalog did not respond. Try loading it again.
-          </p>
-          {onRetry ? (
-            <button
-              type="button"
-              onClick={onRetry}
-              className="mt-4 min-h-10 rounded-full bg-[#ff98a2] px-4 text-sm font-black text-black transition-transform hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb8c0]"
-            >
-              Retry
-            </button>
-          ) : null}
-        </div>
+      <div className="rounded-md border border-[#ff98a2]/30 bg-[#ff98a2]/10 p-5">
+        <h2 className="text-lg font-black text-white">Catalog unavailable</h2>
+        <p className="mt-2 text-sm leading-6 text-white/62">
+          The music catalog did not respond. Try loading it again.
+        </p>
+        {onRetry ? (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="mt-4 min-h-10 rounded-full bg-[#ff98a2] px-4 text-sm font-black text-black transition-transform hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb8c0]"
+          >
+            Retry
+          </button>
+        ) : null}
       </div>
     );
   }
 
   if (tracks.length === 0) {
+    if (fallbackNoticePanel) {
+      return <div className="space-y-3">{fallbackNoticePanel}</div>;
+    }
+
     return (
-      <div className="space-y-3">
-        {fallbackNoticePanel}
-        <div className="rounded-md border border-white/10 bg-white/[0.04] p-5 text-sm font-semibold text-white/58">
-          {emptyMessage}
-        </div>
+      <div className="rounded-md border border-white/10 bg-white/[0.04] p-5 text-sm font-semibold text-white/58">
+        {emptyMessage}
       </div>
     );
   }

@@ -11,6 +11,7 @@ import {
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { resolveCatalogFallbackState } from "@/widgets/musicShell/catalogFallbackState";
 import MusicShell from "@/widgets/musicShell";
+import MusicTrackList from "@/widgets/musicShell/musicTrackList";
 
 jest.mock("react-virtuoso", () => ({
   Virtuoso: ({
@@ -288,6 +289,9 @@ describe("MusicShell", () => {
       screen.getByText(staleSearchFallback.notice?.title ?? ""),
     ).toBeInTheDocument();
     expect(
+      screen.queryByRole("heading", { name: "Catalog unavailable" }),
+    ).not.toBeInTheDocument();
+    expect(
       screen.getByRole("button", { name: "Select Cloud Track One" }),
     ).toBeInTheDocument();
     fireEvent.click(
@@ -296,6 +300,53 @@ describe("MusicShell", () => {
       }),
     );
     expect(refetch).toHaveBeenCalled();
+  });
+
+  it("renders a fallback notice secondary action only when both label and handler are provided", () => {
+    const onSecondaryAction = jest.fn();
+
+    const { rerender } = render(
+      <MusicTrackList
+        tracks={[]}
+        isLoading={false}
+        isError={false}
+        onSelect={jest.fn()}
+        onPlay={jest.fn()}
+        fallbackNotice={{
+          tone: "warning",
+          title: "Recent unavailable",
+          description: "Use the full catalog instead.",
+          secondaryActionLabel: "View all",
+        }}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "View all" }),
+    ).not.toBeInTheDocument();
+
+    rerender(
+      <MusicTrackList
+        tracks={[]}
+        isLoading={false}
+        isError={false}
+        onSelect={jest.fn()}
+        onPlay={jest.fn()}
+        fallbackNotice={{
+          tone: "warning",
+          title: "Recent unavailable",
+          description: "Use the full catalog instead.",
+          secondaryActionLabel: "View all",
+        }}
+        onFallbackNoticeSecondaryAction={onSecondaryAction}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "View all" }));
+    expect(onSecondaryAction).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByText("No tracks in this view."),
+    ).not.toBeInTheDocument();
   });
 
   it("shows cached recent tracks in the Recent view", async () => {
