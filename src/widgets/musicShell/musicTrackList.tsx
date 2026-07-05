@@ -24,6 +24,7 @@ type MusicTrackListProps = {
   isError?: boolean;
   emptyMessage?: string;
   fallbackNotice?: CatalogFallbackNotice | null;
+  canClearSearch?: boolean;
   onFallbackNoticeSecondaryAction?: () => void;
   onClearSearch?: () => void;
   playOnSelect?: boolean;
@@ -96,6 +97,7 @@ export function MusicTrackList({
   isError = false,
   emptyMessage = "No tracks in this view.",
   fallbackNotice = null,
+  canClearSearch = false,
   onFallbackNoticeSecondaryAction,
   onClearSearch,
   playOnSelect = false,
@@ -307,7 +309,7 @@ export function MusicTrackList({
         className="rounded-3xl border border-white/10 bg-white/[0.035] px-5 py-8 text-center"
       >
         <p className="text-sm font-bold text-white/64">{emptyMessage}</p>
-        {emptyMessage === "검색 결과가 없습니다." && onClearSearch ? (
+        {canClearSearch && onClearSearch ? (
           <button
             type="button"
             onClick={onClearSearch}

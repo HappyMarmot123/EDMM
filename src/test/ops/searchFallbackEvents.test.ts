@@ -47,4 +47,36 @@ describe("captureSearchFallbackEvent", () => {
       "https://",
     );
   });
+
+  it("captures selected track unavailable with only hasTrackId", () => {
+    captureSearchFallbackEvent({
+      type: "selected_track_unavailable",
+      route: "/search",
+      view: "all",
+      hasTrackId: true,
+    });
+
+    expect(captureMessage).toHaveBeenCalledWith(
+      "search.selected_track_unavailable",
+      expect.objectContaining({
+        level: "info",
+        tags: expect.objectContaining({
+          error_class: "selected_track_unavailable",
+          route: "/search",
+          view: "all",
+        }),
+        contexts: expect.objectContaining({
+          search: expect.objectContaining({
+            hasTrackId: true,
+          }),
+        }),
+      }),
+    );
+    expect(JSON.stringify(captureMessage.mock.calls[0])).not.toContain(
+      "cloudinary:missing-track",
+    );
+    expect(JSON.stringify(captureMessage.mock.calls[0])).not.toContain(
+      "https://",
+    );
+  });
 });

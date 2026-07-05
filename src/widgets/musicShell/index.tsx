@@ -99,7 +99,6 @@ export function MusicShell({
     : null;
 
   const [query, setQuery] = useState("");
-  const searchQuery = query;
   const setSearchQuery = setQuery;
   const [view, setView] = useState<MusicView>(
     isMobileView ? "all" : normalizedInitialView,
@@ -124,7 +123,7 @@ export function MusicShell({
   const ignoredInitialCurrentTrackIdRef = useRef<string | null>(
     normalizedInitialTrackId ? currentTrackId : null,
   );
-  const reportedFallbackRef = useRef<string | null>(null);
+  const reportedFallbackKeysRef = useRef<Set<string>>(new Set());
   const isCurrentTrackPlaying = Boolean(currentTrackId && isPlaying);
   const shouldPlayOnTrackSelect = isMobileView;
   const activeView = useMemo<MusicView>(() => {
@@ -241,42 +240,82 @@ export function MusicShell({
   );
 
   useEffect(() => {
-    const eventKey = `${catalogFallbackState.status}:${activeView}:${searchQuery.length}`;
-    if (reportedFallbackRef.current === eventKey) {
-      return;
-    }
-
     if (
-      catalogFallbackState.status === "catalog_error_empty" ||
-      catalogFallbackState.status === "catalog_error_with_stale_data"
+      catalogFallbackState.status !== "catalog_error_empty" &&
+      catalogFallbackState.status !== "catalog_error_with_stale_data"
     ) {
-      reportedFallbackRef.current = eventKey;
-      captureSearchFallbackEvent({
-        type: "catalog_fetch_failed",
-        route: "/search",
-        view: activeView,
-        queryLength: searchQuery.length,
-        hasQuery: searchQuery.length > 0,
-        hasStaleData: catalogFallbackState.isShowingStaleData,
-      });
       return;
     }
 
-    if (catalogFallbackState.status === "recent_unavailable") {
-      reportedFallbackRef.current = eventKey;
-      captureSearchFallbackEvent({
-        type: "indexeddb_unavailable",
-        route: "/search",
-        view: activeView,
-        operation: "recent_plays_read",
-      });
+    const eventKey = [
+      "catalog_fetch_failed",
+      activeView,
+      normalizedQuery.length,
+      catalogFallbackState.isShowingStaleData ? "stale" : "empty",
+    ].join(":");
+    if (reportedFallbackKeysRef.current.has(eventKey)) {
+      return;
     }
+
+    reportedFallbackKeysRef.current.add(eventKey);
+    captureSearchFallbackEvent({
+      type: "catalog_fetch_failed",
+      route: "/search",
+      view: activeView,
+      queryLength: normalizedQuery.length,
+      hasQuery: normalizedQuery.length > 0,
+      hasStaleData: catalogFallbackState.isShowingStaleData,
+    });
   }, [
     activeView,
     catalogFallbackState.isShowingStaleData,
     catalogFallbackState.status,
-    searchQuery.length,
+    normalizedQuery.length,
   ]);
+
+  useEffect(() => {
+    if (
+      catalogFallbackState.status !== "recent_unavailable" ||
+      !isRecentPlaysUnavailable
+    ) {
+      return;
+    }
+
+    const eventKey = `indexeddb_unavailable:${activeView}:recent_plays_read`;
+    if (reportedFallbackKeysRef.current.has(eventKey)) {
+      return;
+    }
+
+    reportedFallbackKeysRef.current.add(eventKey);
+    captureSearchFallbackEvent({
+      type: "indexeddb_unavailable",
+      route: "/search",
+      view: activeView,
+      operation: "recent_plays_read",
+    });
+  }, [activeView, catalogFallbackState.status, isRecentPlaysUnavailable]);
+
+  useEffect(() => {
+    if (
+      catalogFallbackState.status !== "recent_unavailable" ||
+      !recentState.isUnavailable
+    ) {
+      return;
+    }
+
+    const eventKey = `indexeddb_unavailable:${activeView}:track_cache_bulk_read`;
+    if (reportedFallbackKeysRef.current.has(eventKey)) {
+      return;
+    }
+
+    reportedFallbackKeysRef.current.add(eventKey);
+    captureSearchFallbackEvent({
+      type: "indexeddb_unavailable",
+      route: "/search",
+      view: activeView,
+      operation: "track_cache_bulk_read",
+    });
+  }, [activeView, catalogFallbackState.status, recentState.isUnavailable]);
 
   const visibleTracks = useMemo(() => {
     if (catalogFallbackState.visibleTracks.length > 0) {
@@ -474,6 +513,9 @@ export function MusicShell({
       ? catalogFallbackState.status === "catalog_error_empty"
       : false;
   const emptyMessage = catalogFallbackState.emptyMessage;
+  const catalogResultCount = catalogFallbackState.isShowingStaleData
+    ? catalogFallbackState.visibleTracks.length
+    : catalogTracks.length;
   return (
     <main className="app-viewport-height relative flex flex-col overflow-hidden bg-[#050306] px-4 pb-[calc(84px+max(env(safe-area-inset-bottom),10px))] pt-5 text-white sm:px-6 sm:pb-[calc(84px+max(env(safe-area-inset-bottom),12px))] md:pb-[calc(112px+max(env(safe-area-inset-bottom),12px))] lg:px-8">
       <SearchBackdrop />
@@ -488,7 +530,7 @@ export function MusicShell({
           <MusicShellHeader
             query={query}
             view={activeView}
-            resultCount={catalogTracks.length}
+            resultCount={catalogResultCount}
             recentCount={allRecentTrackIds.length}
             onQueryChange={setQuery}
             onViewChange={handleViewChange}
@@ -507,6 +549,7 @@ export function MusicShell({
               isError={isVisibleError}
               emptyMessage={emptyMessage}
               fallbackNotice={catalogFallbackState.notice}
+              canClearSearch={catalogFallbackState.status === "search_empty"}
               onClearSearch={() => setSearchQuery("")}
               playOnSelect={shouldPlayOnTrackSelect}
               onSelect={handleSelect}
@@ -552,6 +595,7 @@ export function MusicShell({
           >
             <div className="music-shell-aside__content">
               <TrackDetailAside
+                activeView={activeView}
                 selectedTrackId={detailSelectedTrackId}
                 fallbackTrack={selectedTrack}
                 isWaitingForSelectionSeed={

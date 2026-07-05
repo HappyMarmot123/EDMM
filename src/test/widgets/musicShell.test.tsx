@@ -6,6 +6,7 @@ import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTr
 import { useRecentPlays } from "@/features/library";
 import { getCachedTrack } from "@/shared/db";
 import { getCachedTracksResult } from "@/shared/db/repositories/trackCacheRepo";
+import { captureSearchFallbackEvent } from "@/shared/lib/sentry/searchFallbackEvents";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { resolveCatalogFallbackState } from "@/widgets/musicShell/catalogFallbackState";
 import MusicShell from "@/widgets/musicShell";
@@ -36,6 +37,9 @@ jest.mock("@/shared/db/repositories/trackCacheRepo", () => ({
   getCachedTrack: jest.fn(),
   getCachedTracksResult: jest.fn(),
 }));
+jest.mock("@/shared/lib/sentry/searchFallbackEvents", () => ({
+  captureSearchFallbackEvent: jest.fn(),
+}));
 jest.mock("@/shared/providers/audioPlayerProvider", () => ({
   useAudioPlayer: jest.fn(),
 }));
@@ -55,6 +59,10 @@ const mockGetCachedTracksResult = getCachedTracksResult as jest.MockedFunction<
 const mockGetCachedTrack = getCachedTrack as jest.MockedFunction<
   typeof getCachedTrack
 >;
+const mockCaptureSearchFallbackEvent =
+  captureSearchFallbackEvent as jest.MockedFunction<
+    typeof captureSearchFallbackEvent
+  >;
 
 const mockTrackSelectPlaybackMedia = (matches: boolean) => {
   window.matchMedia = jest.fn().mockImplementation((query: string) => ({
@@ -135,6 +143,7 @@ describe("MusicShell", () => {
     mockGetCachedTrack.mockImplementation(async (trackId: string) =>
       [hiddenTrack, recentTrack, ...cloudTracks].find((item) => item.id === trackId),
     );
+    mockCaptureSearchFallbackEvent.mockClear();
   });
 
   afterEach(() => {
@@ -435,6 +444,48 @@ describe("MusicShell", () => {
     ).toBeInTheDocument();
   });
 
+  it("reports recent plays read failures with recent_plays_read", async () => {
+    mockUseRecentPlays.mockReturnValue({
+      recentIds: [],
+      isUnavailable: true,
+    });
+
+    render(<MusicShell />);
+    fireEvent.click(getDesktopViewButton("Recent"));
+
+    await waitFor(() => {
+      expect(mockCaptureSearchFallbackEvent).toHaveBeenCalledWith({
+        type: "indexeddb_unavailable",
+        route: "/search",
+        view: "recent",
+        operation: "recent_plays_read",
+      });
+    });
+  });
+
+  it("reports cached-track bulk read failures with track_cache_bulk_read", async () => {
+    mockUseRecentPlays.mockReturnValue({
+      recentIds: ["cloudinary:recent-1"],
+      isUnavailable: false,
+    });
+    mockGetCachedTracksResult.mockResolvedValue({
+      tracks: [],
+      unavailable: true,
+    });
+
+    render(<MusicShell />);
+    fireEvent.click(getDesktopViewButton("Recent"));
+
+    await waitFor(() => {
+      expect(mockCaptureSearchFallbackEvent).toHaveBeenCalledWith({
+        type: "indexeddb_unavailable",
+        route: "/search",
+        view: "recent",
+        operation: "track_cache_bulk_read",
+      });
+    });
+  });
+
   it("renders a fallback notice secondary action only when both label and handler are provided", () => {
     const onSecondaryAction = jest.fn();
 
@@ -665,6 +716,14 @@ describe("MusicShell", () => {
     expect(
       await screen.findByText("선택한 정보를 불러올 수 없습니다"),
     ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockCaptureSearchFallbackEvent).toHaveBeenCalledWith({
+        type: "selected_track_unavailable",
+        route: "/search",
+        view: "all",
+        hasTrackId: true,
+      });
+    });
     expect(
       screen.getByRole("button", { name: "Select Cloud Track One" }),
     ).toBeInTheDocument();

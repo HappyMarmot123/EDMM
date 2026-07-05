@@ -7,10 +7,13 @@ import { AudioVisualizer, EqualizerPanel } from "@/features/audio";
 import { getCachedTrack } from "@/shared/db";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import { dispatchEdmmEvent, EDMM_EVENTS } from "@/shared/lib/edmmEvents";
+import { captureSearchFallbackEvent } from "@/shared/lib/sentry/searchFallbackEvents";
 import { pickArtworkUrl } from "@/shared/lib/trackArtwork";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
+import type { MusicView } from "./musicShellHeader";
 
 type TrackDetailAsideProps = {
+  activeView: MusicView;
   selectedTrackId: string | null;
   fallbackTrack?: Track | null;
   isWaitingForSelectionSeed?: boolean;
@@ -45,12 +48,15 @@ function DetailLine({ label, value }: DetailLineProps) {
 }
 
 export function TrackDetailAside({
+  activeView,
   selectedTrackId,
   fallbackTrack = null,
   isWaitingForSelectionSeed = false,
 }: TrackDetailAsideProps) {
   const [cachedTrack, setCachedTrack] = useState<Track | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [reportedUnavailableSelectionKey, setReportedUnavailableSelectionKey] =
+    useState<string | null>(null);
   const canUseArtworkFullscreen = useMediaQuery(
     TRACK_DETAIL_FULLSCREEN_VIEWPORT_QUERY,
     false,
@@ -162,6 +168,30 @@ export function TrackDetailAside({
     (typeof process !== "undefined" &&
       process.env.NEXT_PUBLIC_GITHUB_URL?.trim()) ||
     "https://github.com/HappyMarmot123";
+
+  useEffect(() => {
+    if (!shouldShowUnavailableState) {
+      return;
+    }
+
+    const nextSelectionKey = `${activeView}:${selectedTrackId ?? ""}`;
+    if (reportedUnavailableSelectionKey === nextSelectionKey) {
+      return;
+    }
+
+    captureSearchFallbackEvent({
+      type: "selected_track_unavailable",
+      route: "/search",
+      view: activeView,
+      hasTrackId: Boolean(selectedTrackId),
+    });
+    setReportedUnavailableSelectionKey(nextSelectionKey);
+  }, [
+    activeView,
+    reportedUnavailableSelectionKey,
+    selectedTrackId,
+    shouldShowUnavailableState,
+  ]);
 
   const handleOpenArtworkFullscreen = () => {
     if (!track || !canOpenArtworkFullscreen || typeof window === "undefined") {
