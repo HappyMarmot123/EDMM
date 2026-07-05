@@ -12,6 +12,7 @@ import MusicShellHeader, { type MusicView } from "./musicShellHeader";
 import MusicTrackList from "./musicTrackList";
 import SearchBackdrop from "./searchBackdrop";
 import TrackDetailAside from "./trackDetailAside";
+import { resolveCatalogFallbackState } from "./catalogFallbackState";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   buildTrackSeedFingerprint,
@@ -86,8 +87,9 @@ export function MusicShell({
 }: MusicShellProps) {
   const normalizedInitialView = isMusicView(initialView) ? initialView : "all";
   const isMobileView = useTrackSelectPlaybackMode();
-  const normalizedInitialTrackId =
-    initialTrackId?.trim().length ? initialTrackId : null;
+  const normalizedInitialTrackId = initialTrackId?.trim().length
+    ? initialTrackId
+    : null;
 
   const [query, setQuery] = useState("");
   const [view, setView] = useState<MusicView>(
@@ -96,13 +98,14 @@ export function MusicShell({
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(
     normalizedInitialTrackId,
   );
-  const [selectionSource, setSelectionSource] = useState<SelectionSource | null>(
-    normalizedInitialTrackId ? "initial" : null,
-  );
-  const [
-    playerZoneScrollRequest,
-    setPlayerZoneScrollRequest,
-  ] = useState<{ trackId: string; requestId: number } | null>(null);
+  const [selectionSource, setSelectionSource] =
+    useState<SelectionSource | null>(
+      normalizedInitialTrackId ? "initial" : null,
+    );
+  const [playerZoneScrollRequest, setPlayerZoneScrollRequest] = useState<{
+    trackId: string;
+    requestId: number;
+  } | null>(null);
   const [isTrackDetailOpen, setIsTrackDetailOpen] = useState(true);
   const { currentTrack, isPlaying } = useAudioPlayer();
   const currentTrackId = currentTrack?.id ?? null;
@@ -144,18 +147,17 @@ export function MusicShell({
       window,
       EDMM_EVENTS.playerTrackZoneSelect,
       (event) => {
-      const trackId = event.detail.trackId.trim();
-      if (!trackId) {
-        return;
-      }
+        const trackId = event.detail.trackId.trim();
+        if (!trackId) {
+          return;
+        }
 
-      setSelectedTrackId(trackId);
-      setSelectionSource("visible");
-      setPlayerZoneScrollRequest((current) => ({
-        trackId,
-        requestId:
-          current?.trackId === trackId ? current.requestId + 1 : 1,
-      }));
+        setSelectedTrackId(trackId);
+        setSelectionSource("visible");
+        setPlayerZoneScrollRequest((current) => ({
+          trackId,
+          requestId: current?.trackId === trackId ? current.requestId + 1 : 1,
+        }));
       },
     );
 
@@ -168,10 +170,9 @@ export function MusicShell({
     isLoading: isCatalogLoading,
     isError: isCatalogError,
     refetch,
-  } = useCloudinaryTracks(
-    normalizedQuery,
-    { resourceType: "all" },
-  );
+  } = useCloudinaryTracks(normalizedQuery, { resourceType: "all" });
+  const [lastSuccessfulCatalogTracks, setLastSuccessfulCatalogTracks] =
+    useState<Track[]>([]);
   const catalogTracks = useMemo(() => cloudinaryData ?? [], [cloudinaryData]);
 
   const { recentIds } = useRecentPlays();
@@ -183,11 +184,60 @@ export function MusicShell({
   );
   const recentState = useCachedTrackList(recentTrackIds);
 
-  const visibleTracks = useMemo(() => {
-    if (activeView === "recent") return recentState.tracks;
+  useEffect(() => {
+    if (isCatalogError || isCatalogLoading || catalogTracks.length === 0) {
+      return;
+    }
 
-    return catalogTracks;
-  }, [activeView, catalogTracks, recentState.tracks]);
+    setLastSuccessfulCatalogTracks((currentTracks) => {
+      if (
+        currentTracks.length === catalogTracks.length &&
+        currentTracks.every(
+          (track, index) => track.id === catalogTracks[index]?.id,
+        )
+      ) {
+        return currentTracks;
+      }
+
+      return catalogTracks;
+    });
+  }, [catalogTracks, isCatalogError, isCatalogLoading]);
+
+  const catalogFallbackState = useMemo(
+    () =>
+      resolveCatalogFallbackState({
+        activeView,
+        currentTracks:
+          activeView === "recent" ? recentState.tracks : catalogTracks,
+        previousCatalogTracks: lastSuccessfulCatalogTracks,
+        isCatalogLoading,
+        isCatalogError,
+        hasSearchQuery: normalizedQuery.length > 0,
+        recentUnavailable: false,
+      }),
+    [
+      activeView,
+      recentState.tracks,
+      catalogTracks,
+      lastSuccessfulCatalogTracks,
+      isCatalogLoading,
+      isCatalogError,
+      normalizedQuery,
+    ],
+  );
+
+  const visibleTracks = useMemo(() => {
+    if (catalogFallbackState.visibleTracks.length > 0) {
+      return catalogFallbackState.visibleTracks;
+    }
+
+    return activeView === "recent" ? recentState.tracks : catalogTracks;
+  }, [
+    activeView,
+    catalogFallbackState.visibleTracks,
+    recentState.tracks,
+    catalogTracks,
+  ]);
 
   const visibleTrackIds = useMemo(
     () => new Set(visibleTracks.map((track) => track.id)),
@@ -283,7 +333,9 @@ export function MusicShell({
   }, [selectedTrackId, visibleTracks]);
   const visibleSelectedTrackId = selectedTrack?.id ?? null;
   const detailSelectedTrackId =
-    selectionSource === "initial" ? selectedTrackId : visibleSelectedTrackId ?? selectedTrackId;
+    selectionSource === "initial"
+      ? selectedTrackId
+      : (visibleSelectedTrackId ?? selectedTrackId);
 
   const queueForTrack = useCallback(
     (track: Track) => {
@@ -342,7 +394,12 @@ export function MusicShell({
       return;
     }
 
-    activateTrackInPlayer(fallbackTrack, false, "initial", queueForTrack(fallbackTrack));
+    activateTrackInPlayer(
+      fallbackTrack,
+      false,
+      "initial",
+      queueForTrack(fallbackTrack),
+    );
   }, [activateTrackInPlayer, queueForTrack, visibleTracks]);
 
   useMusicShellTrackSeed({
@@ -356,20 +413,17 @@ export function MusicShell({
     fallbackToFirstPlayable,
   });
 
-  const isVisibleLoading = activeView === "all"
-    ? isCatalogLoading
-    : recentState.isLoading;
-  const isVisibleError = activeView === "all" ? isCatalogError : false;
-  const emptyMessage =
+  const isVisibleLoading =
     activeView === "all"
-      ? normalizedQuery
-        ? `No tracks found for "${normalizedQuery}".`
-        : "No tracks in this view."
-      : "No tracks in this view.";
+      ? catalogFallbackState.status === "loading_initial"
+      : recentState.isLoading;
+  const isVisibleError =
+    activeView === "all"
+      ? catalogFallbackState.status === "catalog_error_empty"
+      : false;
+  const emptyMessage = catalogFallbackState.emptyMessage;
   return (
-    <main
-      className="app-viewport-height relative flex flex-col overflow-hidden bg-[#050306] px-4 pb-[calc(84px+max(env(safe-area-inset-bottom),10px))] pt-5 text-white sm:px-6 sm:pb-[calc(84px+max(env(safe-area-inset-bottom),12px))] md:pb-[calc(112px+max(env(safe-area-inset-bottom),12px))] lg:px-8"
-    >
+    <main className="app-viewport-height relative flex flex-col overflow-hidden bg-[#050306] px-4 pb-[calc(84px+max(env(safe-area-inset-bottom),10px))] pt-5 text-white sm:px-6 sm:pb-[calc(84px+max(env(safe-area-inset-bottom),12px))] md:pb-[calc(112px+max(env(safe-area-inset-bottom),12px))] lg:px-8">
       <SearchBackdrop />
       <section
         className={`music-shell-grid relative mx-auto grid min-h-0 w-full flex-1 gap-5 max-w-6xl ${
@@ -400,6 +454,7 @@ export function MusicShell({
               isLoading={isVisibleLoading}
               isError={isVisibleError}
               emptyMessage={emptyMessage}
+              fallbackNotice={catalogFallbackState.notice}
               playOnSelect={shouldPlayOnTrackSelect}
               onSelect={handleSelect}
               onPlay={handlePlay}
@@ -442,7 +497,9 @@ export function MusicShell({
                 selectedTrackId={detailSelectedTrackId}
                 fallbackTrack={selectedTrack}
                 isWaitingForSelectionSeed={
-                  selectionSource === "initial" && !selectedTrack && isVisibleLoading
+                  selectionSource === "initial" &&
+                  !selectedTrack &&
+                  isVisibleLoading
                 }
               />
             </div>

@@ -9,6 +9,7 @@ import {
   getCachedTracks,
 } from "@/shared/db";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
+import { resolveCatalogFallbackState } from "@/widgets/musicShell/catalogFallbackState";
 import MusicShell from "@/widgets/musicShell";
 
 jest.mock("react-virtuoso", () => ({
@@ -242,6 +243,59 @@ describe("MusicShell", () => {
 
     expect(mockUseCloudinaryTracks).toHaveBeenLastCalledWith("lemonade", { resourceType: "all" });
     expect(screen.getByRole("button", { name: "Select Cloud Track Two" })).toBeInTheDocument();
+  });
+
+  it("keeps the last catalog results visible when a searched refetch fails", async () => {
+    const user = userEvent.setup();
+    const refetch = jest.fn();
+    const staleSearchFallback = resolveCatalogFallbackState({
+      activeView: "all",
+      currentTracks: [],
+      previousCatalogTracks: cloudTracks,
+      isCatalogLoading: false,
+      isCatalogError: true,
+      hasSearchQuery: true,
+      recentUnavailable: false,
+    });
+
+    mockUseCloudinaryTracks.mockReturnValueOnce({
+      data: cloudTracks,
+      isLoading: false,
+      isError: false,
+      refetch,
+    });
+
+    const { rerender } = render(<MusicShell />);
+
+    expect(
+      screen.getByRole("button", { name: "Select Cloud Track One" }),
+    ).toBeInTheDocument();
+
+    mockUseCloudinaryTracks.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      refetch,
+    });
+
+    await user.type(
+      screen.getByRole("searchbox", { name: /search catalog/i }),
+      "broken",
+    );
+    rerender(<MusicShell />);
+
+    expect(
+      screen.getByText(staleSearchFallback.notice?.title ?? ""),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Select Cloud Track One" }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: staleSearchFallback.notice?.primaryActionLabel ?? "",
+      }),
+    );
+    expect(refetch).toHaveBeenCalled();
   });
 
   it("shows cached recent tracks in the Recent view", async () => {
@@ -590,6 +644,16 @@ describe("MusicShell", () => {
   });
 
   it("shows loading and empty states without live services", async () => {
+    const emptyCatalogState = resolveCatalogFallbackState({
+      activeView: "all",
+      currentTracks: [],
+      previousCatalogTracks: [],
+      isCatalogLoading: false,
+      isCatalogError: false,
+      hasSearchQuery: false,
+      recentUnavailable: false,
+    });
+
     mockUseCloudinaryTracks.mockReturnValue({
       data: [],
       isLoading: true,
@@ -609,7 +673,9 @@ describe("MusicShell", () => {
     rerender(<MusicShell />);
 
     await waitFor(() => {
-      expect(screen.getByText("No tracks in this view.")).toBeInTheDocument();
+      expect(
+        screen.getByText(emptyCatalogState.emptyMessage),
+      ).toBeInTheDocument();
     });
   });
 
