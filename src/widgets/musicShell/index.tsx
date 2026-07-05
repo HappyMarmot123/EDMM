@@ -185,7 +185,7 @@ export function MusicShell({
   const recentState = useCachedTrackList(recentTrackIds);
 
   useEffect(() => {
-    if (isCatalogError || isCatalogLoading || catalogTracks.length === 0) {
+    if (isCatalogError || isCatalogLoading) {
       return;
     }
 

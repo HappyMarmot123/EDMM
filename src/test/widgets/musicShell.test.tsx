@@ -302,6 +302,84 @@ describe("MusicShell", () => {
     expect(refetch).toHaveBeenCalled();
   });
 
+  it("does not revive older catalog tracks after an empty successful search is followed by an error", async () => {
+    const user = userEvent.setup();
+    let phase: "initial" | "emptySuccess" | "error" = "initial";
+    const refetch = jest.fn();
+    const searchEmptyState = resolveCatalogFallbackState({
+      activeView: "all",
+      currentTracks: [],
+      previousCatalogTracks: [],
+      isCatalogLoading: false,
+      isCatalogError: false,
+      hasSearchQuery: true,
+      recentUnavailable: false,
+    });
+    const searchErrorState = resolveCatalogFallbackState({
+      activeView: "all",
+      currentTracks: [],
+      previousCatalogTracks: [],
+      isCatalogLoading: false,
+      isCatalogError: true,
+      hasSearchQuery: true,
+      recentUnavailable: false,
+    });
+
+    mockUseCloudinaryTracks.mockImplementation((query: string) => {
+      if (!query) {
+        return {
+          data: cloudTracks,
+          isLoading: false,
+          isError: false,
+          refetch,
+        };
+      }
+
+      if (phase === "error") {
+        return {
+          data: undefined,
+          isLoading: false,
+          isError: true,
+          refetch,
+        };
+      }
+
+      return {
+        data: [],
+        isLoading: false,
+        isError: false,
+        refetch,
+      };
+    });
+
+    const { rerender } = render(<MusicShell />);
+
+    expect(
+      screen.getByRole("button", { name: "Select Cloud Track One" }),
+    ).toBeInTheDocument();
+
+    phase = "emptySuccess";
+    await user.type(
+      screen.getByRole("searchbox", { name: /search catalog/i }),
+      "rare",
+    );
+
+    expect(screen.getByText(searchEmptyState.emptyMessage)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Select Cloud Track One" }),
+    ).not.toBeInTheDocument();
+
+    phase = "error";
+    rerender(<MusicShell />);
+
+    expect(
+      screen.getByText(searchErrorState.notice?.title ?? ""),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Select Cloud Track One" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("renders a fallback notice secondary action only when both label and handler are provided", () => {
     const onSecondaryAction = jest.fn();
 
