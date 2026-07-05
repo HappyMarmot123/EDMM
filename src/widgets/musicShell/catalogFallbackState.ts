@@ -11,13 +11,15 @@ export type CatalogFallbackStatus =
   | "recent_empty"
   | "recent_unavailable";
 
-export type CatalogFallbackNotice = {
+export interface CatalogFallbackCopy {
   tone: "warning" | "error";
   title: string;
   description: string;
   primaryActionLabel?: string;
   secondaryActionLabel?: string;
-};
+}
+
+export type CatalogFallbackNotice = CatalogFallbackCopy;
 
 export type CatalogFallbackInput = {
   activeView: MusicView;
@@ -57,7 +59,7 @@ export function resolveCatalogFallbackState({
           tone: "warning",
           title: "최근 재생 목록을 불러올 수 없습니다",
           description: "카탈로그 전체 목록은 계속 탐색할 수 있습니다.",
-          secondaryActionLabel: "All 보기",
+          secondaryActionLabel: "전체 보기",
         },
       };
     }
@@ -150,7 +152,7 @@ export function resolveCatalogFallbackState({
   return {
     status: "ready",
     visibleTracks: currentTracks,
-    emptyMessage: "No tracks in this view.",
+    emptyMessage: "현재 보기에 표시할 트랙이 없습니다.",
     isShowingStaleData: false,
     notice: null,
   };
