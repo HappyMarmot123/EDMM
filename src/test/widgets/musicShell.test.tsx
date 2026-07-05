@@ -380,6 +380,53 @@ describe("MusicShell", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("separates search empty state from catalog unavailable state", async () => {
+    const user = userEvent.setup();
+
+    mockUseCloudinaryTracks.mockImplementation((query: string) => ({
+      data: query ? [] : cloudTracks,
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    }));
+
+    render(<MusicShell />);
+    await user.type(
+      screen.getByRole("searchbox", { name: /search catalog/i }),
+      "missing track",
+    );
+
+    expect(screen.getByText("검색 결과가 없습니다.")).toBeInTheDocument();
+    expect(
+      screen.queryByText("카탈로그를 불러올 수 없습니다"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("clears the active search from the search empty state action", async () => {
+    const user = userEvent.setup();
+
+    mockUseCloudinaryTracks.mockImplementation((query: string) => ({
+      data: query ? [] : cloudTracks,
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    }));
+
+    render(<MusicShell />);
+    const searchbox = screen.getByRole("searchbox", { name: /search catalog/i });
+
+    await user.type(searchbox, "missing track");
+
+    expect(screen.getByText("검색 결과가 없습니다.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "검색어 지우기" }));
+
+    expect(searchbox).toHaveValue("");
+    expect(
+      screen.getByRole("button", { name: "Select Cloud Track One" }),
+    ).toBeInTheDocument();
+  });
+
   it("renders a fallback notice secondary action only when both label and handler are provided", () => {
     const onSecondaryAction = jest.fn();
 

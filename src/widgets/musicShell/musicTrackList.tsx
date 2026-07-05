@@ -25,6 +25,7 @@ type MusicTrackListProps = {
   emptyMessage?: string;
   fallbackNotice?: CatalogFallbackNotice | null;
   onFallbackNoticeSecondaryAction?: () => void;
+  onClearSearch?: () => void;
   playOnSelect?: boolean;
   onSelect: (track: Track) => void;
   onPlay: (track: Track) => void;
@@ -96,6 +97,7 @@ export function MusicTrackList({
   emptyMessage = "No tracks in this view.",
   fallbackNotice = null,
   onFallbackNoticeSecondaryAction,
+  onClearSearch,
   playOnSelect = false,
   onSelect,
   onPlay,
@@ -300,8 +302,20 @@ export function MusicTrackList({
     }
 
     return (
-      <div className="rounded-md border border-white/10 bg-white/[0.04] p-5 text-sm font-semibold text-white/58">
-        {emptyMessage}
+      <div
+        role="status"
+        className="rounded-3xl border border-white/10 bg-white/[0.035] px-5 py-8 text-center"
+      >
+        <p className="text-sm font-bold text-white/64">{emptyMessage}</p>
+        {emptyMessage === "검색 결과가 없습니다." && onClearSearch ? (
+          <button
+            type="button"
+            onClick={onClearSearch}
+            className="mt-4 rounded-full border border-[#ff98a2]/40 px-4 py-2 text-xs font-black text-[#ffb8c0] transition-colors hover:border-[#ff98a2]/75 hover:text-white"
+          >
+            검색어 지우기
+          </button>
+        ) : null}
       </div>
     );
   }

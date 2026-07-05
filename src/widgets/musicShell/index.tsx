@@ -92,6 +92,7 @@ export function MusicShell({
     : null;
 
   const [query, setQuery] = useState("");
+  const setSearchQuery = setQuery;
   const [view, setView] = useState<MusicView>(
     isMobileView ? "all" : normalizedInitialView,
   );
@@ -455,6 +456,7 @@ export function MusicShell({
               isError={isVisibleError}
               emptyMessage={emptyMessage}
               fallbackNotice={catalogFallbackState.notice}
+              onClearSearch={() => setSearchQuery("")}
               playOnSelect={shouldPlayOnTrackSelect}
               onSelect={handleSelect}
               onPlay={handlePlay}
