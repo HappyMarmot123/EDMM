@@ -24,38 +24,52 @@ export function useMediaSession({
   prevTrack,
   seekTo,
 }: MediaSessionState) {
+  const currentTrackId = currentTrack?.id ?? null;
+  const currentTrackTitle = currentTrack?.title ?? "";
+  const currentTrackArtist = currentTrack?.artistName ?? "";
+  const currentTrackAlbum = currentTrack?.albumName ?? "";
+
   useEffect(() => {
     if (
       typeof window === "undefined" ||
-      !currentTrack ||
+      !currentTrackId ||
       !("mediaSession" in navigator)
     ) {
       return;
     }
 
     const mediaSession = navigator.mediaSession;
-    const artwork = currentTrack.artworkUrl
-      ? [{ src: currentTrack.artworkUrl }]
-      : undefined;
     const metadata = typeof MediaMetadata === "undefined" ? null : new MediaMetadata({
-      title: currentTrack.title,
-      artist: currentTrack.artistName,
-      album: currentTrack.albumName,
-      artwork,
+      title: currentTrackTitle,
+      artist: currentTrackArtist,
+      album: currentTrackAlbum,
     });
 
     mediaSession.metadata = metadata;
 
+    return () => {
+      mediaSession.metadata = null;
+    };
+  }, [
+    currentTrackAlbum,
+    currentTrackArtist,
+    currentTrackId,
+    currentTrackTitle,
+  ]);
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      !currentTrackId ||
+      !("mediaSession" in navigator)
+    ) {
+      return;
+    }
+
+    const mediaSession = navigator.mediaSession;
+
     const clampedDuration =
       Number.isFinite(duration) && duration > 0 ? duration : 0;
-
-    if (clampedDuration > 0 && "setPositionState" in mediaSession) {
-      mediaSession.setPositionState({
-        duration: clampedDuration,
-        position: currentTime > clampedDuration ? clampedDuration : currentTime,
-        playbackRate: 1,
-      });
-    }
 
     mediaSession.setActionHandler("play", () => {
       void togglePlayPause();
@@ -81,10 +95,9 @@ export function useMediaSession({
       mediaSession.setActionHandler("nexttrack", null);
       mediaSession.setActionHandler("previoustrack", null);
       mediaSession.setActionHandler("seekto", null);
-      mediaSession.metadata = null;
     };
   }, [
-    currentTrack,
+    currentTrackId,
     duration,
     nextTrack,
     prevTrack,
@@ -95,7 +108,7 @@ export function useMediaSession({
   useEffect(() => {
     if (
       typeof window === "undefined" ||
-      !currentTrack ||
+      !currentTrackId ||
       !("mediaSession" in navigator)
     ) {
       return;
@@ -115,5 +128,5 @@ export function useMediaSession({
         playbackRate: 1,
       });
     }
-  }, [currentTrack, currentTime, duration]);
+  }, [currentTrackId, currentTime, duration]);
 }

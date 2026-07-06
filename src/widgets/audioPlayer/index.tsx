@@ -7,28 +7,41 @@ import {
   useAudioKeyboardShortcuts,
 } from "@/features/audio";
 
+type PlayerViewport = "desktop" | "mobile";
+
+const DESKTOP_PLAYER_VIEWPORT_QUERY = "(min-width: 768px)";
+
 export default function AudioPlayerWidget() {
   useAudioKeyboardShortcuts();
+  const [playerViewport, setPlayerViewport] = useState<PlayerViewport | null>(
+    null,
+  );
 
-  // The player is driven entirely by client-side state (current track, playback,
-  // restored recents). Rendering it during SSR/first hydration would diverge from
-  // the client once that state loads, causing a hydration mismatch. Render it only
-  // after mount so the server and first client render always agree (nothing).
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => setIsMounted(true), []);
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      setPlayerViewport("mobile");
+      return;
+    }
 
-  if (!isMounted) {
+    const mediaQuery = window.matchMedia(DESKTOP_PLAYER_VIEWPORT_QUERY);
+    const updateViewport = () => {
+      setPlayerViewport(mediaQuery.matches ? "desktop" : "mobile");
+    };
+
+    updateViewport();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", updateViewport);
+      return () => mediaQuery.removeEventListener("change", updateViewport);
+    }
+
+    mediaQuery.addListener(updateViewport);
+    return () => mediaQuery.removeListener(updateViewport);
+  }, []);
+
+  if (!playerViewport) {
     return null;
   }
 
-  return (
-    <>
-      <div className="hidden md:block">
-        <AudioPlayer />
-      </div>
-      <div className="md:hidden">
-        <MobileAudioPlayer />
-      </div>
-    </>
-  );
+  return playerViewport === "desktop" ? <AudioPlayer /> : <MobileAudioPlayer />;
 }

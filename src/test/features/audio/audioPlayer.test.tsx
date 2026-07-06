@@ -408,6 +408,28 @@ describe("AudioPlayer", () => {
     expect(mockAudioPlayerState.nextTrack).toHaveBeenCalledTimes(1);
   });
 
+  it("mounts only the desktop player on desktop viewport", async () => {
+    mockFullscreenViewport(true);
+
+    render(<AudioPlayerWidget />);
+
+    await waitFor(() => {
+      expect(document.getElementById("player-container")).toBeInTheDocument();
+    });
+    expect(document.getElementById("player-container-mobile")).not.toBeInTheDocument();
+  });
+
+  it("mounts only the mobile player on mobile viewport", async () => {
+    mockFullscreenViewport(false);
+
+    render(<AudioPlayerWidget />);
+
+    await waitFor(() => {
+      expect(document.getElementById("player-container-mobile")).toBeInTheDocument();
+    });
+    expect(document.getElementById("player-container")).not.toBeInTheDocument();
+  });
+
   it("closes fullscreen keyboard guidance when focus leaves the shortcut button", async () => {
     render(<AudioPlayer />);
 

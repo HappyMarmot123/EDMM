@@ -28,24 +28,47 @@ const createMediaSessionMock = () => {
     previoustrack: null,
     seekto: null,
   };
+  let metadataValue: MediaMetadata | null = null;
+  const metadataAssignments: Array<MediaMetadata | null> = [];
+  const mediaSession = {
+    setActionHandler: jest.fn(
+      (type: MediaSessionActionType, handler: MediaSessionActionHandler) => {
+        handlers[type] = handler;
+      },
+    ),
+    setPositionState: jest.fn(),
+  } as MediaSession & {
+    handlers?: Record<MediaSessionActionType, MediaSessionActionHandler>;
+  };
+
+  Object.defineProperty(mediaSession, "metadata", {
+    configurable: true,
+    get: () => metadataValue,
+    set: (value: MediaMetadata | null) => {
+      metadataValue = value;
+      metadataAssignments.push(value);
+    },
+  });
+
   return {
     handlers,
-    mediaSession: {
-      setActionHandler: jest.fn(
-        (type: MediaSessionActionType, handler: MediaSessionActionHandler) => {
-          handlers[type] = handler;
-        },
-      ),
-      setPositionState: jest.fn(),
-      metadata: null as MediaMetadata | null,
-    },
+    mediaSession,
+    metadataAssignments,
   };
 };
 
 beforeEach(() => {
   (globalThis as Record<string, unknown>).MediaMetadata = class {
-    constructor(init: Record<string, string | string[] | undefined>) {
-      void init;
+    constructor(init: {
+      title?: string;
+      artist?: string;
+      album?: string;
+      artwork?: { src: string }[];
+    }) {
+      this.title = init.title;
+      this.artist = init.artist;
+      this.album = init.album;
+      this.artwork = init.artwork;
     }
 
     title?: string;
@@ -56,13 +79,14 @@ beforeEach(() => {
 });
 
 const installMediaSession = () => {
-  const { handlers, mediaSession } = createMediaSessionMock();
+  const { handlers, mediaSession, metadataAssignments } =
+    createMediaSessionMock();
   Object.defineProperty(navigator, "mediaSession", {
     configurable: true,
     value: mediaSession,
   });
 
-  return { handlers, mediaSession };
+  return { handlers, mediaSession, metadataAssignments };
 };
 
 function TestHost({
@@ -182,6 +206,45 @@ describe("useMediaSession", () => {
       playbackRate: 1,
     });
     unmount();
+  });
+
+  it("does not reset artwork metadata when only action callbacks change", () => {
+    const { metadataAssignments } = installMediaSession();
+
+    const { rerender } = render(
+      <TestHost
+        track={TRACK}
+        nextTrack={jest.fn()}
+        prevTrack={jest.fn()}
+        togglePlayPause={jest.fn()}
+      />,
+    );
+
+    expect(metadataAssignments.filter(Boolean)).toHaveLength(1);
+
+    rerender(
+      <TestHost
+        track={TRACK}
+        nextTrack={jest.fn()}
+        prevTrack={jest.fn()}
+        togglePlayPause={jest.fn()}
+      />,
+    );
+
+    expect(metadataAssignments.filter(Boolean)).toHaveLength(1);
+  });
+
+  it("does not pass external artwork URLs to media session metadata", () => {
+    const { mediaSession } = installMediaSession();
+
+    render(<TestHost track={TRACK} />);
+
+    expect(mediaSession.metadata).toMatchObject({
+      title: "Test Track",
+      artist: "Test Artist",
+      album: "Test Album",
+    });
+    expect(mediaSession.metadata?.artwork).toBeUndefined();
   });
 
   it("clamps seek action to track duration", () => {
