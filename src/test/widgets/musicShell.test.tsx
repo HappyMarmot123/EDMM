@@ -5,28 +5,61 @@ import type { Track } from "@/entities/track";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import { useRecentPlays } from "@/features/library";
 import { getCachedTrack, getCachedTracksResult } from "@/shared/db";
+import { dispatchEdmmEvent, EDMM_EVENTS } from "@/shared/lib/edmmEvents";
 import { captureSearchFallbackEvent } from "@/shared/lib/sentry/searchFallbackEvents";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { resolveCatalogFallbackState } from "@/widgets/musicShell/catalogFallbackState";
 import MusicShell from "@/widgets/musicShell";
 
-jest.mock("react-virtuoso", () => ({
-  Virtuoso: ({
-    data,
-    itemContent,
-  }: {
-    data: Track[];
-    itemContent: (index: number, item: Track) => JSX.Element;
-  }) => {
-    return (
-      <div>
-        {data.map((item, index) => (
-          <div key={item.id}>{itemContent(index, item)}</div>
-        ))}
-      </div>
-    );
+jest.mock(
+  "react-virtuoso",
+  () => {
+    const React = jest.requireActual("react") as typeof import("react");
+
+    return {
+      Virtuoso: React.forwardRef(
+        (
+          {
+            data,
+            itemContent,
+            scrollerRef,
+          }: {
+            data: Track[];
+            itemContent: (index: number, item: Track) => JSX.Element;
+            scrollerRef?: (ref: HTMLDivElement | null) => void;
+          },
+          ref,
+        ) => {
+          const containerRef = React.useRef<HTMLDivElement | null>(null);
+
+          React.useImperativeHandle(
+            ref,
+            () => ({
+              scrollToIndex: jest.fn(),
+            }),
+            [],
+          );
+          React.useEffect(() => {
+            scrollerRef?.(containerRef.current);
+
+            return () => {
+              scrollerRef?.(null);
+            };
+          }, [scrollerRef]);
+
+          return (
+            <div ref={containerRef}>
+              {data.map((item, index) => (
+                <div key={item.id}>{itemContent(index, item)}</div>
+              ))}
+            </div>
+          );
+        },
+      ),
+    };
   },
-}), { virtual: true });
+  { virtual: true },
+);
 
 jest.mock("@/features/cloudinary/hooks/useCloudinaryTracks");
 jest.mock("@/features/library");
@@ -928,6 +961,40 @@ describe("MusicShell", () => {
         [edmTracks[1]],
         false,
       );
+    });
+  });
+
+  it("switches to the current track folder and focuses the row when selecting the player track zone", async () => {
+    mockCategoryCatalogs();
+    mockUseAudioPlayer.mockReturnValue({
+      ...mockAudioState,
+      currentTrack: edmTracks[1],
+      isPlaying: true,
+    });
+
+    render(<MusicShell />);
+
+    expect(getDesktopViewButton("Pop")).toHaveAttribute("aria-pressed", "true");
+
+    act(() => {
+      dispatchEdmmEvent(window, EDMM_EVENTS.playerTrackZoneSelect, {
+        trackId: edmTracks[1].id,
+      });
+    });
+
+    await waitFor(() => {
+      expect(getDesktopViewButton("EDM")).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+    });
+
+    const targetRow = screen
+      .getByRole("button", { name: "Select EDM Track Two" })
+      .closest("[data-track-row-id]");
+    expect(targetRow).not.toBeNull();
+    await waitFor(() => {
+      expect(document.activeElement).toBe(targetRow);
     });
   });
 

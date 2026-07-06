@@ -209,6 +209,9 @@ export function MusicShell({
     trackId: string;
     requestId: number;
   } | null>(null);
+  const [pendingPlayerZoneTrackId, setPendingPlayerZoneTrackId] = useState<
+    string | null
+  >(null);
   const [isTrackDetailOpen, setIsTrackDetailOpen] = useState(true);
   const { currentTrack, isPlaying } = useAudioPlayer();
   const currentTrackId = currentTrack?.id ?? null;
@@ -224,6 +227,13 @@ export function MusicShell({
   const activeView = view;
   const manualViewChangeRef = useRef(false);
 
+  const requestPlayerZoneScroll = useCallback((trackId: string) => {
+    setPlayerZoneScrollRequest((current) => ({
+      trackId,
+      requestId: current?.trackId === trackId ? current.requestId + 1 : 1,
+    }));
+  }, []);
+
   const handleTrackZoneScrollHandled = useCallback(
     () => setPlayerZoneScrollRequest(null),
     [],
@@ -238,28 +248,6 @@ export function MusicShell({
   useEffect(() => {
     setView(normalizedInitialView);
   }, [normalizedInitialView]);
-
-  useEffect(() => {
-    const cleanup = addEdmmEventListener(
-      window,
-      EDMM_EVENTS.playerTrackZoneSelect,
-      (event) => {
-        const trackId = event.detail.trackId.trim();
-        if (!trackId) {
-          return;
-        }
-
-        setSelectedTrackId(trackId);
-        setSelectionSource("visible");
-        setPlayerZoneScrollRequest((current) => ({
-          trackId,
-          requestId: current?.trackId === trackId ? current.requestId + 1 : 1,
-        }));
-      },
-    );
-
-    return cleanup;
-  }, []);
 
   const normalizedQuery = query.trim();
   const catalogCategory: CloudinaryTrackCategory =
@@ -505,6 +493,102 @@ export function MusicShell({
     () => new Set(visibleTracks.map((track) => track.id)),
     [visibleTracks],
   );
+
+  const handlePlayerTrackZoneSelect = useCallback(
+    (trackId: string) => {
+      setSelectedTrackId(trackId);
+      setSelectionSource("visible");
+
+      const targetView = resolveTrackCatalogView(
+        trackId,
+        popCatalogData,
+        edmCatalogData,
+      );
+
+      if (targetView && activeView !== targetView) {
+        manualViewChangeRef.current = true;
+        setPendingPlayerZoneTrackId(trackId);
+        setView(targetView);
+        return;
+      }
+
+      if (!targetView && !areInitialSeedCatalogsSettled) {
+        setPendingPlayerZoneTrackId(trackId);
+        return;
+      }
+
+      setPendingPlayerZoneTrackId(null);
+      requestPlayerZoneScroll(trackId);
+    },
+    [
+      activeView,
+      areInitialSeedCatalogsSettled,
+      edmCatalogData,
+      popCatalogData,
+      requestPlayerZoneScroll,
+    ],
+  );
+
+  useEffect(() => {
+    const cleanup = addEdmmEventListener(
+      window,
+      EDMM_EVENTS.playerTrackZoneSelect,
+      (event) => {
+        const trackId = event.detail.trackId.trim();
+        if (!trackId) {
+          return;
+        }
+
+        handlePlayerTrackZoneSelect(trackId);
+      },
+    );
+
+    return cleanup;
+  }, [handlePlayerTrackZoneSelect]);
+
+  useEffect(() => {
+    if (!pendingPlayerZoneTrackId) {
+      return;
+    }
+
+    const targetView = resolveTrackCatalogView(
+      pendingPlayerZoneTrackId,
+      popCatalogData,
+      edmCatalogData,
+    );
+
+    if (targetView && activeView !== targetView) {
+      manualViewChangeRef.current = true;
+      setView(targetView);
+      return;
+    }
+
+    if (visibleTrackIds.has(pendingPlayerZoneTrackId)) {
+      requestPlayerZoneScroll(pendingPlayerZoneTrackId);
+      setPendingPlayerZoneTrackId(null);
+      return;
+    }
+
+    if (targetView === activeView && !isCatalogLoading) {
+      requestPlayerZoneScroll(pendingPlayerZoneTrackId);
+      setPendingPlayerZoneTrackId(null);
+      return;
+    }
+
+    if (!targetView && areInitialSeedCatalogsSettled) {
+      requestPlayerZoneScroll(pendingPlayerZoneTrackId);
+      setPendingPlayerZoneTrackId(null);
+    }
+  }, [
+    activeView,
+    areInitialSeedCatalogsSettled,
+    edmCatalogData,
+    isCatalogLoading,
+    pendingPlayerZoneTrackId,
+    popCatalogData,
+    requestPlayerZoneScroll,
+    visibleTrackIds,
+  ]);
 
   useEffect(() => {
     if (
