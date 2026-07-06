@@ -115,7 +115,20 @@ export function resolveCatalogFallbackState({
     };
   }
 
-  if (isCatalogLoading && currentTracks.length === 0) {
+  if (isCatalogLoading) {
+    const loadingTracks =
+      currentTracks.length > 0 ? currentTracks : previousCatalogTracks;
+
+    if (loadingTracks.length > 0) {
+      return {
+        status: "refreshing_with_data",
+        visibleTracks: loadingTracks,
+        emptyMessage: "",
+        isShowingStaleData: false,
+        notice: null,
+      };
+    }
+
     return {
       status: "loading_initial",
       visibleTracks: [],
@@ -124,21 +137,6 @@ export function resolveCatalogFallbackState({
       notice: null,
     };
   }
-
-  if (isCatalogLoading && currentTracks.length > 0) {
-    return {
-      status: "refreshing_with_data",
-      visibleTracks: currentTracks,
-      emptyMessage: "",
-      isShowingStaleData: false,
-      notice: {
-        tone: "warning",
-        title: "카탈로그를 새로 확인하는 중입니다",
-        description: "현재 목록은 계속 사용할 수 있습니다.",
-      },
-    };
-  }
-
   if (currentTracks.length === 0 && hasSearchQuery) {
     return {
       status: "search_empty",

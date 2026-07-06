@@ -154,6 +154,17 @@ const getDesktopViewButton = (name: string) =>
     { name },
   );
 
+const setupUserWithFakeTimers = () => {
+  jest.useFakeTimers();
+  return userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+};
+
+const advanceSearchTimer = async (ms = 400) => {
+  await act(async () => {
+    jest.advanceTimersByTime(ms);
+  });
+};
+
 const mockCategoryCatalogs = ({
   pop = cloudTracks,
   edm = edmTracks,
@@ -364,23 +375,71 @@ describe("MusicShell", () => {
   });
 
   it("calls Cloudinary search with a normalized typed query", async () => {
-    const user = userEvent.setup();
+    const user = setupUserWithFakeTimers();
 
     render(<MusicShell />);
     await user.type(
       screen.getByRole("searchbox", { name: /search catalog/i }),
       "  lemonade  ",
     );
+    await advanceSearchTimer();
 
-    expect(mockUseCloudinaryTracks).toHaveBeenLastCalledWith("lemonade", {
+    expect(mockUseCloudinaryTracks).toHaveBeenCalledWith("lemonade", {
       resourceType: "all",
       category: "pop",
     });
     expect(screen.getByRole("button", { name: "Select Cloud Track Two" })).toBeInTheDocument();
   });
 
+  it("debounces typed search before applying the Cloudinary query", async () => {
+    const user = setupUserWithFakeTimers();
+
+    render(<MusicShell />);
+
+    await user.type(
+      screen.getByRole("searchbox", { name: /search catalog/i }),
+      "l",
+    );
+
+    expect(screen.getByRole("searchbox", { name: /search catalog/i })).toHaveValue("l");
+    expect(mockUseCloudinaryTracks).not.toHaveBeenCalledWith("l", {
+      resourceType: "all",
+      category: "pop",
+    });
+
+    await advanceSearchTimer(399);
+    expect(mockUseCloudinaryTracks).not.toHaveBeenCalledWith("l", {
+      resourceType: "all",
+      category: "pop",
+    });
+
+    await advanceSearchTimer(1);
+    expect(mockUseCloudinaryTracks).toHaveBeenCalledWith("l", {
+      resourceType: "all",
+      category: "pop",
+    });
+  });
+
+  it("clears the search field from the inline clear button and keeps focus", async () => {
+    const user = setupUserWithFakeTimers();
+
+    render(<MusicShell />);
+
+    const searchbox = screen.getByRole("searchbox", { name: /search catalog/i });
+    expect(screen.queryByRole("button", { name: "Clear search" })).not.toBeInTheDocument();
+
+    await user.type(searchbox, "lemonade");
+    const clearButton = screen.getByRole("button", { name: "Clear search" });
+
+    await user.click(clearButton);
+
+    expect(searchbox).toHaveValue("");
+    expect(searchbox).toHaveFocus();
+    expect(screen.queryByRole("button", { name: "Clear search" })).not.toBeInTheDocument();
+  });
+
   it("keeps the last catalog results visible when a searched refetch fails", async () => {
-    const user = userEvent.setup();
+    const user = setupUserWithFakeTimers();
     const refetch = jest.fn();
     const staleSearchFallback = resolveCatalogFallbackState({
       activeView: "pop",
@@ -416,6 +475,7 @@ describe("MusicShell", () => {
       screen.getByRole("searchbox", { name: /search catalog/i }),
       "broken",
     );
+    await advanceSearchTimer();
     rerender(<MusicShell />);
 
     expect(
@@ -436,7 +496,7 @@ describe("MusicShell", () => {
   });
 
   it("renders catalog fallback feedback outside the fixed track list section", async () => {
-    const user = userEvent.setup();
+    const user = setupUserWithFakeTimers();
     const staleSearchFallback = resolveCatalogFallbackState({
       activeView: "pop",
       currentTracks: [],
@@ -467,6 +527,7 @@ describe("MusicShell", () => {
       screen.getByRole("searchbox", { name: /search catalog/i }),
       "broken",
     );
+    await advanceSearchTimer();
     rerender(<MusicShell />);
 
     const noticeTitle = screen.getByText(staleSearchFallback.notice?.title ?? "");
@@ -480,7 +541,7 @@ describe("MusicShell", () => {
   });
 
   it("does not revive older catalog tracks after an empty successful search is followed by an error", async () => {
-    const user = userEvent.setup();
+    const user = setupUserWithFakeTimers();
     let phase: "initial" | "emptySuccess" | "error" = "initial";
     const refetch = jest.fn();
     const searchEmptyState = resolveCatalogFallbackState({
@@ -540,6 +601,7 @@ describe("MusicShell", () => {
       screen.getByRole("searchbox", { name: /search catalog/i }),
       "rare",
     );
+    await advanceSearchTimer();
 
     expect(screen.getByText(searchEmptyState.emptyMessage)).toBeInTheDocument();
     expect(
@@ -558,7 +620,7 @@ describe("MusicShell", () => {
   });
 
   it("separates search empty state from catalog unavailable state", async () => {
-    const user = userEvent.setup();
+    const user = setupUserWithFakeTimers();
 
     mockUseCloudinaryTracks.mockImplementation((query: string) => ({
       data: query ? [] : cloudTracks,
@@ -572,6 +634,7 @@ describe("MusicShell", () => {
       screen.getByRole("searchbox", { name: /search catalog/i }),
       "missing track",
     );
+    await advanceSearchTimer();
 
     expect(screen.getByText("검색 결과가 없습니다.")).toBeInTheDocument();
     expect(
@@ -580,7 +643,7 @@ describe("MusicShell", () => {
   });
 
   it("clears the active search from the search empty state action", async () => {
-    const user = userEvent.setup();
+    const user = setupUserWithFakeTimers();
 
     mockUseCloudinaryTracks.mockImplementation((query: string) => ({
       data: query ? [] : cloudTracks,
@@ -593,6 +656,7 @@ describe("MusicShell", () => {
     const searchbox = screen.getByRole("searchbox", { name: /search catalog/i });
 
     await user.type(searchbox, "missing track");
+    await advanceSearchTimer();
 
     expect(screen.getByText("검색 결과가 없습니다.")).toBeInTheDocument();
 

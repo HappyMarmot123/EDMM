@@ -43,7 +43,29 @@ type CachedTrackState = {
   isUnavailable: boolean;
 };
 const noop: NonNullable<MusicShellProps["onPlay"]> = () => {};
+const SEARCH_QUERY_DEBOUNCE_MS = 400;
 const TRACK_SELECT_PLAYBACK_MEDIA_QUERY = "(max-width: 767px)";
+
+function useDebouncedSearchQuery(query: string) {
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
+
+  useEffect(() => {
+    if (!query) {
+      setDebouncedQuery("");
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedQuery(query);
+    }, SEARCH_QUERY_DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [query]);
+
+  return debouncedQuery;
+}
 
 const isMusicView = (view: MusicView | undefined): view is MusicView =>
   view === "pop" || view === "edm" || view === "recent";
@@ -250,6 +272,7 @@ export function MusicShell({
   }, [normalizedInitialView]);
 
   const normalizedQuery = query.trim();
+  const appliedSearchQuery = useDebouncedSearchQuery(normalizedQuery);
   const catalogCategory: CloudinaryTrackCategory =
     activeView === "edm" ? "edm" : "pop";
   // 두 폴더의 전체 트랙 수를 미리 받아 탭 배지에 노출한다(검색어와 무관한 총 개수).
@@ -281,7 +304,7 @@ export function MusicShell({
     isLoading: isCatalogLoading,
     isError: isCatalogError,
     refetch,
-  } = useCloudinaryTracks(normalizedQuery, {
+  } = useCloudinaryTracks(appliedSearchQuery, {
     resourceType: "all",
     category: catalogCategory,
   });
@@ -380,7 +403,7 @@ export function MusicShell({
         previousCatalogTracks: lastSuccessfulCatalogTracks,
         isCatalogLoading,
         isCatalogError,
-        hasSearchQuery: normalizedQuery.length > 0,
+        hasSearchQuery: appliedSearchQuery.length > 0,
         recentUnavailable: Boolean(
           isRecentPlaysUnavailable || recentState.isUnavailable,
         ),
@@ -394,7 +417,7 @@ export function MusicShell({
       lastSuccessfulCatalogTracks,
       isCatalogLoading,
       isCatalogError,
-      normalizedQuery,
+      appliedSearchQuery,
     ],
   );
 
@@ -409,7 +432,7 @@ export function MusicShell({
     const eventKey = [
       "catalog_fetch_failed",
       activeView,
-      normalizedQuery.length,
+      appliedSearchQuery.length,
       catalogFallbackState.isShowingStaleData ? "stale" : "empty",
     ].join(":");
     if (reportedFallbackKeysRef.current.has(eventKey)) {
@@ -421,15 +444,15 @@ export function MusicShell({
       type: "catalog_fetch_failed",
       route: "/search",
       view: activeView,
-      queryLength: normalizedQuery.length,
-      hasQuery: normalizedQuery.length > 0,
+      queryLength: appliedSearchQuery.length,
+      hasQuery: appliedSearchQuery.length > 0,
       hasStaleData: catalogFallbackState.isShowingStaleData,
     });
   }, [
     activeView,
     catalogFallbackState.isShowingStaleData,
     catalogFallbackState.status,
-    normalizedQuery.length,
+    appliedSearchQuery.length,
   ]);
 
   useEffect(() => {

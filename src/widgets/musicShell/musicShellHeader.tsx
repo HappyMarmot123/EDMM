@@ -1,6 +1,7 @@
 "use client";
 
-import { Clock3, Library, Search, Sparkles } from "lucide-react";
+import { useRef } from "react";
+import { Clock3, Library, Search, Sparkles, X } from "lucide-react";
 
 export type MusicView = "pop" | "edm" | "recent";
 
@@ -29,6 +30,14 @@ export function MusicShellHeader({
   onQueryChange,
   onViewChange,
 }: MusicShellHeaderProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const hasQuery = query.length > 0;
+
+  const handleClearSearch = () => {
+    onQueryChange("");
+    inputRef.current?.focus();
+  };
+
   return (
     <header className="space-y-5">
       <div className="flex min-w-0 items-end justify-between gap-12">
@@ -53,14 +62,27 @@ export function MusicShellHeader({
             strokeWidth={2.2}
           />
           <input
+            ref={inputRef}
             type="search"
             role="searchbox"
             aria-label="Search catalog"
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
             placeholder="Search tracks, artists"
-            className="min-h-11 min-w-0 flex-1 bg-transparent text-sm font-semibold text-white outline-none placeholder:text-white/38"
+            className="min-h-11 min-w-0 flex-1 bg-transparent text-sm font-semibold text-white outline-none placeholder:text-white/38 [&::-webkit-search-cancel-button]:appearance-none"
           />
+          {hasQuery ? (
+            <button
+              type="button"
+              aria-label="Clear search"
+              title="Clear search"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={handleClearSearch}
+              className="-mr-1 grid h-6 w-6 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.075] text-white/68 transition-colors hover:border-[#ff98a2]/45 hover:bg-[#ff98a2]/16 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb8c0]"
+            >
+              <X size={17} strokeWidth={2.4} aria-hidden="true" />
+            </button>
+          ) : null}
         </form>
       </div>
 
@@ -88,7 +110,9 @@ export function MusicShellHeader({
                   aria-hidden="true"
                   className={[
                     "rounded-full px-2 py-0.5 text-xs",
-                    isActive ? "bg-black/18 text-black" : "bg-white/10 text-white/58",
+                    isActive
+                      ? "bg-black/18 text-black"
+                      : "bg-white/10 text-white/58",
                   ].join(" ")}
                 >
                   {catalogCounts[value]}
