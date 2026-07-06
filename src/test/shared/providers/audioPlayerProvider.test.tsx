@@ -3,6 +3,7 @@ import {
   AudioPlayerProvider,
   useAudioPlayer,
 } from "@/shared/providers/audioPlayerProvider";
+import { addRecentPlay } from "@/shared/db";
 import { setupAudioEventListeners } from "@/shared/lib/audioEventManager";
 import type { Track } from "@/entities/track";
 
@@ -93,6 +94,26 @@ const playableTrack: Track = {
   streamUrl: "https://example.com/track.mp3",
   metadata: {},
 };
+const secondPlayableTrack: Track = {
+  ...playableTrack,
+  id: "track-2",
+  title: "Track Two",
+  artistId: "artist-2",
+  artistName: "Artist Two",
+  streamUrl: "https://example.com/track-2.mp3",
+};
+const thirdPlayableTrack: Track = {
+  ...playableTrack,
+  id: "track-3",
+  title: "Track Three",
+  artistId: "artist-3",
+  artistName: "Artist Three",
+  streamUrl: "https://example.com/track-3.mp3",
+};
+const playbackQueue = [playableTrack, secondPlayableTrack, thirdPlayableTrack];
+const mockAddRecentPlay = addRecentPlay as jest.MockedFunction<
+  typeof addRecentPlay
+>;
 
 function CapabilityConsumer() {
   const player = useAudioPlayer() as ReturnType<typeof useAudioPlayer> & {
@@ -151,6 +172,33 @@ function CurrentTrackConsumer() {
         }}
       >
         Queue track
+      </button>
+    </div>
+  );
+}
+
+function QueueNavigationConsumer() {
+  const player = useAudioPlayer();
+
+  return (
+    <div>
+      <span data-testid="queue-current-track-id">
+        {player.currentTrack?.id ?? "none"}
+      </span>
+      <span data-testid="queue-is-playing">{String(player.isPlaying)}</span>
+      <button
+        type="button"
+        onClick={() => {
+          void player.playTrack(playableTrack, playbackQueue, true);
+        }}
+      >
+        Play queue
+      </button>
+      <button type="button" onClick={player.nextTrack}>
+        Next track
+      </button>
+      <button type="button" onClick={player.prevTrack}>
+        Previous track
       </button>
     </div>
   );
@@ -279,5 +327,43 @@ describe("AudioPlayerProvider", () => {
         ([source]) => source === playableTrack.streamUrl,
       ),
     ).toBe(false);
+  });
+
+  it("records recent plays for next and previous track navigation while playing", async () => {
+    render(
+      <AudioPlayerProvider>
+        <QueueNavigationConsumer />
+      </AudioPlayerProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Play queue" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("queue-current-track-id")).toHaveTextContent(
+        "track-1",
+      );
+      expect(screen.getByTestId("queue-is-playing")).toHaveTextContent("true");
+      expect(mockAddRecentPlay).toHaveBeenCalledWith("track-1");
+    });
+    mockAddRecentPlay.mockClear();
+
+    fireEvent.click(screen.getByRole("button", { name: "Next track" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("queue-current-track-id")).toHaveTextContent(
+        "track-2",
+      );
+      expect(mockAddRecentPlay).toHaveBeenCalledWith("track-2");
+    });
+    mockAddRecentPlay.mockClear();
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous track" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("queue-current-track-id")).toHaveTextContent(
+        "track-1",
+      );
+      expect(mockAddRecentPlay).toHaveBeenCalledWith("track-1");
+    });
   });
 });
