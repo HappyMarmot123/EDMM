@@ -3,6 +3,7 @@ import {
   buildCloudinaryCacheHeader,
   fetchCloudinaryTracks,
   getCloudinaryTrackCachePolicy,
+  normalizeCloudinaryCacheVersion,
   type ResourceTypeFilter,
 } from "@/shared/api/cloudinary/cloudinaryClient";
 import {
@@ -39,11 +40,15 @@ export async function GET(request: Request) {
   const category = parseCloudinaryCategory(
     requestUrl.searchParams.get("category"),
   );
+  const cacheVersion = normalizeCloudinaryCacheVersion(
+    requestUrl.searchParams.get("v"),
+  );
   const cachePolicy = getCloudinaryTrackCachePolicy(resourceType);
   const fetchOptions: {
     resourceType: ResourceTypeFilter;
     filterPlayable?: boolean;
     category?: CloudinaryTrackCategory;
+    cacheVersion?: string;
   } = {
     resourceType,
   };
@@ -55,6 +60,10 @@ export async function GET(request: Request) {
 
     if (category) {
       fetchOptions.category = category;
+    }
+
+    if (cacheVersion) {
+      fetchOptions.cacheVersion = cacheVersion;
     }
 
     const tracks = await fetchCloudinaryTracks(query, {

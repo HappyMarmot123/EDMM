@@ -3,6 +3,7 @@ import {
   buildCloudinaryCacheHeader,
   fetchCloudinaryTracks,
   getCloudinaryTrackCachePolicy,
+  normalizeCloudinaryCacheVersion,
 } from "@/shared/api/cloudinary/cloudinaryClient";
 import { parseCloudinaryCategory } from "@/shared/api/cloudinary/cloudinaryCategory";
 
@@ -12,12 +13,16 @@ export async function GET(request: Request) {
   const category = parseCloudinaryCategory(
     requestUrl.searchParams.get("category"),
   );
+  const cacheVersion = normalizeCloudinaryCacheVersion(
+    requestUrl.searchParams.get("v"),
+  );
   const cachePolicy = getCloudinaryTrackCachePolicy("video");
 
   try {
     const tracks = await fetchCloudinaryTracks(query, {
       resourceType: "video",
       ...(category ? { category } : {}),
+      ...(cacheVersion ? { cacheVersion } : {}),
     });
 
     return NextResponse.json(tracks, {

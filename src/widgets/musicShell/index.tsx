@@ -24,6 +24,7 @@ import {
   dedupeIds,
   findTrackById,
   firstPlayableTrack,
+  shouldClearVisibleSelection,
 } from "./trackSeedUtils";
 import {
   SelectionSource,
@@ -42,10 +43,60 @@ type CachedTrackState = {
   isUnavailable: boolean;
 };
 const noop: NonNullable<MusicShellProps["onPlay"]> = () => {};
+const SEARCH_QUERY_DEBOUNCE_MS = 400;
 const TRACK_SELECT_PLAYBACK_MEDIA_QUERY = "(max-width: 767px)";
+
+function useDebouncedSearchQuery(query: string) {
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
+
+  useEffect(() => {
+    if (!query) {
+      setDebouncedQuery("");
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedQuery(query);
+    }, SEARCH_QUERY_DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [query]);
+
+  return debouncedQuery;
+}
 
 const isMusicView = (view: MusicView | undefined): view is MusicView =>
   view === "pop" || view === "edm" || view === "recent";
+
+type CatalogMusicView = Extract<MusicView, "pop" | "edm">;
+
+const resolveTrackCatalogView = (
+  trackId: string | null,
+  popTracks: Track[] | undefined,
+  edmTracks: Track[] | undefined,
+): CatalogMusicView | null => {
+  if (!trackId) {
+    return null;
+  }
+
+  if (popTracks?.some((track) => track.id === trackId)) {
+    return "pop";
+  }
+
+  if (edmTracks?.some((track) => track.id === trackId)) {
+    return "edm";
+  }
+
+  return null;
+};
+
+const hasCatalogLookupSettled = (
+  tracks: Track[] | undefined,
+  isFetched: boolean | undefined,
+  isError: boolean | undefined,
+) => tracks !== undefined || Boolean(isFetched) || Boolean(isError);
 
 type CatalogFallbackFeedbackProps = {
   notice: CatalogFallbackNotice | null;
@@ -160,6 +211,7 @@ export function MusicShell({
   initialTrackId = null,
 }: MusicShellProps) {
   const normalizedInitialView = isMusicView(initialView) ? initialView : "pop";
+  const hasExplicitInitialView = isMusicView(initialView);
   const isMobileView = useTrackSelectPlaybackMode();
   const normalizedInitialTrackId = initialTrackId?.trim().length
     ? initialTrackId
@@ -179,6 +231,9 @@ export function MusicShell({
     trackId: string;
     requestId: number;
   } | null>(null);
+  const [pendingPlayerZoneTrackId, setPendingPlayerZoneTrackId] = useState<
+    string | null
+  >(null);
   const [isTrackDetailOpen, setIsTrackDetailOpen] = useState(true);
   const { currentTrack, isPlaying } = useAudioPlayer();
   const currentTrackId = currentTrack?.id ?? null;
@@ -192,6 +247,14 @@ export function MusicShell({
   const isCurrentTrackPlaying = Boolean(currentTrackId && isPlaying);
   const shouldPlayOnTrackSelect = isMobileView;
   const activeView = view;
+  const manualViewChangeRef = useRef(false);
+
+  const requestPlayerZoneScroll = useCallback((trackId: string) => {
+    setPlayerZoneScrollRequest((current) => ({
+      trackId,
+      requestId: current?.trackId === trackId ? current.requestId + 1 : 1,
+    }));
+  }, []);
 
   const handleTrackZoneScrollHandled = useCallback(
     () => setPlayerZoneScrollRequest(null),
@@ -199,6 +262,7 @@ export function MusicShell({
   );
 
   const handleViewChange = useCallback((nextView: MusicView) => {
+    manualViewChangeRef.current = true;
     setView(nextView);
   }, []);
 
@@ -207,37 +271,24 @@ export function MusicShell({
     setView(normalizedInitialView);
   }, [normalizedInitialView]);
 
-  useEffect(() => {
-    const cleanup = addEdmmEventListener(
-      window,
-      EDMM_EVENTS.playerTrackZoneSelect,
-      (event) => {
-        const trackId = event.detail.trackId.trim();
-        if (!trackId) {
-          return;
-        }
-
-        setSelectedTrackId(trackId);
-        setSelectionSource("visible");
-        setPlayerZoneScrollRequest((current) => ({
-          trackId,
-          requestId: current?.trackId === trackId ? current.requestId + 1 : 1,
-        }));
-      },
-    );
-
-    return cleanup;
-  }, []);
-
   const normalizedQuery = query.trim();
+  const appliedSearchQuery = useDebouncedSearchQuery(normalizedQuery);
   const catalogCategory: CloudinaryTrackCategory =
     activeView === "edm" ? "edm" : "pop";
   // 두 폴더의 전체 트랙 수를 미리 받아 탭 배지에 노출한다(검색어와 무관한 총 개수).
-  const { data: popCatalogData } = useCloudinaryTracks("", {
+  const {
+    data: popCatalogData,
+    isFetched: isPopCatalogFetched,
+    isError: isPopCatalogError,
+  } = useCloudinaryTracks("", {
     resourceType: "all",
     category: "pop",
   });
-  const { data: edmCatalogData } = useCloudinaryTracks("", {
+  const {
+    data: edmCatalogData,
+    isFetched: isEdmCatalogFetched,
+    isError: isEdmCatalogError,
+  } = useCloudinaryTracks("", {
     resourceType: "all",
     category: "edm",
   });
@@ -253,7 +304,7 @@ export function MusicShell({
     isLoading: isCatalogLoading,
     isError: isCatalogError,
     refetch,
-  } = useCloudinaryTracks(normalizedQuery, {
+  } = useCloudinaryTracks(appliedSearchQuery, {
     resourceType: "all",
     category: catalogCategory,
   });
@@ -269,6 +320,60 @@ export function MusicShell({
   const allRecentTrackIds = useMemo(() => dedupeIds(recentIds), [recentIds]);
   const recentTrackIds = allRecentTrackIds;
   const recentState = useCachedTrackList(recentTrackIds);
+  const initialSeedTrackId =
+    normalizedInitialTrackId ?? recentTrackIds[0] ?? null;
+  const initialSeedCatalogView = useMemo(
+    () =>
+      resolveTrackCatalogView(
+        initialSeedTrackId,
+        popCatalogData,
+        edmCatalogData,
+      ),
+    [edmCatalogData, initialSeedTrackId, popCatalogData],
+  );
+  const areInitialSeedCatalogsSettled =
+    hasCatalogLookupSettled(
+      popCatalogData,
+      isPopCatalogFetched,
+      isPopCatalogError,
+    ) &&
+    hasCatalogLookupSettled(
+      edmCatalogData,
+      isEdmCatalogFetched,
+      isEdmCatalogError,
+    );
+  const shouldAlignInitialView =
+    !hasExplicitInitialView &&
+    !manualViewChangeRef.current &&
+    Boolean(initialSeedTrackId) &&
+    initialSeedCatalogView !== null &&
+    activeView !== initialSeedCatalogView;
+  const isInitialSeedPaused =
+    !hasExplicitInitialView &&
+    !manualViewChangeRef.current &&
+    Boolean(initialSeedTrackId) &&
+    (!areInitialSeedCatalogsSettled || shouldAlignInitialView);
+
+  useEffect(() => {
+    if (
+      hasExplicitInitialView ||
+      manualViewChangeRef.current ||
+      !initialSeedTrackId ||
+      !areInitialSeedCatalogsSettled ||
+      !initialSeedCatalogView ||
+      activeView === initialSeedCatalogView
+    ) {
+      return;
+    }
+
+    setView(initialSeedCatalogView);
+  }, [
+    activeView,
+    areInitialSeedCatalogsSettled,
+    hasExplicitInitialView,
+    initialSeedCatalogView,
+    initialSeedTrackId,
+  ]);
 
   useEffect(() => {
     if (isCatalogError || isCatalogLoading) {
@@ -298,7 +403,7 @@ export function MusicShell({
         previousCatalogTracks: lastSuccessfulCatalogTracks,
         isCatalogLoading,
         isCatalogError,
-        hasSearchQuery: normalizedQuery.length > 0,
+        hasSearchQuery: appliedSearchQuery.length > 0,
         recentUnavailable: Boolean(
           isRecentPlaysUnavailable || recentState.isUnavailable,
         ),
@@ -312,7 +417,7 @@ export function MusicShell({
       lastSuccessfulCatalogTracks,
       isCatalogLoading,
       isCatalogError,
-      normalizedQuery,
+      appliedSearchQuery,
     ],
   );
 
@@ -327,7 +432,7 @@ export function MusicShell({
     const eventKey = [
       "catalog_fetch_failed",
       activeView,
-      normalizedQuery.length,
+      appliedSearchQuery.length,
       catalogFallbackState.isShowingStaleData ? "stale" : "empty",
     ].join(":");
     if (reportedFallbackKeysRef.current.has(eventKey)) {
@@ -339,15 +444,15 @@ export function MusicShell({
       type: "catalog_fetch_failed",
       route: "/search",
       view: activeView,
-      queryLength: normalizedQuery.length,
-      hasQuery: normalizedQuery.length > 0,
+      queryLength: appliedSearchQuery.length,
+      hasQuery: appliedSearchQuery.length > 0,
       hasStaleData: catalogFallbackState.isShowingStaleData,
     });
   }, [
     activeView,
     catalogFallbackState.isShowingStaleData,
     catalogFallbackState.status,
-    normalizedQuery.length,
+    appliedSearchQuery.length,
   ]);
 
   useEffect(() => {
@@ -412,6 +517,102 @@ export function MusicShell({
     [visibleTracks],
   );
 
+  const handlePlayerTrackZoneSelect = useCallback(
+    (trackId: string) => {
+      setSelectedTrackId(trackId);
+      setSelectionSource("visible");
+
+      const targetView = resolveTrackCatalogView(
+        trackId,
+        popCatalogData,
+        edmCatalogData,
+      );
+
+      if (targetView && activeView !== targetView) {
+        manualViewChangeRef.current = true;
+        setPendingPlayerZoneTrackId(trackId);
+        setView(targetView);
+        return;
+      }
+
+      if (!targetView && !areInitialSeedCatalogsSettled) {
+        setPendingPlayerZoneTrackId(trackId);
+        return;
+      }
+
+      setPendingPlayerZoneTrackId(null);
+      requestPlayerZoneScroll(trackId);
+    },
+    [
+      activeView,
+      areInitialSeedCatalogsSettled,
+      edmCatalogData,
+      popCatalogData,
+      requestPlayerZoneScroll,
+    ],
+  );
+
+  useEffect(() => {
+    const cleanup = addEdmmEventListener(
+      window,
+      EDMM_EVENTS.playerTrackZoneSelect,
+      (event) => {
+        const trackId = event.detail.trackId.trim();
+        if (!trackId) {
+          return;
+        }
+
+        handlePlayerTrackZoneSelect(trackId);
+      },
+    );
+
+    return cleanup;
+  }, [handlePlayerTrackZoneSelect]);
+
+  useEffect(() => {
+    if (!pendingPlayerZoneTrackId) {
+      return;
+    }
+
+    const targetView = resolveTrackCatalogView(
+      pendingPlayerZoneTrackId,
+      popCatalogData,
+      edmCatalogData,
+    );
+
+    if (targetView && activeView !== targetView) {
+      manualViewChangeRef.current = true;
+      setView(targetView);
+      return;
+    }
+
+    if (visibleTrackIds.has(pendingPlayerZoneTrackId)) {
+      requestPlayerZoneScroll(pendingPlayerZoneTrackId);
+      setPendingPlayerZoneTrackId(null);
+      return;
+    }
+
+    if (targetView === activeView && !isCatalogLoading) {
+      requestPlayerZoneScroll(pendingPlayerZoneTrackId);
+      setPendingPlayerZoneTrackId(null);
+      return;
+    }
+
+    if (!targetView && areInitialSeedCatalogsSettled) {
+      requestPlayerZoneScroll(pendingPlayerZoneTrackId);
+      setPendingPlayerZoneTrackId(null);
+    }
+  }, [
+    activeView,
+    areInitialSeedCatalogsSettled,
+    edmCatalogData,
+    isCatalogLoading,
+    pendingPlayerZoneTrackId,
+    popCatalogData,
+    requestPlayerZoneScroll,
+    visibleTrackIds,
+  ]);
+
   useEffect(() => {
     if (
       normalizedInitialTrackId &&
@@ -439,13 +640,9 @@ export function MusicShell({
 
       const isCurrentTrackSelected = selectedTrackId === currentTrackId;
       const nextSelectionSource =
-        isCurrentTrackSelected
-          ? selectionSource === "initial"
-            ? "initial"
-            : "visible"
-          : visibleTrackIds.has(currentTrackId)
-            ? "visible"
-            : "initial";
+        isCurrentTrackSelected && selectionSource === "initial"
+          ? "initial"
+          : "visible";
 
       setSelectedTrackId((previousId) =>
         previousId === currentTrackId ? previousId : currentTrackId,
@@ -472,31 +669,16 @@ export function MusicShell({
     normalizedInitialTrackId,
     selectedTrackId,
     selectionSource,
-    visibleTrackIds,
   ]);
 
   useEffect(() => {
-    if (!currentTrackId || selectionSource === "initial") {
-      return;
-    }
-
     if (
-      selectedTrackId !== currentTrackId &&
-      !visibleTrackIds.has(currentTrackId)
-    ) {
-      setSelectedTrackId(null);
-      setSelectionSource(null);
-    }
-  }, [currentTrackId, selectedTrackId, selectionSource, visibleTrackIds]);
-
-  useEffect(() => {
-    if (!selectedTrackId || selectionSource !== "visible") {
-      return;
-    }
-
-    if (
-      selectedTrackId !== currentTrackId &&
-      !visibleTrackIds.has(selectedTrackId)
+      shouldClearVisibleSelection({
+        selectedTrackId,
+        currentTrackId,
+        selectionSource,
+        visibleTrackIds,
+      })
     ) {
       setSelectedTrackId(null);
       setSelectionSource(null);
@@ -588,6 +770,8 @@ export function MusicShell({
     queueForTrack,
     activateTrackInPlayer,
     fallbackToFirstPlayable,
+    isInitialSeedPaused,
+    isAutomaticSeedDisabled: manualViewChangeRef.current,
   });
 
   const isVisibleLoading =

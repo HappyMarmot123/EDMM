@@ -12,50 +12,119 @@ type MediaSessionState = {
   seekTo: (time: number) => void;
 };
 
+type TrackMetadataSnapshot = {
+  trackId: string | null;
+  title: string;
+  artist: string;
+  album: string;
+};
+
+type MediaSessionActionName = Parameters<
+  MediaSession["setActionHandler"]
+>[0];
+
+const MEDIA_SESSION_ACTIONS = [
+  "play",
+  "pause",
+  "nexttrack",
+  "previoustrack",
+  "seekto",
+] as const satisfies readonly MediaSessionActionName[];
+
 const clampPositionState = (value: number) =>
   Number.isFinite(value) ? Math.max(0, value) : 0;
 
-export function useMediaSession({
-  currentTrack,
-  currentTime,
+const getMediaSession = () => {
+  if (
+    typeof window === "undefined" ||
+    typeof navigator === "undefined" ||
+    !("mediaSession" in navigator)
+  ) {
+    return null;
+  }
+
+  return navigator.mediaSession;
+};
+
+const getPlayableDuration = (duration: number) =>
+  Number.isFinite(duration) && duration > 0 ? duration : 0;
+
+const getTrackPosition = (currentTime: number, duration: number) =>
+  clampPositionState(Math.min(currentTime, duration));
+
+const getTrackMetadataSnapshot = (
+  currentTrack: Track | null,
+): TrackMetadataSnapshot => ({
+  trackId: currentTrack?.id ?? null,
+  title: currentTrack?.title ?? "",
+  artist: currentTrack?.artistName ?? "",
+  album: currentTrack?.albumName ?? "",
+});
+
+const createMediaMetadata = ({
+  title,
+  artist,
+  album,
+}: Omit<TrackMetadataSnapshot, "trackId">) =>
+  typeof MediaMetadata === "undefined"
+    ? null
+    : new MediaMetadata({
+        title,
+        artist,
+        album,
+      });
+
+const clearActionHandlers = (mediaSession: MediaSession) => {
+  MEDIA_SESSION_ACTIONS.forEach((action) => {
+    mediaSession.setActionHandler(action, null);
+  });
+};
+
+function useMediaSessionMetadata(trackMetadata: TrackMetadataSnapshot) {
+  const { trackId, title, artist, album } = trackMetadata;
+
+  useEffect(() => {
+    if (!trackId) {
+      return;
+    }
+
+    const mediaSession = getMediaSession();
+
+    if (!mediaSession) {
+      return;
+    }
+
+    mediaSession.metadata = createMediaMetadata({ title, artist, album });
+
+    return () => {
+      mediaSession.metadata = null;
+    };
+  }, [album, artist, title, trackId]);
+}
+
+function useMediaSessionActionHandlers({
+  trackId,
   duration,
   togglePlayPause,
   nextTrack,
   prevTrack,
   seekTo,
-}: MediaSessionState) {
+}: Pick<
+  MediaSessionState,
+  "duration" | "togglePlayPause" | "nextTrack" | "prevTrack" | "seekTo"
+> & { trackId: string | null }) {
   useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      !currentTrack ||
-      !("mediaSession" in navigator)
-    ) {
+    if (!trackId) {
       return;
     }
 
-    const mediaSession = navigator.mediaSession;
-    const artwork = currentTrack.artworkUrl
-      ? [{ src: currentTrack.artworkUrl }]
-      : undefined;
-    const metadata = typeof MediaMetadata === "undefined" ? null : new MediaMetadata({
-      title: currentTrack.title,
-      artist: currentTrack.artistName,
-      album: currentTrack.albumName,
-      artwork,
-    });
+    const mediaSession = getMediaSession();
 
-    mediaSession.metadata = metadata;
-
-    const clampedDuration =
-      Number.isFinite(duration) && duration > 0 ? duration : 0;
-
-    if (clampedDuration > 0 && "setPositionState" in mediaSession) {
-      mediaSession.setPositionState({
-        duration: clampedDuration,
-        position: currentTime > clampedDuration ? clampedDuration : currentTime,
-        playbackRate: 1,
-      });
+    if (!mediaSession) {
+      return;
     }
+
+    const playableDuration = getPlayableDuration(duration);
 
     mediaSession.setActionHandler("play", () => {
       void togglePlayPause();
@@ -70,50 +139,79 @@ export function useMediaSession({
     mediaSession.setActionHandler("seekto", (details) => {
       const nextTime = details?.seekTime;
 
-      if (typeof nextTime === "number" && clampedDuration > 0) {
-        seekTo(clampPositionState(Math.min(nextTime, clampedDuration)));
+      if (typeof nextTime === "number" && playableDuration > 0) {
+        seekTo(getTrackPosition(nextTime, playableDuration));
       }
     });
 
     return () => {
-      mediaSession.setActionHandler("play", null);
-      mediaSession.setActionHandler("pause", null);
-      mediaSession.setActionHandler("nexttrack", null);
-      mediaSession.setActionHandler("previoustrack", null);
-      mediaSession.setActionHandler("seekto", null);
-      mediaSession.metadata = null;
+      clearActionHandlers(mediaSession);
     };
   }, [
-    currentTrack,
     duration,
     nextTrack,
     prevTrack,
     seekTo,
     togglePlayPause,
+    trackId,
   ]);
+}
 
+function useMediaSessionPositionState({
+  trackId,
+  currentTime,
+  duration,
+}: Pick<MediaSessionState, "currentTime" | "duration"> & {
+  trackId: string | null;
+}) {
   useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      !currentTrack ||
-      !("mediaSession" in navigator)
-    ) {
+    if (!trackId) {
       return;
     }
 
-    const mediaSession = navigator.mediaSession;
-    const clampedDuration =
-      Number.isFinite(duration) && duration > 0 ? duration : 0;
-    const clampedPosition = clampPositionState(
-      currentTime > clampedDuration ? clampedDuration : currentTime,
-    );
+    const mediaSession = getMediaSession();
 
-    if (clampedDuration > 0 && "setPositionState" in mediaSession) {
-      mediaSession.setPositionState({
-        duration: clampedDuration,
-        position: clampedPosition,
-        playbackRate: 1,
-      });
+    if (!mediaSession || !("setPositionState" in mediaSession)) {
+      return;
     }
-  }, [currentTrack, currentTime, duration]);
+
+    const playableDuration = getPlayableDuration(duration);
+
+    if (playableDuration <= 0) {
+      return;
+    }
+
+    mediaSession.setPositionState({
+      duration: playableDuration,
+      position: getTrackPosition(currentTime, playableDuration),
+      playbackRate: 1,
+    });
+  }, [currentTime, duration, trackId]);
+}
+
+export function useMediaSession({
+  currentTrack,
+  currentTime,
+  duration,
+  togglePlayPause,
+  nextTrack,
+  prevTrack,
+  seekTo,
+}: MediaSessionState) {
+  const trackMetadata = getTrackMetadataSnapshot(currentTrack);
+
+  useMediaSessionMetadata(trackMetadata);
+  useMediaSessionActionHandlers({
+    trackId: trackMetadata.trackId,
+    duration,
+    togglePlayPause,
+    nextTrack,
+    prevTrack,
+    seekTo,
+  });
+  useMediaSessionPositionState({
+    trackId: trackMetadata.trackId,
+    currentTime,
+    duration,
+  });
 }

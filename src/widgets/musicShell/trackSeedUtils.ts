@@ -28,6 +28,28 @@ export const buildTrackSeedFingerprint = (track: Track, queue: Track[]) => {
 export const buildVisibleTrackFingerprint = (track: Track | null) =>
   track ? `${track.id}|${normalizeArtworkUrl(track.artworkUrl)}` : "none";
 
+export const shouldClearVisibleSelection = ({
+  selectedTrackId,
+  currentTrackId,
+  selectionSource,
+  visibleTrackIds,
+}: {
+  selectedTrackId: string | null;
+  currentTrackId: string | null;
+  selectionSource: "initial" | "visible" | null;
+  visibleTrackIds: Set<string>;
+}) => {
+  if (!selectedTrackId || selectionSource !== "visible") {
+    return false;
+  }
+
+  if (currentTrackId) {
+    return false;
+  }
+
+  return !visibleTrackIds.has(selectedTrackId);
+};
+
 export const resolveInitialSeedTrack = ({
   selectedTrackId,
   selectedTrack,
@@ -64,19 +86,13 @@ export const resolveInitialSeedTrack = ({
 export const resolveRecentSeedTrack = ({
   latestRecentId,
   visibleTracks,
-  cachedTrack,
 }: {
   latestRecentId: string;
   visibleTracks: Track[];
-  cachedTrack: Track | null;
 }): Track | null => {
   const visibleMatch = findTrackById(visibleTracks, latestRecentId);
   if (visibleMatch && isPlayable(visibleMatch)) {
     return visibleMatch;
-  }
-
-  if (cachedTrack && isPlayable(cachedTrack)) {
-    return cachedTrack;
   }
 
   return firstPlayableTrack(visibleTracks);
@@ -123,25 +139,10 @@ export const resolveInitialSeedTrackWithCache = async ({
 export const resolveRecentSeedTrackWithCache = async ({
   latestRecentId,
   visibleTracks,
-  loadTrackById,
 }: {
   latestRecentId: string;
   visibleTracks: Track[];
   loadTrackById: TrackCacheLookup;
 }): Promise<Track | null> => {
-  const visibleMatch = findTrackById(visibleTracks, latestRecentId);
-  if (visibleMatch && isPlayable(visibleMatch)) {
-    return visibleMatch;
-  }
-
-  try {
-    const cachedTrack = await loadTrackById(latestRecentId);
-    if (cachedTrack && isPlayable(cachedTrack)) {
-      return cachedTrack;
-    }
-  } catch {
-    // keep fallback behavior deterministic
-  }
-
-  return firstPlayableTrack(visibleTracks);
+  return resolveRecentSeedTrack({ latestRecentId, visibleTracks });
 };

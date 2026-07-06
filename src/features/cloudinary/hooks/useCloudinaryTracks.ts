@@ -13,9 +13,9 @@ type CloudinaryTrackQueryOptions = {
 };
 
 const TRACK_LIST_BASE = "/api/cloudinary/tracks";
-// 캐시 버스터
+// 캐시 버스터 Latest 20260707
 // 이전 HTTP 캐시(max-age + stale-while-revalidate) 엔트리를 우회한다.
-const TRACK_LIST_CACHE_VERSION = "2";
+const TRACK_LIST_CACHE_VERSION = "4";
 const TRACK_LIST_ENDPOINTS: Record<ResourceTypeFilter, string> = {
   video: `${TRACK_LIST_BASE}/video`,
   image: `${TRACK_LIST_BASE}/image`,
@@ -84,7 +84,9 @@ const resolveTrackList = async (
   filterPlayable?: boolean,
   category?: CloudinaryTrackCategory,
 ) => {
-  const response = await fetch(toFetchUrl(query, resourceType, filterPlayable, category));
+  const response = await fetch(
+    toFetchUrl(query, resourceType, filterPlayable, category),
+  );
   if (!response.ok) throw new Error("cloudinary tracks fetch failed");
 
   const tracks = (await response.json()) as Track[];
@@ -111,7 +113,10 @@ const normalizeForMatching = (value: string) =>
     .replace(/[^\p{L}\p{N}\s]/gu, "")
     .trim();
 
-const readMetadataString = (metadata: Record<string, unknown> | undefined, key: string) => {
+const readMetadataString = (
+  metadata: Record<string, unknown> | undefined,
+  key: string,
+) => {
   const value = metadata?.[key];
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 };
@@ -143,7 +148,9 @@ const buildMatchKeys = (track: Track) => {
   const publicIdStem = getTrackPublicId(track);
   const title = normalizeForMatching(track.title);
   const artist = normalizeForMatching(track.artistName);
-  const album = track.albumName ? normalizeForMatching(track.albumName) : undefined;
+  const album = track.albumName
+    ? normalizeForMatching(track.albumName)
+    : undefined;
 
   if (publicIdStem) {
     keys.add(publicIdStem);
@@ -250,13 +257,17 @@ async function getCloudinaryTracks(
   return tracks;
 }
 
-export function useCloudinaryTracks(query = "", options?: CloudinaryTrackQueryOptions) {
+export function useCloudinaryTracks(
+  query = "",
+  options?: CloudinaryTrackQueryOptions,
+) {
   const hydrated = useHydrated();
   const normalizedQuery = query.trim();
 
   return useQuery({
     queryKey: [
       "cloudinary-tracks",
+      TRACK_LIST_CACHE_VERSION,
       normalizedQuery,
       options?.resourceType ?? "video",
       options?.filterPlayable ?? null,

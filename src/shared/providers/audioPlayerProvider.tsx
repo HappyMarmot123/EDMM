@@ -167,6 +167,12 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
     [],
   );
 
+  const recordRecentPlay = useCallback((trackId: string) => {
+    addRecentPlay(trackId).catch((error) => {
+      logger.warn("Failed to record recent play:", error);
+    });
+  }, []);
+
   const setTrack = useCallback(
     (track: Track, playImmediately = false) => {
       const mergedTrack = mergeTrack(currentTrackRef.current, track);
@@ -321,9 +327,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
         logger.warn("Failed to cache track:", error);
       });
       if (shouldAutoPlay) {
-        addRecentPlay(track.id).catch((error) => {
-          logger.warn("Failed to record recent play:", error);
-        });
+        recordRecentPlay(primaryTrackInfo.id);
       }
     },
     [
@@ -335,6 +339,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       getRememberedArtwork,
       isShuffleEnabled,
       mergeTrack,
+      recordRecentPlay,
       recordPlaybackError,
       recoverArtworkForCurrentTrack,
       setTrack,
@@ -396,11 +401,16 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
 
     const nextIndex = currentIndex + 1;
     if (nextIndex >= activeQueue.length) return;
-    setTrack(activeQueue[nextIndex], isPlaying);
+    const nextQueueTrack = activeQueue[nextIndex];
+    setTrack(nextQueueTrack, isPlaying);
+    if (isPlaying && isPlayable(nextQueueTrack)) {
+      recordRecentPlay(nextQueueTrack.id);
+    }
   }, [
     isPlaying,
     currentTrack,
     activeQueue,
+    recordRecentPlay,
     setTrack,
   ]);
 
@@ -417,11 +427,16 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
 
     const prevIndex = currentIndex - 1;
     if (prevIndex < 0) return;
-    setTrack(activeQueue[prevIndex], isPlaying);
+    const previousQueueTrack = activeQueue[prevIndex];
+    setTrack(previousQueueTrack, isPlaying);
+    if (isPlaying && isPlayable(previousQueueTrack)) {
+      recordRecentPlay(previousQueueTrack.id);
+    }
   }, [
     isPlaying,
     currentTrack,
     activeQueue,
+    recordRecentPlay,
     setTrack,
   ]);
 

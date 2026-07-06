@@ -65,6 +65,40 @@ describe("resolveCatalogFallbackState", () => {
     expect(state.emptyMessage).toBe("검색 결과가 없습니다.");
   });
 
+  it("returns readable Korean copy while the initial catalog is loading", () => {
+    const state = resolveCatalogFallbackState({
+      activeView: "edm",
+      currentTracks: [],
+      previousCatalogTracks: [],
+      isCatalogLoading: true,
+      isCatalogError: false,
+      hasSearchQuery: false,
+      recentUnavailable: false,
+    });
+
+    expect(state.status).toBe("loading_initial");
+    expect(state.emptyMessage).toBe("트랙을 불러오는 중입니다.");
+  });
+
+  it("keeps previous catalog tracks visible while a search query is loading", () => {
+    const previousTracks = [track("previous-1")];
+
+    const state = resolveCatalogFallbackState({
+      activeView: "edm",
+      currentTracks: [],
+      previousCatalogTracks: previousTracks,
+      isCatalogLoading: true,
+      isCatalogError: false,
+      hasSearchQuery: true,
+      recentUnavailable: false,
+    });
+
+    expect(state.status).toBe("refreshing_with_data");
+    expect(state.visibleTracks).toEqual(previousTracks);
+    expect(state.emptyMessage).toBe("");
+    expect(state.notice).toBeNull();
+  });
+
   it("marks recent unavailable without blocking all catalog behavior", () => {
     const state = resolveCatalogFallbackState({
       activeView: "recent",

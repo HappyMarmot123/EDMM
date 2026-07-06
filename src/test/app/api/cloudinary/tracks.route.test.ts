@@ -109,6 +109,16 @@ it("passes a known category to the Cloudinary client", async () => {
   });
 });
 
+it("passes cache version to the Cloudinary client", async () => {
+  await GET(request("http://x/api/cloudinary/tracks?v=4&category=pop"));
+
+  expect(fetchCloudinaryTracks).toHaveBeenCalledWith("", {
+    resourceType: "all",
+    category: "pop",
+    cacheVersion: "4",
+  });
+});
+
 it("ignores an unknown category", async () => {
   await GET(request("http://x/api/cloudinary/tracks?category=hacker"));
 

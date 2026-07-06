@@ -29,6 +29,12 @@ jest.mock("@/shared/api/cloudinary/cloudinaryClient", () => ({
     browserCacheTtlMs: 300_000,
     staleWhileRevalidateMs: 604_800_000,
   })),
+  normalizeCloudinaryCacheVersion: jest.fn((value: string | null | undefined) => {
+    const normalized = value?.trim() ?? "";
+    return normalized && /^[A-Za-z0-9._-]+$/.test(normalized)
+      ? normalized
+      : undefined;
+  }),
 }));
 
 jest.mock("next/server", () => ({
@@ -112,12 +118,32 @@ it("passes a known category to the video endpoint", async () => {
   });
 });
 
+it("passes cache version to the video endpoint", async () => {
+  await GET_VIDEO(request("http://x/api/cloudinary/tracks/video?v=4&category=pop"));
+
+  expect(fetchCloudinaryTracks).toHaveBeenCalledWith("", {
+    resourceType: "video",
+    category: "pop",
+    cacheVersion: "4",
+  });
+});
+
 it("passes a known category to the image endpoint", async () => {
   await GET_IMAGE(request("http://x/api/cloudinary/tracks/image?category=edm"));
 
   expect(fetchCloudinaryTracks).toHaveBeenCalledWith("", {
     resourceType: "image",
     category: "edm",
+  });
+});
+
+it("passes cache version to the image endpoint", async () => {
+  await GET_IMAGE(request("http://x/api/cloudinary/tracks/image?v=4&category=edm"));
+
+  expect(fetchCloudinaryTracks).toHaveBeenCalledWith("", {
+    resourceType: "image",
+    category: "edm",
+    cacheVersion: "4",
   });
 });
 

@@ -1,10 +1,12 @@
-import { describe, expect, it } from "@jest/globals";
+import { describe, expect, it, jest } from "@jest/globals";
 import {
   buildTrackSeedFingerprint,
   buildVisibleTrackFingerprint,
   resolveInitialSeedTrack,
   resolveRecentSeedTrack,
+  resolveRecentSeedTrackWithCache,
   dedupeIds,
+  shouldClearVisibleSelection,
 } from "@/widgets/musicShell/trackSeedUtils";
 import type { Track } from "@/entities/track";
 
@@ -40,6 +42,28 @@ describe("trackSeedUtils", () => {
     expect(buildVisibleTrackFingerprint(createTrack("visible"))).toBe(
       "visible|https://example.com/artwork.jpg",
     );
+  });
+
+  it("does not clear selection while a hidden queue track is current", () => {
+    expect(
+      shouldClearVisibleSelection({
+        selectedTrackId: "cloudinary:edm-1",
+        currentTrackId: "cloudinary:edm-2",
+        selectionSource: "visible",
+        visibleTrackIds: new Set(["cloudinary:pop-1"]),
+      }),
+    ).toBe(false);
+  });
+
+  it("clears visible selection that leaves the view when nothing is playing", () => {
+    expect(
+      shouldClearVisibleSelection({
+        selectedTrackId: "cloudinary:recent-1",
+        currentTrackId: null,
+        selectionSource: "visible",
+        visibleTrackIds: new Set(["cloudinary:pop-1"]),
+      }),
+    ).toBe(true);
   });
 
   it("resolveInitialSeedTrack prefers visible selected track when selected is already visible", () => {
@@ -86,36 +110,45 @@ describe("trackSeedUtils", () => {
 
   it("resolveRecentSeedTrack prefers a matching visible track", () => {
     const visibleMatch = createTrack("recent-visible");
-    const cached = createTrack("recent-cached");
 
     const resolved = resolveRecentSeedTrack({
       latestRecentId: "recent-visible",
-      visibleTracks: [visibleMatch, cached],
-      cachedTrack: cached,
+      visibleTracks: [visibleMatch, createTrack("other")],
     });
 
     expect(resolved?.id).toBe("recent-visible");
   });
 
-  it("resolveRecentSeedTrack falls back to cached track if no visible match", () => {
-    const cached = createTrack("recent-cached");
-
+  it("resolveRecentSeedTrack falls back to first playable visible track when the recent track is not visible", () => {
     const resolved = resolveRecentSeedTrack({
-      latestRecentId: "recent-cached",
+      latestRecentId: "recent-from-another-folder",
       visibleTracks: [createTrack("other")],
-      cachedTrack: cached,
     });
 
-    expect(resolved?.id).toBe("recent-cached");
+    // 교차 폴더 캐시 트랙을 시드하지 않는다: 보이는 목록의 첫 재생가능 트랙으로 폴백
+    expect(resolved?.id).toBe("other");
   });
 
   it("resolveRecentSeedTrack falls back to first playable track as final fallback", () => {
     const resolved = resolveRecentSeedTrack({
       latestRecentId: "recent-cached",
       visibleTracks: [createTrack("unplayable", false), createTrack("playable")],
-      cachedTrack: createTrack("cached-unplayable", false),
     });
 
     expect(resolved?.id).toBe("playable");
+  });
+
+  it("resolveRecentSeedTrackWithCache ignores cached recent tracks outside the visible list", async () => {
+    const cachedTrack = createTrack("recent-from-another-folder");
+    const loadTrackById = jest.fn(async () => cachedTrack);
+
+    const resolved = await resolveRecentSeedTrackWithCache({
+      latestRecentId: cachedTrack.id,
+      visibleTracks: [createTrack("visible")],
+      loadTrackById,
+    });
+
+    expect(loadTrackById).not.toHaveBeenCalled();
+    expect(resolved?.id).toBe("visible");
   });
 });
