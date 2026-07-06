@@ -364,6 +364,19 @@ h1 {
   pointer-events: none;
 }
 
+.rose-cobe-orbit--deferred,
+.rose-cobe-orbit--visible {
+  transition: opacity 400ms ease;
+}
+
+.rose-cobe-orbit--deferred {
+  opacity: 0;
+}
+
+.rose-cobe-orbit--visible {
+  opacity: 1;
+}
+
 .rose-cobe-orbit::before,
 .rose-cobe-orbit::after {
   content: "";

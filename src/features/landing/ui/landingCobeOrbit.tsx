@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import createGlobe from "cobe";
 import type { COBEOptions, Globe } from "cobe";
 
@@ -38,6 +38,32 @@ const getCanvasSize = (canvas: HTMLCanvasElement, pixelRatio: number) => {
 
 export default function LandingCobeOrbit() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const prefersReducedMotion =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
+    if (prefersReducedMotion) {
+      const timer = window.setTimeout(() => {
+        setIsVisible(true);
+      }, 0);
+
+      return () => window.clearTimeout(timer);
+    }
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      setIsVisible(true);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+    };
+  }, []);
+
+  const orbitClassName = isVisible
+    ? "rose-cobe-orbit rose-cobe-orbit--visible"
+    : "rose-cobe-orbit rose-cobe-orbit--deferred";
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -121,7 +147,7 @@ export default function LandingCobeOrbit() {
   }, []);
 
   return (
-    <div className="rose-cobe-orbit" aria-hidden="true" data-testid="rose-cobe-orbit">
+    <div className={orbitClassName} aria-hidden="true" data-testid="rose-cobe-orbit">
       <span className="rose-cobe-orbit__halo" />
       <canvas
         ref={canvasRef}

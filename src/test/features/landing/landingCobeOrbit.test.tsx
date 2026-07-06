@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import createGlobe from "cobe";
 import type { COBEOptions, Globe } from "cobe";
 import LandingCobeOrbit from "@/features/landing/ui/landingCobeOrbit";
+import { act } from "react";
 
 type MockGlobe = {
   destroy: jest.Mock;
@@ -69,8 +70,11 @@ describe("LandingCobeOrbit", () => {
     render(<LandingCobeOrbit />);
 
     await getCobeOptions();
-    runAnimationFrame();
-    runAnimationFrame();
+    act(() => {
+      runAnimationFrame();
+      runAnimationFrame();
+      runAnimationFrame();
+    });
 
     const [firstState] = globe.update.mock.calls[0] as [Partial<COBEOptions>];
     const [secondState] = globe.update.mock.calls[1] as [Partial<COBEOptions>];
@@ -98,6 +102,23 @@ describe("LandingCobeOrbit", () => {
     expect(screen.getByTestId("rose-cobe-orbit")).toBeInTheDocument();
     expect(screen.getByTestId("rose-cobe-canvas")).toBeInTheDocument();
     expect(screen.getByText("PLUM BLOSSOM")).toBeInTheDocument();
+  });
+
+  it("fades in after first paint when mounted", async () => {
+    render(<LandingCobeOrbit />);
+
+    const orbit = screen.getByTestId("rose-cobe-orbit");
+
+    expect(orbit).toHaveClass("rose-cobe-orbit--deferred");
+
+    act(() => {
+      runAnimationFrame();
+    });
+
+    await waitFor(() => {
+      expect(orbit).toHaveClass("rose-cobe-orbit--visible");
+      expect(orbit).not.toHaveClass("rose-cobe-orbit--deferred");
+    });
   });
 
   it("does not request animation frames when reduced motion is preferred", async () => {

@@ -22,7 +22,7 @@ describe("DeferredCobeOrbit", () => {
   it("renders a lightweight shell before the orbit is mounted", () => {
     render(<DeferredCobeOrbit />);
 
-    expect(screen.getByTestId("rose-cobe-orbit-shell")).toBeInTheDocument();
+    expect(screen.getByTestId("rose-cobe-canvas")).toBeInTheDocument();
     expect(screen.queryByTestId("landing-cobe-orbit")).not.toBeInTheDocument();
   });
 
