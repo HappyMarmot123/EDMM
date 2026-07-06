@@ -22,7 +22,9 @@ const parseMusicView = (
   value: string | string[] | undefined,
 ): MusicView | undefined => {
   const view = pickFirst(value);
-  return view === "all" || view === "recent" ? view : undefined;
+  return view === "pop" || view === "edm" || view === "recent"
+    ? view
+    : undefined;
 };
 
 const parseTrackId = (

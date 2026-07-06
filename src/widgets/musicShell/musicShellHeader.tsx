@@ -1,14 +1,13 @@
 "use client";
 
-import { Clock3, Library, Search } from "lucide-react";
+import { Clock3, Library, Search, Sparkles } from "lucide-react";
 
-export type MusicView = "all" | "recent";
+export type MusicView = "pop" | "edm" | "recent";
 
 type MusicShellHeaderProps = {
   query: string;
   view: MusicView;
-  resultCount: number;
-  recentCount: number;
+  catalogCounts: Record<"pop" | "edm", number>;
   onQueryChange: (query: string) => void;
   onViewChange: (view: MusicView) => void;
 };
@@ -18,23 +17,18 @@ const VIEW_OPTIONS: Array<{
   label: string;
   Icon: typeof Library;
 }> = [
-  { value: "all", label: "All", Icon: Library },
+  { value: "pop", label: "Pop", Icon: Sparkles },
+  { value: "edm", label: "EDM", Icon: Library },
   { value: "recent", label: "Recent", Icon: Clock3 },
 ];
 
 export function MusicShellHeader({
   query,
   view,
-  resultCount,
-  recentCount,
+  catalogCounts,
   onQueryChange,
   onViewChange,
 }: MusicShellHeaderProps) {
-  const counts: Record<MusicView, number> = {
-    all: resultCount,
-    recent: recentCount,
-  };
-
   return (
     <header className="space-y-5">
       <div className="flex min-w-0 items-end justify-between gap-12">
@@ -70,7 +64,7 @@ export function MusicShellHeader({
         </form>
       </div>
 
-      <nav className="hidden flex-wrap gap-2 md:flex" aria-label="Music views">
+      <nav className="flex flex-wrap gap-2" aria-label="Music views">
         {VIEW_OPTIONS.map(({ value, label, Icon }) => {
           const isActive = view === value;
 
@@ -89,7 +83,7 @@ export function MusicShellHeader({
             >
               <Icon size={17} strokeWidth={2.2} aria-hidden="true" />
               <span>{label}</span>
-              {value === "all" ? (
+              {value !== "recent" ? (
                 <span
                   aria-hidden="true"
                   className={[
@@ -97,7 +91,7 @@ export function MusicShellHeader({
                     isActive ? "bg-black/18 text-black" : "bg-white/10 text-white/58",
                   ].join(" ")}
                 >
-                  {counts[value]}
+                  {catalogCounts[value]}
                 </span>
               ) : null}
             </button>

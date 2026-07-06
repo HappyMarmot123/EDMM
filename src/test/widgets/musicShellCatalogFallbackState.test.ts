@@ -19,7 +19,7 @@ describe("resolveCatalogFallbackState", () => {
     const staleTracks = [track("stale-1")];
 
     const state = resolveCatalogFallbackState({
-      activeView: "all",
+      activeView: "edm",
       currentTracks: [],
       previousCatalogTracks: staleTracks,
       isCatalogLoading: false,
@@ -36,7 +36,7 @@ describe("resolveCatalogFallbackState", () => {
 
   it("returns catalog error without tracks when there is no stale data", () => {
     const state = resolveCatalogFallbackState({
-      activeView: "all",
+      activeView: "edm",
       currentTracks: [],
       previousCatalogTracks: [],
       isCatalogLoading: false,
@@ -52,7 +52,7 @@ describe("resolveCatalogFallbackState", () => {
 
   it("separates search empty from catalog error", () => {
     const state = resolveCatalogFallbackState({
-      activeView: "all",
+      activeView: "edm",
       currentTracks: [],
       previousCatalogTracks: [],
       isCatalogLoading: false,

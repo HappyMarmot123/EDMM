@@ -3,11 +3,13 @@ import type { Track } from "@/entities/track";
 import { cacheTrack } from "@/shared/db";
 import { useHydrated } from "@/shared/hooks/useHydrated";
 import type { ResourceTypeFilter } from "@/shared/api/cloudinary/cloudinaryClient";
+import type { CloudinaryTrackCategory } from "@/shared/api/cloudinary/cloudinaryCategory";
 import { logger } from "@/shared/lib/logger";
 
 type CloudinaryTrackQueryOptions = {
   resourceType?: ResourceTypeFilter;
   filterPlayable?: boolean;
+  category?: CloudinaryTrackCategory;
 };
 
 const TRACK_LIST_BASE = "/api/cloudinary/tracks";
@@ -25,6 +27,7 @@ const toSearchParams = (
   query: string,
   includeFilterPlayable: boolean,
   filterPlayable?: boolean,
+  category?: CloudinaryTrackCategory,
 ) => {
   const params = new URLSearchParams();
   params.set("v", TRACK_LIST_CACHE_VERSION);
@@ -41,6 +44,10 @@ const toSearchParams = (
     params.set("filterPlayable", filterPlayable ? "true" : "false");
   }
 
+  if (category) {
+    params.set("category", category);
+  }
+
   const serialized = params.toString();
 
   return serialized ? `?${serialized}` : "";
@@ -54,19 +61,30 @@ const shouldIncludeFilterPlayable = (resourceType: ResourceTypeFilter) => {
   return resourceType === "all" || resourceType === "video";
 };
 
-const toFetchUrl = (query: string, resourceType: ResourceTypeFilter, filterPlayable?: boolean) => {
+const toFetchUrl = (
+  query: string,
+  resourceType: ResourceTypeFilter,
+  filterPlayable?: boolean,
+  category?: CloudinaryTrackCategory,
+) => {
   const suffix = toSearchParams(
     resourceType,
     query,
     shouldIncludeFilterPlayable(resourceType),
     filterPlayable,
+    category,
   );
 
   return `${toEndpoint(resourceType)}${suffix}`;
 };
 
-const resolveTrackList = async (query: string, resourceType: ResourceTypeFilter, filterPlayable?: boolean) => {
-  const response = await fetch(toFetchUrl(query, resourceType, filterPlayable));
+const resolveTrackList = async (
+  query: string,
+  resourceType: ResourceTypeFilter,
+  filterPlayable?: boolean,
+  category?: CloudinaryTrackCategory,
+) => {
+  const response = await fetch(toFetchUrl(query, resourceType, filterPlayable, category));
   if (!response.ok) throw new Error("cloudinary tracks fetch failed");
 
   const tracks = (await response.json()) as Track[];
@@ -209,11 +227,12 @@ async function getCloudinaryTracks(
   options?: CloudinaryTrackQueryOptions,
 ): Promise<Track[]> {
   const resourceType = options?.resourceType ?? "video";
+  const category = options?.category;
 
   if (resourceType === "all") {
     const [videoTracks, imageTracks] = await Promise.all([
-      resolveTrackList(query, "video", options?.filterPlayable),
-      resolveTrackList(query, "image"),
+      resolveTrackList(query, "video", options?.filterPlayable, category),
+      resolveTrackList(query, "image", undefined, category),
     ]);
     const mergedVideos = mergeImageTracksIntoVideos(videoTracks, imageTracks);
     await cacheTracks([...mergedVideos, ...imageTracks]);
@@ -221,7 +240,12 @@ async function getCloudinaryTracks(
     return mergedVideos;
   }
 
-  const tracks = await resolveTrackList(query, resourceType, options?.filterPlayable);
+  const tracks = await resolveTrackList(
+    query,
+    resourceType,
+    options?.filterPlayable,
+    category,
+  );
   await cacheTracks(tracks);
   return tracks;
 }
@@ -236,6 +260,7 @@ export function useCloudinaryTracks(query = "", options?: CloudinaryTrackQueryOp
       normalizedQuery,
       options?.resourceType ?? "video",
       options?.filterPlayable ?? null,
+      options?.category ?? null,
     ],
     queryFn: () => getCloudinaryTracks(normalizedQuery, options),
     enabled: hydrated,

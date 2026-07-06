@@ -56,7 +56,7 @@ describe("TrackDetailAside", () => {
     mockGetCachedTrack.mockResolvedValue(track);
 
     render(
-      <TrackDetailAside activeView="all" selectedTrackId="cloudinary:asset-1" />,
+      <TrackDetailAside activeView="edm" selectedTrackId="cloudinary:asset-1" />,
     );
 
     expect(mockGetCachedTrack).toHaveBeenCalledWith("cloudinary:asset-1");
@@ -71,7 +71,7 @@ describe("TrackDetailAside", () => {
     mockGetCachedTrack.mockResolvedValue(track);
 
     render(
-      <TrackDetailAside activeView="all" selectedTrackId="cloudinary:asset-1" />,
+      <TrackDetailAside activeView="edm" selectedTrackId="cloudinary:asset-1" />,
     );
 
     expect(await screen.findByText("Cached Track")).toBeInTheDocument();
@@ -89,7 +89,7 @@ describe("TrackDetailAside", () => {
     });
 
     render(
-      <TrackDetailAside activeView="all" selectedTrackId="cloudinary:asset-1" />,
+      <TrackDetailAside activeView="edm" selectedTrackId="cloudinary:asset-1" />,
     );
 
     expect(await screen.findByTestId("track-detail-title")).toBeInTheDocument();
@@ -115,7 +115,7 @@ describe("TrackDetailAside", () => {
   it("shows details unavailable when cached metadata is missing", async () => {
     mockGetCachedTrack.mockResolvedValue(undefined);
 
-    render(<TrackDetailAside activeView="all" selectedTrackId="missing:track" />);
+    render(<TrackDetailAside activeView="edm" selectedTrackId="missing:track" />);
 
     expect(
       await screen.findByText("선택한 정보를 불러올 수 없습니다"),
