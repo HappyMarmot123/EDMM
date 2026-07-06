@@ -20,7 +20,6 @@ type MusicTrackListProps = {
   currentTrackId?: string | null;
   isCurrentTrackPlaying?: boolean;
   isLoading?: boolean;
-  isError?: boolean;
   emptyMessage?: string;
   canClearSearch?: boolean;
   onClearSearch?: () => void;
@@ -32,6 +31,57 @@ type MusicTrackListProps = {
   onTrackZoneScrollHandled?: () => void;
 };
 
+type EmptyTrackListProps = {
+  message: string;
+  canClearSearch: boolean;
+  onClearSearch?: () => void;
+};
+
+type TrackArtworkProps = {
+  track: Track;
+  shouldShowArtwork: boolean;
+};
+
+type PlayPauseButtonProps = {
+  track: Track;
+  isActive: boolean;
+  isPlayable: boolean;
+  onPlay: (track: Track) => void;
+};
+
+type TrackScrollerInput = {
+  tracks: Track[];
+  scrollToTrackId?: string | null;
+  scrollToTrackRequest?: number;
+  onTrackZoneScrollHandled?: () => void;
+};
+
+const PRIORITY_ARTWORK_COUNT = 8;
+const SKELETON_ROW_COUNT = 4;
+const DEFERRED_ARTWORK_LOAD_MS = 8000;
+const TRACK_ARTWORK_THUMBNAIL_TRANSFORM =
+  "c_fill,w_96,h_96,q_auto,f_auto";
+const ARTWORK_LOAD_EVENTS = [
+  "keydown",
+  "pointerdown",
+  "touchstart",
+  "wheel",
+] as const;
+
+const trackScrollerComponents = {
+  Scroller: (
+    props: ComponentPropsWithoutRef<"div"> & { stateChanged?: unknown },
+  ) => {
+    const { stateChanged, className, ...htmlProps } = props;
+    const mergedClassName = `scrollbar-hide ${className ?? ""}`.trim();
+    void stateChanged;
+
+    return <div {...htmlProps} className={mergedClassName} />;
+  },
+};
+
+const getTrackKey = (_: number, track: Track) => track.id;
+
 const formatDuration = (durationMs: number) => {
   const totalSeconds = Math.max(0, Math.round(durationMs / 1000));
   const minutes = Math.floor(totalSeconds / 60);
@@ -39,11 +89,6 @@ const formatDuration = (durationMs: number) => {
 
   return `${minutes}:${seconds}`;
 };
-
-const getTrackKey = (_: number, track: Track) => track.id;
-const PRIORITY_ARTWORK_COUNT = 8;
-const TRACK_ARTWORK_THUMBNAIL_TRANSFORM =
-  "c_fill,w_96,h_96,q_auto,f_auto";
 
 const getTrackArtworkSrc = (artworkUrl: string) => {
   if (!artworkUrl) {
@@ -72,41 +117,26 @@ const getTrackArtworkSrc = (artworkUrl: string) => {
   }
 };
 
-const trackScrollerComponents = {
-  Scroller: (
-    props: ComponentPropsWithoutRef<"div"> & { stateChanged?: unknown },
-  ) => {
-    const { stateChanged, className, ...htmlProps } = props;
-    const mergedClassName = `scrollbar-hide ${className ?? ""}`.trim();
-    void stateChanged;
+const findTrackRow = (
+  scroller: HTMLElement | Window | null,
+  trackId: string,
+) => {
+  if (!scroller) {
+    return null;
+  }
 
-    return <div {...htmlProps} className={mergedClassName} />;
-  },
+  const escapedTrackId = trackId.replace(/"/g, '\\"');
+  const selector = `[data-track-row-id="${escapedTrackId}"]`;
+
+  if (scroller instanceof Window) {
+    return scroller.document.querySelector<HTMLElement>(selector);
+  }
+
+  return scroller.querySelector<HTMLElement>(selector);
 };
 
-export function MusicTrackList({
-  tracks,
-  selectedTrackId,
-  currentTrackId,
-  isCurrentTrackPlaying = false,
-  isLoading = false,
-  isError = false,
-  emptyMessage = "No tracks in this view.",
-  canClearSearch = false,
-  onClearSearch,
-  playOnSelect = false,
-  onSelect,
-  onPlay,
-  scrollToTrackId,
-  scrollToTrackRequest,
-  onTrackZoneScrollHandled,
-}: MusicTrackListProps) {
-  const virtuosoRef = useRef<VirtuosoHandle | null>(null);
-  const scrollerRef = useRef<HTMLElement | Window | null>(null);
-  const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
-  const [isScrolledToTop, setIsScrolledToTop] = useState(true);
+function useDeferredArtworkLoad() {
   const [shouldLoadArtwork, setShouldLoadArtwork] = useState(false);
-  const scrollTopButtonPresence = useFadePresence(!isScrolledToTop, 200);
 
   useEffect(() => {
     if (shouldLoadArtwork) {
@@ -116,16 +146,12 @@ export function MusicTrackList({
     const loadArtwork = () => {
       setShouldLoadArtwork(true);
     };
+    const timeoutHandle = window.setTimeout(
+      loadArtwork,
+      DEFERRED_ARTWORK_LOAD_MS,
+    );
 
-    const interactionEvents = [
-      "keydown",
-      "pointerdown",
-      "touchstart",
-      "wheel",
-    ] as const;
-    const timeoutHandle = window.setTimeout(loadArtwork, 8000);
-
-    interactionEvents.forEach((eventName) => {
+    ARTWORK_LOAD_EVENTS.forEach((eventName) => {
       window.addEventListener(eventName, loadArtwork, {
         once: true,
         passive: true,
@@ -134,11 +160,23 @@ export function MusicTrackList({
 
     return () => {
       window.clearTimeout(timeoutHandle);
-      interactionEvents.forEach((eventName) => {
+      ARTWORK_LOAD_EVENTS.forEach((eventName) => {
         window.removeEventListener(eventName, loadArtwork);
       });
     };
   }, [shouldLoadArtwork]);
+
+  return shouldLoadArtwork;
+}
+
+function useTrackScroller({
+  tracks,
+  scrollToTrackId,
+  scrollToTrackRequest,
+  onTrackZoneScrollHandled,
+}: TrackScrollerInput) {
+  const virtuosoRef = useRef<VirtuosoHandle | null>(null);
+  const scrollerRef = useRef<HTMLElement | Window | null>(null);
 
   useEffect(() => {
     if (!scrollToTrackId || scrollToTrackRequest === undefined) {
@@ -159,29 +197,9 @@ export function MusicTrackList({
     });
 
     const rafId = requestAnimationFrame(() => {
-      const escapedTrackId = scrollToTrackId.replace(/"/g, '\\"');
-      const selectedRow = (() => {
-        const currentScroller = scrollerRef.current;
-
-        if (!currentScroller) {
-          return null;
-        }
-
-        if (currentScroller instanceof Window) {
-          return currentScroller.document.querySelector<HTMLElement>(
-            `[data-track-row-id="${escapedTrackId}"]`,
-          );
-        }
-
-        return currentScroller.querySelector<HTMLElement>(
-          `[data-track-row-id="${escapedTrackId}"]`,
-        );
-      })();
-
-      if (selectedRow) {
-        selectedRow.focus({ preventScroll: true });
-      }
-
+      findTrackRow(scrollerRef.current, scrollToTrackId)?.focus({
+        preventScroll: true,
+      });
       onTrackZoneScrollHandled?.();
     });
 
@@ -189,6 +207,143 @@ export function MusicTrackList({
       cancelAnimationFrame(rafId);
     };
   }, [onTrackZoneScrollHandled, scrollToTrackId, scrollToTrackRequest, tracks]);
+
+  const setScrollerRef = useCallback((ref: HTMLElement | Window | null) => {
+    scrollerRef.current = ref;
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    virtuosoRef.current?.scrollToIndex({
+      index: 0,
+      align: "start",
+      behavior: "smooth",
+    });
+  }, []);
+
+  return {
+    virtuosoRef,
+    setScrollerRef,
+    scrollToTop,
+  };
+}
+
+function LoadingTrackList() {
+  return (
+    <div className="space-y-2">
+      <div role="status" aria-live="polite" className="space-y-2 text-sm text-white/62">
+        <span>Loading tracks...</span>
+        {Array.from({ length: SKELETON_ROW_COUNT }, (_, item) => (
+          <div
+            key={item}
+            className="h-[68px] animate-pulse rounded-md border border-white/10 bg-white/[0.04]"
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EmptyTrackList({
+  message,
+  canClearSearch,
+  onClearSearch,
+}: EmptyTrackListProps) {
+  return (
+    <div
+      role="status"
+      className="rounded-3xl border border-white/10 bg-white/[0.035] px-5 py-8 text-center"
+    >
+      <p className="text-sm font-bold text-white/64">{message}</p>
+      {canClearSearch && onClearSearch ? (
+        <button
+          type="button"
+          onClick={onClearSearch}
+          className="mt-4 rounded-full border border-[#ff98a2]/40 px-4 py-2 text-xs font-black text-[#ffb8c0] transition-colors hover:border-[#ff98a2]/75 hover:text-white"
+        >
+          검색어 지우기
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function TrackArtwork({ track, shouldShowArtwork }: TrackArtworkProps) {
+  const artworkSrc = shouldShowArtwork ? getTrackArtworkSrc(track.artworkUrl) : "";
+
+  return (
+    <span
+      aria-hidden="true"
+      data-track-artwork-id={track.id}
+      className="grid aspect-square place-items-center overflow-hidden rounded-md border border-white/10 bg-[#16080f] bg-cover bg-center text-[#ffb8c0]"
+      style={artworkSrc ? { backgroundImage: `url(${artworkSrc})` } : undefined}
+    >
+      {shouldShowArtwork ? (
+        <span className="h-full w-full bg-black/10" />
+      ) : track.artworkUrl ? (
+        <span
+          className="h-6 w-6 animate-pulse rounded-full bg-[#ff98a2]/20 shadow-[0_0_18px_rgba(255,152,162,0.16)]"
+          data-track-artwork-skeleton
+        />
+      ) : (
+        <Disc3 size={21} strokeWidth={1.8} />
+      )}
+    </span>
+  );
+}
+
+function PlayPauseButton({
+  track,
+  isActive,
+  isPlayable,
+  onPlay,
+}: PlayPauseButtonProps) {
+  return (
+    <button
+      type="button"
+      aria-label={`${isActive ? "Pause" : "Play"} ${track.title}`}
+      onClick={(event) => {
+        event.stopPropagation();
+        onPlay(track);
+      }}
+      onKeyDown={(event) => event.stopPropagation()}
+      disabled={!isPlayable}
+      className="grid h-8 w-8 cursor-pointer place-items-center rounded-full bg-[#ff98a2] text-black disabled:cursor-not-allowed disabled:opacity-45 md:h-10 md:w-10"
+    >
+      {isActive ? (
+        <Pause size={16} fill="currentColor" strokeWidth={2.1} />
+      ) : (
+        <Play size={16} fill="currentColor" strokeWidth={2.1} />
+      )}
+    </button>
+  );
+}
+
+export function MusicTrackList({
+  tracks,
+  selectedTrackId,
+  currentTrackId,
+  isCurrentTrackPlaying = false,
+  isLoading = false,
+  emptyMessage = "No tracks in this view.",
+  canClearSearch = false,
+  onClearSearch,
+  playOnSelect = false,
+  onSelect,
+  onPlay,
+  scrollToTrackId,
+  scrollToTrackRequest,
+  onTrackZoneScrollHandled,
+}: MusicTrackListProps) {
+  const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
+  const [isScrolledToTop, setIsScrolledToTop] = useState(true);
+  const shouldLoadArtwork = useDeferredArtworkLoad();
+  const scrollTopButtonPresence = useFadePresence(!isScrolledToTop, 200);
+  const { virtuosoRef, setScrollerRef, scrollToTop } = useTrackScroller({
+    tracks,
+    scrollToTrackId,
+    scrollToTrackRequest,
+    onTrackZoneScrollHandled,
+  });
 
   const handleSelect = useCallback(
     (event: MouseEvent<HTMLElement>, track: Track) => {
@@ -204,62 +359,17 @@ export function MusicTrackList({
     [onSelect],
   );
 
-  const handleScrollToTop = useCallback(() => {
-    virtuosoRef.current?.scrollToIndex({
-      index: 0,
-      align: "start",
-      behavior: "smooth",
-    });
-  }, []);
-
   if (isLoading) {
-    return (
-      <div className="space-y-2">
-        <div
-          role="status"
-          aria-live="polite"
-          className="space-y-2 text-sm text-white/62"
-        >
-          <span>Loading tracks...</span>
-          {[0, 1, 2, 3].map((item) => (
-            <div
-              key={item}
-              className="h-[68px] animate-pulse rounded-md border border-white/10 bg-white/[0.04]"
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="rounded-md border border-[#ff98a2]/30 bg-[#ff98a2]/10 p-5">
-        <h2 className="text-lg font-black text-white">Catalog unavailable</h2>
-        <p className="mt-2 text-sm leading-6 text-white/62">
-          The music catalog did not respond. Try loading it again.
-        </p>
-      </div>
-    );
+    return <LoadingTrackList />;
   }
 
   if (tracks.length === 0) {
     return (
-      <div
-        role="status"
-        className="rounded-3xl border border-white/10 bg-white/[0.035] px-5 py-8 text-center"
-      >
-        <p className="text-sm font-bold text-white/64">{emptyMessage}</p>
-        {canClearSearch && onClearSearch ? (
-          <button
-            type="button"
-            onClick={onClearSearch}
-            className="mt-4 rounded-full border border-[#ff98a2]/40 px-4 py-2 text-xs font-black text-[#ffb8c0] transition-colors hover:border-[#ff98a2]/75 hover:text-white"
-          >
-            검색어 지우기
-          </button>
-        ) : null}
-      </div>
+      <EmptyTrackList
+        message={emptyMessage}
+        canClearSearch={canClearSearch}
+        onClearSearch={onClearSearch}
+      />
     );
   }
 
@@ -273,9 +383,7 @@ export function MusicTrackList({
       >
         <Virtuoso
           ref={virtuosoRef}
-          scrollerRef={(ref) => {
-            scrollerRef.current = ref;
-          }}
+          scrollerRef={setScrollerRef}
           atBottomStateChange={setIsScrolledToBottom}
           atTopStateChange={setIsScrolledToTop}
           data={tracks}
@@ -286,22 +394,14 @@ export function MusicTrackList({
           fixedItemHeight={84}
           itemContent={(index, track) => {
             const isSelected = selectedTrackId === track.id;
-            const isCurrentTrack = track.id === currentTrackId;
             const isTrackPlayable = isPlayable(track);
-            const isCurrentTrackActive = isCurrentTrack && isCurrentTrackPlaying;
+            const isCurrentTrackActive =
+              track.id === currentTrackId && isCurrentTrackPlaying;
             const selectActionLabel =
               playOnSelect && isTrackPlayable ? "Select and play" : "Select";
-            const hasArtwork = Boolean(track.artworkUrl);
             const shouldShowArtwork =
-              hasArtwork && (index < PRIORITY_ARTWORK_COUNT || shouldLoadArtwork);
-            const artworkSrc = shouldShowArtwork
-              ? getTrackArtworkSrc(track.artworkUrl)
-              : "";
-
-            const handlePlay = (event: MouseEvent<HTMLButtonElement>) => {
-              event.stopPropagation();
-              onPlay(track);
-            };
+              Boolean(track.artworkUrl) &&
+              (index < PRIORITY_ARTWORK_COUNT || shouldLoadArtwork);
 
             return (
               <div
@@ -330,27 +430,10 @@ export function MusicTrackList({
                     <span className="hidden text-sm font-black text-white/38 md:block">
                       {index + 1}
                     </span>
-                    <span
-                      aria-hidden="true"
-                      data-track-artwork-id={track.id}
-                      className="grid aspect-square place-items-center overflow-hidden rounded-md border border-white/10 bg-[#16080f] bg-cover bg-center text-[#ffb8c0]"
-                      style={
-                        artworkSrc
-                          ? { backgroundImage: `url(${artworkSrc})` }
-                          : undefined
-                      }
-                    >
-                      {shouldShowArtwork ? (
-                        <span className="h-full w-full bg-black/10" />
-                      ) : hasArtwork ? (
-                        <span
-                          className="h-6 w-6 animate-pulse rounded-full bg-[#ff98a2]/20 shadow-[0_0_18px_rgba(255,152,162,0.16)]"
-                          data-track-artwork-skeleton
-                        />
-                      ) : (
-                        <Disc3 size={21} strokeWidth={1.8} />
-                      )}
-                    </span>
+                    <TrackArtwork
+                      track={track}
+                      shouldShowArtwork={shouldShowArtwork}
+                    />
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-black text-white">
                         {track.title}
@@ -365,22 +448,12 @@ export function MusicTrackList({
                     <span className="hidden min-w-10 text-right text-sm font-bold text-white/42 sm:inline">
                       {formatDuration(track.durationMs)}
                     </span>
-                    <button
-                      type="button"
-                      aria-label={`${
-                        isCurrentTrackActive ? "Pause" : "Play"
-                      } ${track.title}`}
-                      onClick={handlePlay}
-                      onKeyDown={(event) => event.stopPropagation()}
-                      disabled={!isTrackPlayable}
-                      className="grid h-8 w-8 cursor-pointer place-items-center rounded-full bg-[#ff98a2] text-black md:h-10 md:w-10"
-                    >
-                      {isCurrentTrackActive ? (
-                        <Pause size={16} fill="currentColor" strokeWidth={2.1} />
-                      ) : (
-                        <Play size={16} fill="currentColor" strokeWidth={2.1} />
-                      )}
-                    </button>
+                    <PlayPauseButton
+                      track={track}
+                      isActive={isCurrentTrackActive}
+                      isPlayable={isTrackPlayable}
+                      onPlay={onPlay}
+                    />
                   </div>
                 </li>
               </div>
@@ -395,7 +468,7 @@ export function MusicTrackList({
                 ? "opacity-100"
                 : "pointer-events-none opacity-0"
             }`}
-            onClick={handleScrollToTop}
+            onClick={scrollToTop}
             aria-label="Scroll to top"
             title="Scroll to top"
           >

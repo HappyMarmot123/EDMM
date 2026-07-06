@@ -812,7 +812,6 @@ export function MusicShell({
               currentTrackId={currentTrackId}
               isCurrentTrackPlaying={isCurrentTrackPlaying}
               isLoading={isVisibleLoading}
-              isError={false}
               emptyMessage={emptyMessage}
               canClearSearch={catalogFallbackState.status === "search_empty"}
               onClearSearch={() => setSearchQuery("")}
