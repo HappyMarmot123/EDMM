@@ -18,7 +18,6 @@ export function CobeOrbitShell() {
       data-testid="rose-cobe-orbit"
       aria-hidden="true"
     >
-      <div data-testid="rose-cobe-orbit-shell" className="rose-cobe-orbit__halo" />
       <canvas
         className="rose-cobe-orbit__canvas rose-cobe-orbit__canvas--shell"
         data-testid="rose-cobe-canvas"
