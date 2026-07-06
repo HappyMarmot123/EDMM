@@ -16,6 +16,7 @@ const CLOUDINARY_TRACK_STALE_TTL_MS = 604_800_000;
 const MAX_PAGES = 20;
 const MAX_SEARCH_TOKENS = 8;
 const SEARCH_TOKEN_REGEX = /[\p{L}\p{N}_-]+/gu;
+const CACHE_VERSION_REGEX = /^[A-Za-z0-9._-]+$/;
 export const CLOUDINARY_TRACKS_CACHE_TAG = "cloudinary-tracks";
 
 export type CloudinaryCachePolicy = {
@@ -75,8 +76,34 @@ const requiredEnv = () => {
 const escapeExpressionValue = (value: string) =>
   value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 
+const isBareExpressionValue = (value: string) => /^[A-Za-z0-9_./-]+$/.test(value);
+
+const formatExpressionValue = (value: string) =>
+  isBareExpressionValue(value) ? value : `"${escapeExpressionValue(value)}"`;
+
+const buildFolderScopeExpression = (folder: string) => {
+  const value = formatExpressionValue(folder);
+
+  return [
+    `asset_folder=${value}`,
+    `asset_folder:${value}/*`,
+    `folder=${value}`,
+    `folder:${value}/*`,
+  ].join(" OR ");
+};
+
 const searchTokens = (query: string) =>
   (query.match(SEARCH_TOKEN_REGEX) ?? []).slice(0, MAX_SEARCH_TOKENS);
+
+export const normalizeCloudinaryCacheVersion = (
+  value: string | null | undefined,
+) => {
+  const normalized = value?.trim() ?? "";
+
+  return normalized && CACHE_VERSION_REGEX.test(normalized)
+    ? normalized
+    : undefined;
+};
 
 // 검색 대상은 곡명과 아티스트만. 캡션이 없는 에셋은 어댑터가 파일명을
 // 제목으로 쓰므로 파일명 기반 곡도 자연스럽게 매칭된다.
@@ -101,6 +128,7 @@ type FetchCloudinaryTrackOptions = {
   filterPlayable?: boolean;
   cachePolicy?: CloudinaryCachePolicy;
   category?: string;
+  cacheVersion?: string;
 };
 
 const getCloudinaryTrackPolicy = (
@@ -130,7 +158,7 @@ export function buildCloudinaryExpression(
       ? "(resource_type:video OR resource_type:image)"
       : `resource_type:${resourceType}`;
 
-  return `${resourceTypeExpression} AND (asset_folder="${escapeExpressionValue(normalizedFolder)}" OR folder="${escapeExpressionValue(normalizedFolder)}")`;
+  return `${resourceTypeExpression} AND (${buildFolderScopeExpression(normalizedFolder)})`;
 }
 
 export function clearCloudinaryTrackCacheForTests() {
@@ -179,6 +207,7 @@ export async function fetchCloudinaryTracks(
   const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
   const tracks: Track[] = [];
   const category = options.category?.trim();
+  const cacheVersion = normalizeCloudinaryCacheVersion(options.cacheVersion);
   const scopedFolder = category ? `${folder}/${category}` : folder;
   const expression = buildCloudinaryExpression(scopedFolder, resourceType);
   const queryTokens = searchTokens(normalizedQuery.toLowerCase());
@@ -196,6 +225,10 @@ export async function fetchCloudinaryTracks(
     );
     url.searchParams.append("with_field", "tags");
     url.searchParams.append("with_field", "context");
+
+    if (cacheVersion) {
+      url.searchParams.set("edmm_cache_version", cacheVersion);
+    }
 
     if (nextCursor) {
       url.searchParams.set("next_cursor", nextCursor);

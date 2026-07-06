@@ -103,6 +103,10 @@ const cloudTracks = [
   track("cloudinary:all-2", "Cloud Track Two", "Cloud Artist"),
   track("cloudinary:all-3", "Cloud Track Three", "Cloud Artist"),
 ];
+const edmTracks = [
+  track("cloudinary:edm-1", "EDM Track One", "EDM Artist"),
+  track("cloudinary:edm-2", "EDM Track Two", "EDM Artist"),
+];
 const hiddenTrack = track("cloudinary:hidden-1", "Hidden Track");
 const recentTrack = track("cloudinary:recent-1", "Recent Track");
 const mockAudioState = {
@@ -116,6 +120,27 @@ const getDesktopViewButton = (name: string) =>
     "button",
     { name },
   );
+
+const mockCategoryCatalogs = ({
+  pop = cloudTracks,
+  edm = edmTracks,
+}: {
+  pop?: Track[];
+  edm?: Track[];
+} = {}) => {
+  mockUseCloudinaryTracks.mockImplementation(
+    (query: string, options?: { category?: string }) => {
+      const tracks = options?.category === "edm" ? edm : pop;
+
+      return {
+        data: query ? tracks.slice(0, 1) : tracks,
+        isLoading: false,
+        isError: false,
+        refetch: jest.fn(),
+      };
+    },
+  );
+};
 
 describe("MusicShell", () => {
   beforeEach(() => {
@@ -138,7 +163,9 @@ describe("MusicShell", () => {
       unavailable: false,
     });
     mockGetCachedTrack.mockImplementation(async (trackId: string) =>
-      [hiddenTrack, recentTrack, ...cloudTracks].find((item) => item.id === trackId),
+      [hiddenTrack, recentTrack, ...cloudTracks, ...edmTracks].find(
+        (item) => item.id === trackId,
+      ),
     );
     mockCaptureSearchFallbackEvent.mockClear();
   });
@@ -1031,6 +1058,13 @@ describe("MusicShell", () => {
 
   it("prefers latest recent play as first controller seed when present", async () => {
     const onPlay = jest.fn();
+    const visibleTracks = [recentTrack, ...cloudTracks];
+    mockUseCloudinaryTracks.mockImplementation((query: string) => ({
+      data: query ? [cloudTracks[1]] : visibleTracks,
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    }));
     mockUseRecentPlays.mockReturnValue({
       recentIds: ["cloudinary:recent-1"],
       isUnavailable: false,
@@ -1039,12 +1073,66 @@ describe("MusicShell", () => {
     render(<MusicShell onPlay={onPlay} />);
 
     await waitFor(() => {
-      expect(onPlay).toHaveBeenCalledWith(recentTrack, [recentTrack], false);
+      expect(onPlay).toHaveBeenCalledWith(recentTrack, visibleTracks, false);
     });
+  });
+
+  it("aligns the initial tab to the latest recent track folder before seeding", async () => {
+    const onPlay = jest.fn();
+    mockCategoryCatalogs();
+    mockUseRecentPlays.mockReturnValue({
+      recentIds: ["cloudinary:edm-1"],
+      isUnavailable: false,
+    });
+
+    render(<MusicShell onPlay={onPlay} />);
+
+    await waitFor(() => {
+      expect(getDesktopViewButton("EDM")).toHaveAttribute("aria-pressed", "true");
+    });
+    expect(
+      screen.getByRole("button", { name: "Select EDM Track One" }),
+    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(onPlay).toHaveBeenCalledWith(edmTracks[0], edmTracks, false);
+    });
+    expect(onPlay).not.toHaveBeenCalledWith(
+      edmTracks[0],
+      [edmTracks[0]],
+      false,
+    );
+  });
+
+  it("respects explicit initialView when the latest recent track is in another folder", async () => {
+    const onPlay = jest.fn();
+    mockCategoryCatalogs();
+    mockUseRecentPlays.mockReturnValue({
+      recentIds: ["cloudinary:edm-1"],
+      isUnavailable: false,
+    });
+
+    render(<MusicShell initialView="pop" onPlay={onPlay} />);
+
+    expect(getDesktopViewButton("Pop")).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() => {
+      expect(onPlay).toHaveBeenCalledWith(cloudTracks[0], cloudTracks, false);
+    });
+    expect(onPlay).not.toHaveBeenCalledWith(
+      edmTracks[0],
+      [edmTracks[0]],
+      false,
+    );
   });
 
   it("keeps seeded recent track details when the player current track syncs", async () => {
     const onPlay = jest.fn();
+    const visibleTracks = [recentTrack, ...cloudTracks];
+    mockUseCloudinaryTracks.mockImplementation((query: string) => ({
+      data: query ? [cloudTracks[1]] : visibleTracks,
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    }));
     mockUseRecentPlays.mockReturnValue({
       recentIds: ["cloudinary:recent-1"],
       isUnavailable: false,

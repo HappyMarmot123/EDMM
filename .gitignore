@@ -36,3 +36,4 @@ skills-lock.json
 # typescript (FE)
 **/*.tsbuildinfo
 
+next-env.d.ts

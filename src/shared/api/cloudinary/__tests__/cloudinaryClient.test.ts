@@ -82,19 +82,25 @@ afterAll(() => {
 describe("buildCloudinaryExpression", () => {
   it("builds a folder-scoped video expression", () => {
     expect(buildCloudinaryExpression("edmm/media-pipeline")).toBe(
-      'resource_type:video AND (asset_folder="edmm/media-pipeline" OR folder="edmm/media-pipeline")',
+      'resource_type:video AND (asset_folder=edmm/media-pipeline OR asset_folder:edmm/media-pipeline/* OR folder=edmm/media-pipeline OR folder:edmm/media-pipeline/*)',
     );
   });
 
   it("builds an image expression when requested", () => {
     expect(buildCloudinaryExpression("edmm/media-pipeline", "image")).toBe(
-      'resource_type:image AND (asset_folder="edmm/media-pipeline" OR folder="edmm/media-pipeline")',
+      'resource_type:image AND (asset_folder=edmm/media-pipeline OR asset_folder:edmm/media-pipeline/* OR folder=edmm/media-pipeline OR folder:edmm/media-pipeline/*)',
     );
   });
 
   it("builds an all-type expression when requested", () => {
     expect(buildCloudinaryExpression("edmm/media-pipeline", "all")).toBe(
-      '(resource_type:video OR resource_type:image) AND (asset_folder="edmm/media-pipeline" OR folder="edmm/media-pipeline")',
+      '(resource_type:video OR resource_type:image) AND (asset_folder=edmm/media-pipeline OR asset_folder:edmm/media-pipeline/* OR folder=edmm/media-pipeline OR folder:edmm/media-pipeline/*)',
+    );
+  });
+
+  it("includes exact and prefix folder matches for category subfolders", () => {
+    expect(buildCloudinaryExpression("edmm/media-pipeline/edm", "video")).toBe(
+      'resource_type:video AND (asset_folder=edmm/media-pipeline/edm OR asset_folder:edmm/media-pipeline/edm/* OR folder=edmm/media-pipeline/edm OR folder:edmm/media-pipeline/edm/*)',
     );
   });
 });
@@ -184,7 +190,7 @@ describe("fetchCloudinaryTracks", () => {
     expect(url.origin).toBe("https://api.cloudinary.com");
     expect(url.pathname).toBe("/v1_1/demo/resources/search");
     expect(url.searchParams.get("expression")).toBe(
-      'resource_type:video AND (asset_folder="edmm/media-pipeline" OR folder="edmm/media-pipeline")',
+      'resource_type:video AND (asset_folder=edmm/media-pipeline OR asset_folder:edmm/media-pipeline/* OR folder=edmm/media-pipeline OR folder:edmm/media-pipeline/*)',
     );
     expect(url.searchParams.getAll("with_field")).toEqual(["tags", "context"]);
     expect(init).toMatchObject({
@@ -217,7 +223,7 @@ describe("fetchCloudinaryTracks", () => {
     const url = new URL(requestUrl.toString());
 
     expect(url.searchParams.get("expression")).toBe(
-      'resource_type:image AND (asset_folder="edmm/media-pipeline" OR folder="edmm/media-pipeline")',
+      'resource_type:image AND (asset_folder=edmm/media-pipeline OR asset_folder:edmm/media-pipeline/* OR folder=edmm/media-pipeline OR folder:edmm/media-pipeline/*)',
     );
   });
 
@@ -233,7 +239,7 @@ describe("fetchCloudinaryTracks", () => {
     const url = new URL(requestUrl.toString());
 
     expect(url.searchParams.get("expression")).toBe(
-      '(resource_type:video OR resource_type:image) AND (asset_folder="edmm/media-pipeline" OR folder="edmm/media-pipeline")',
+      '(resource_type:video OR resource_type:image) AND (asset_folder=edmm/media-pipeline OR asset_folder:edmm/media-pipeline/* OR folder=edmm/media-pipeline OR folder:edmm/media-pipeline/*)',
     );
   });
 
@@ -249,8 +255,25 @@ describe("fetchCloudinaryTracks", () => {
     const url = new URL(requestUrl.toString());
 
     expect(url.searchParams.get("expression")).toBe(
-      '(resource_type:video OR resource_type:image) AND (asset_folder="edmm/media-pipeline/pop" OR folder="edmm/media-pipeline/pop")',
+      '(resource_type:video OR resource_type:image) AND (asset_folder=edmm/media-pipeline/pop OR asset_folder:edmm/media-pipeline/pop/* OR folder=edmm/media-pipeline/pop OR folder:edmm/media-pipeline/pop/*)',
     );
+  });
+
+  it("adds cache version to the Cloudinary Search URL", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ resources: [rawResource] }),
+    });
+
+    await fetchCloudinaryTracks("", {
+      resourceType: "video",
+      cacheVersion: "4",
+    });
+
+    const requestUrl = mockFetch.mock.calls[0][0];
+    const url = new URL(requestUrl.toString());
+
+    expect(url.searchParams.get("edmm_cache_version")).toBe("4");
   });
 
   it("returns mixed resources when resourceType=all and filterPlayable is disabled", async () => {
@@ -394,7 +417,7 @@ describe("fetchCloudinaryTracks", () => {
       const expression = url.searchParams.get("expression") ?? "";
 
       expect(expression).toBe(
-        'resource_type:video AND (asset_folder="edmm/media-pipeline" OR folder="edmm/media-pipeline")',
+        'resource_type:video AND (asset_folder=edmm/media-pipeline OR asset_folder:edmm/media-pipeline/* OR folder=edmm/media-pipeline OR folder:edmm/media-pipeline/*)',
       );
     });
 

@@ -64,19 +64,13 @@ export const resolveInitialSeedTrack = ({
 export const resolveRecentSeedTrack = ({
   latestRecentId,
   visibleTracks,
-  cachedTrack,
 }: {
   latestRecentId: string;
   visibleTracks: Track[];
-  cachedTrack: Track | null;
 }): Track | null => {
   const visibleMatch = findTrackById(visibleTracks, latestRecentId);
   if (visibleMatch && isPlayable(visibleMatch)) {
     return visibleMatch;
-  }
-
-  if (cachedTrack && isPlayable(cachedTrack)) {
-    return cachedTrack;
   }
 
   return firstPlayableTrack(visibleTracks);
@@ -123,25 +117,10 @@ export const resolveInitialSeedTrackWithCache = async ({
 export const resolveRecentSeedTrackWithCache = async ({
   latestRecentId,
   visibleTracks,
-  loadTrackById,
 }: {
   latestRecentId: string;
   visibleTracks: Track[];
   loadTrackById: TrackCacheLookup;
 }): Promise<Track | null> => {
-  const visibleMatch = findTrackById(visibleTracks, latestRecentId);
-  if (visibleMatch && isPlayable(visibleMatch)) {
-    return visibleMatch;
-  }
-
-  try {
-    const cachedTrack = await loadTrackById(latestRecentId);
-    if (cachedTrack && isPlayable(cachedTrack)) {
-      return cachedTrack;
-    }
-  } catch {
-    // keep fallback behavior deterministic
-  }
-
-  return firstPlayableTrack(visibleTracks);
+  return resolveRecentSeedTrack({ latestRecentId, visibleTracks });
 };

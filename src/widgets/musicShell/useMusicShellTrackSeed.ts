@@ -28,6 +28,8 @@ type MusicShellSeedHookParams = {
     queueOverride?: Track[],
   ) => void;
   fallbackToFirstPlayable: () => void;
+  isInitialSeedPaused?: boolean;
+  isAutomaticSeedDisabled?: boolean;
 };
 
 const loadCachedTrack = async (trackId: string): Promise<Track | null> => {
@@ -44,6 +46,8 @@ export const useMusicShellTrackSeed = ({
   queueForTrack,
   activateTrackInPlayer,
   fallbackToFirstPlayable,
+  isInitialSeedPaused = false,
+  isAutomaticSeedDisabled = false,
 }: MusicShellSeedHookParams) => {
   const loadTrackById = useCallback(async (trackId: string) => {
     try {
@@ -57,7 +61,7 @@ export const useMusicShellTrackSeed = ({
   const resolvedRecentTrackRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (selectionSource !== "initial" || !selectedTrackId) {
+    if (isInitialSeedPaused || selectionSource !== "initial" || !selectedTrackId) {
       return;
     }
 
@@ -102,6 +106,7 @@ export const useMusicShellTrackSeed = ({
   }, [
     activateTrackInPlayer,
     fallbackToFirstPlayable,
+    isInitialSeedPaused,
     loadTrackById,
     queueForTrack,
     selectedTrack,
@@ -111,7 +116,7 @@ export const useMusicShellTrackSeed = ({
   ]);
 
   useEffect(() => {
-    if (selectionSource) {
+    if (isInitialSeedPaused || isAutomaticSeedDisabled || selectionSource) {
       return;
     }
 
@@ -158,6 +163,8 @@ export const useMusicShellTrackSeed = ({
     };
   }, [
     activateTrackInPlayer,
+    isAutomaticSeedDisabled,
+    isInitialSeedPaused,
     queueForTrack,
     recentTrackIds,
     selectionSource,
