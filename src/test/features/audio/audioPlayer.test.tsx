@@ -21,6 +21,7 @@ type MockAudioPlayerState = {
   currentTrack: Track | null;
   isPlaying: boolean;
   isBuffering: boolean;
+  playbackError: "autoplay-blocked" | "unsupported-audio-context" | "source-load-failed" | null;
   currentTime: number;
   duration: number;
   volume: number;
@@ -39,6 +40,7 @@ let mockAudioPlayerState: MockAudioPlayerState = {
   currentTrack: track,
   isPlaying: false,
   isBuffering: false,
+  playbackError: null,
   currentTime: 12,
   duration: 180,
   volume: 0.7,
@@ -97,6 +99,7 @@ describe("AudioPlayer", () => {
       currentTrack: track,
       isPlaying: false,
       isBuffering: false,
+      playbackError: null,
       currentTime: 12,
       duration: 180,
       volume: 0.7,
@@ -156,6 +159,30 @@ describe("AudioPlayer", () => {
     expect(volumeZone).toHaveClass("flex");
     expect(volumeSlider).toHaveAttribute("aria-valuenow", "70");
     expect(within(volumeZone).queryByText("EQ Presets")).not.toBeInTheDocument();
+  });
+
+  it("renders playback errors as a fixed desktop popup outside player layout zones", () => {
+    mockAudioPlayerState.playbackError = "autoplay-blocked";
+
+    render(<AudioPlayer />);
+
+    const feedback = screen.getByRole("status", {
+      name: "Playback error feedback",
+    });
+
+    expect(feedback).toHaveClass("absolute");
+    expect(feedback).toHaveTextContent(
+      "브라우저가 자동 재생을 막았습니다. 재생 버튼을 한 번 더 눌러 주세요.",
+    );
+    expect(screen.getByTestId("player-track-zone")).not.toContainElement(feedback);
+    expect(screen.getByTestId("player-control-zone")).not.toContainElement(
+      feedback,
+    );
+    expect(screen.getByTestId("player-volume-zone")).not.toContainElement(feedback);
+
+    fireEvent.click(screen.getByRole("button", { name: "다시 재생" }));
+
+    expect(mockAudioPlayerState.togglePlayPause).toHaveBeenCalledTimes(1);
   });
 
   it("fires previous and next actions from desktop controls", () => {
@@ -464,6 +491,26 @@ describe("AudioPlayer", () => {
     );
     expect(screen.getByText("No track selected")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
+  });
+
+  it("renders playback errors as a fixed mobile popup outside the compact player", () => {
+    mockAudioPlayerState.playbackError = "source-load-failed";
+
+    render(<MobileAudioPlayer />);
+
+    const feedback = screen.getByRole("status", {
+      name: "Playback error feedback",
+    });
+    const mobilePlayer = document.getElementById("player-mobile");
+
+    expect(feedback).toHaveClass("absolute");
+    expect(feedback).toHaveTextContent(
+      "지금은 이 트랙을 재생할 수 없습니다. 다른 트랙을 선택해 주세요.",
+    );
+    expect(mobilePlayer).not.toContainElement(feedback);
+    expect(
+      screen.queryByRole("button", { name: "다시 재생" }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps mobile fullscreen drag stable when pointer capture APIs are unavailable", async () => {

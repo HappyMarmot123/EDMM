@@ -5,12 +5,21 @@ import MPlayerTrackDetails from "@/features/audio/components/mobile/m_playerTrac
 import MPlayerControlsSection from "@/features/audio/components/mobile/m_playerControlsSection";
 import MAlbumArtwork from "@/features/audio/components/mobile/m_albumArtwork";
 import MobileFullscreenPlayer from "@/features/audio/components/mobile/mobileFullscreenPlayer";
+import PlaybackErrorFeedback from "@/features/audio/components/playbackErrorFeedback";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 
 // Root here
 export default function MobileAudioPlayer() {
-  const { currentTrack, isPlaying, isBuffering, currentTime, duration, seek } =
-    useAudioPlayer();
+  const {
+    currentTrack,
+    isPlaying,
+    isBuffering,
+    currentTime,
+    duration,
+    seek,
+    playbackError,
+    togglePlayPause,
+  } = useAudioPlayer();
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
   const seekBarContainerRef = useRef<HTMLDivElement>(null);
 
@@ -44,6 +53,12 @@ export default function MobileAudioPlayer() {
         style={{ bottom: "max(env(safe-area-inset-bottom), 10px)" }}
         aria-label="Audio Player"
       >
+        <PlaybackErrorFeedback
+          error={playbackError}
+          canRetry={Boolean(currentTrack?.streamUrl)}
+          onRetry={togglePlayPause}
+          className="px-0"
+        />
         <div
           id="player-mobile"
           className="relative min-h-[64px] overflow-hidden rounded-lg"

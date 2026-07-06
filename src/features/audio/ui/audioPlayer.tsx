@@ -10,6 +10,7 @@ import PlayerControlsSection, {
   PlayerVolumeControls,
 } from "@/features/audio/components/playerControlsSection";
 import AlbumArtwork from "@/features/audio/components/albumArtwork";
+import PlaybackErrorFeedback from "@/features/audio/components/playbackErrorFeedback";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { useFadePresence } from "@/shared/hooks/useFadePresence";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
@@ -39,6 +40,8 @@ export default function AudioPlayer() {
     duration,
     seek,
     audioAnalyser,
+    playbackError,
+    togglePlayPause,
   } =
     useAudioPlayer();
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
@@ -155,6 +158,11 @@ export default function AudioPlayer() {
         <span
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-white/[0.03] to-transparent"
+        />
+        <PlaybackErrorFeedback
+          error={playbackError}
+          canRetry={Boolean(currentTrack?.streamUrl)}
+          onRetry={togglePlayPause}
         />
         <div
           id="player"

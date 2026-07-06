@@ -68,6 +68,13 @@ jest.mock("@/shared/db", () => ({
   getCachedTrack: jest.fn(async () => undefined),
 }));
 
+const mockCapturePlaybackErrorEvent = jest.fn();
+jest.mock("@/shared/lib/sentry/playbackEvents", () => ({
+  capturePlaybackErrorEvent: (...args: unknown[]) =>
+    mockCapturePlaybackErrorEvent(...args),
+  getCurrentBrowserRoute: () => "/",
+}));
+
 function AudioConsumer() {
   const { audioInstance } = useAudioPlayer();
 
@@ -225,6 +232,17 @@ describe("AudioPlayerProvider", () => {
     expect(console.warn).toHaveBeenCalledWith(
       "Error playing audio:",
       expect.any(DOMException),
+    );
+    expect(mockCapturePlaybackErrorEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        errorCode: "autoplay-blocked",
+        retryable: true,
+        route: "/",
+        track: expect.objectContaining({
+          id: "track-1",
+          source: "cloudinary",
+        }),
+      }),
     );
   });
 

@@ -1,9 +1,14 @@
 import * as Sentry from "@sentry/nextjs";
 import type { MusicView } from "@/widgets/musicShell/musicShellHeader";
+import {
+  buildErrorTags,
+  ERROR_CLASSES,
+  getErrorSeverity,
+} from "./errorTaxonomy";
 
 export type SearchFallbackEvent =
   | {
-      type: "catalog_fetch_failed";
+      type: typeof ERROR_CLASSES.catalogFetchFailed;
       route: "/search";
       view: MusicView;
       queryLength: number;
@@ -11,7 +16,7 @@ export type SearchFallbackEvent =
       hasStaleData: boolean;
     }
   | {
-      type: "search_fallback_used";
+      type: typeof ERROR_CLASSES.searchFallbackUsed;
       route: "/search";
       view: MusicView;
       queryLength: number;
@@ -19,13 +24,13 @@ export type SearchFallbackEvent =
       resultCount: number;
     }
   | {
-      type: "indexeddb_unavailable";
+      type: typeof ERROR_CLASSES.indexedDbUnavailable;
       route: "/search";
       view: MusicView;
       operation: "recent_plays_read" | "track_cache_bulk_read";
     }
   | {
-      type: "selected_track_unavailable";
+      type: typeof ERROR_CLASSES.selectedTrackUnavailable;
       route: "/search";
       view: MusicView;
       hasTrackId: boolean;
@@ -33,12 +38,13 @@ export type SearchFallbackEvent =
 
 export function captureSearchFallbackEvent(event: SearchFallbackEvent): void {
   Sentry.captureMessage(`search.${event.type}`, {
-    level: event.type === "selected_track_unavailable" ? "info" : "warning",
-    tags: {
+    level: getErrorSeverity(event.type),
+    tags: buildErrorTags({
       error_class: event.type,
       route: event.route,
       view: event.view,
-    },
+      operation: "operation" in event ? event.operation : undefined,
+    }),
     contexts: {
       search: event,
     },
