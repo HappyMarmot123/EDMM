@@ -8,7 +8,16 @@ import { addRecentPlay } from "@/shared/db";
 import { CLAMP_VOLUME } from "@/shared/lib/util";
 import { logger } from "@/shared/lib/logger";
 import { normalizeArtworkUrl } from "@/shared/lib/trackArtwork";
-import { classifyPlaybackError } from "./audioPlaybackErrors";
+import {
+  classifyPlaybackError,
+  isPlaybackErrorRetryable,
+  PLAYBACK_ERROR_CODES,
+  type PlaybackErrorCode,
+} from "./audioPlaybackErrors";
+import {
+  capturePlaybackErrorEvent,
+  getCurrentBrowserRoute,
+} from "@/shared/lib/sentry/playbackEvents";
 import { useMediaSession } from "../hooks/useMediaSession";
 import { useAudioPlaybackLifecycle } from "../hooks/useAudioPlaybackLifecycle";
 import { setMasterAudioVolume } from "@/shared/lib/audioInstance";
@@ -145,6 +154,19 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
     setIsMuted((muted) => !muted);
   }, []);
 
+  const recordPlaybackError = useCallback(
+    (errorCode: PlaybackErrorCode, trackOverride?: Track | null) => {
+      setPlaybackError(errorCode);
+      capturePlaybackErrorEvent({
+        errorCode,
+        retryable: isPlaybackErrorRetryable(errorCode),
+        route: getCurrentBrowserRoute(),
+        track: trackOverride ?? currentTrackRef.current,
+      });
+    },
+    [],
+  );
+
   const setTrack = useCallback(
     (track: Track, playImmediately = false) => {
       const mergedTrack = mergeTrack(currentTrackRef.current, track);
@@ -280,8 +302,12 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
             await audioContext.resume();
             setPlaybackError(null);
           } catch (error) {
-            setPlaybackError(
-              classifyPlaybackError(error, "unsupported-audio-context"),
+            recordPlaybackError(
+              classifyPlaybackError(
+                error,
+                PLAYBACK_ERROR_CODES.unsupportedAudioContext,
+              ),
+              primaryTrackInfo,
             );
             logger.warn("Error resuming audio context:", error);
           }
@@ -309,6 +335,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       getRememberedArtwork,
       isShuffleEnabled,
       mergeTrack,
+      recordPlaybackError,
       recoverArtworkForCurrentTrack,
       setTrack,
       resolveTrackArtwork,
@@ -406,8 +433,12 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
         await audioContext.resume();
         setPlaybackError(null);
       } catch (error) {
-        setPlaybackError(
-          classifyPlaybackError(error, "unsupported-audio-context"),
+        recordPlaybackError(
+          classifyPlaybackError(
+            error,
+            PLAYBACK_ERROR_CODES.unsupportedAudioContext,
+          ),
+          currentTrack,
         );
         setIsPlaying(false);
         return;
@@ -415,7 +446,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
     }
 
     setIsPlaying((playing) => !playing);
-  }, [audioContext, currentTrack]);
+  }, [audioContext, currentTrack, recordPlaybackError]);
 
   const seek = useCallback(
     (time: number) => {

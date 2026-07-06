@@ -1,7 +1,16 @@
 import { db, type RecentPlayRow } from "@/shared/db/edmmDB";
+import {
+  captureIndexedDbUnavailableEvent,
+  INDEXEDDB_OPERATIONS,
+} from "@/shared/lib/sentry/indexedDbEvents";
 import { logger } from "@/shared/lib/logger";
 
 const RECENT_PLAYS_LIMIT = 10;
+
+export type RecentPlaysResult = {
+  recentPlays: RecentPlayRow[];
+  unavailable: boolean;
+};
 
 export async function addRecentPlay(trackId: string): Promise<void> {
   try {
@@ -23,14 +32,30 @@ export async function addRecentPlay(trackId: string): Promise<void> {
       }
     });
   } catch (error) {
+    captureIndexedDbUnavailableEvent({
+      operation: INDEXEDDB_OPERATIONS.recentPlaysWrite,
+      retryable: false,
+      trackId,
+    });
     logger.debug("Failed to record recent play:", error);
   }
 }
 
 export async function getRecentPlays(): Promise<RecentPlayRow[]> {
+  const result = await getRecentPlaysResult();
+  return result.recentPlays;
+}
+
+export async function getRecentPlaysResult(): Promise<RecentPlaysResult> {
   try {
-    return await db.recentPlays.orderBy("playedAt").reverse().toArray();
+    return {
+      recentPlays: await db.recentPlays.orderBy("playedAt").reverse().toArray(),
+      unavailable: false,
+    };
   } catch {
-    return [];
+    return {
+      recentPlays: [],
+      unavailable: true,
+    };
   }
 }

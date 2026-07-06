@@ -1,5 +1,18 @@
 import { db } from "../../edmmDB";
-import { addRecentPlay, getRecentPlays } from "../recentPlaysRepo";
+import {
+  addRecentPlay,
+  getRecentPlays,
+  getRecentPlaysResult,
+} from "../recentPlaysRepo";
+
+const mockCaptureIndexedDbUnavailableEvent = jest.fn();
+jest.mock("@/shared/lib/sentry/indexedDbEvents", () => ({
+  captureIndexedDbUnavailableEvent: (...args: unknown[]) =>
+    mockCaptureIndexedDbUnavailableEvent(...args),
+  INDEXEDDB_OPERATIONS: {
+    recentPlaysWrite: "recent_plays_write",
+  },
+}));
 
 afterEach(async () => {
   jest.restoreAllMocks();
@@ -8,6 +21,10 @@ afterEach(async () => {
 });
 
 describe("recentPlaysRepo", () => {
+  beforeEach(() => {
+    mockCaptureIndexedDbUnavailableEvent.mockClear();
+  });
+
   it("returns recent plays newest first and dedupes repeated tracks", async () => {
     jest
       .spyOn(Date, "now")
@@ -49,6 +66,19 @@ describe("recentPlaysRepo", () => {
     await expect(getRecentPlays()).resolves.toEqual([]);
   });
 
+  it("returns unavailable true when reading recent plays result fails", async () => {
+    jest
+      .spyOn(db.recentPlays, "orderBy")
+      .mockImplementationOnce(() => {
+        throw new Error("IndexedDB unavailable");
+      });
+
+    await expect(getRecentPlaysResult()).resolves.toEqual({
+      recentPlays: [],
+      unavailable: true,
+    });
+  });
+
   it("does not reject when recording a recent play fails", async () => {
     jest.spyOn(console, "debug").mockImplementation(() => {});
     jest
@@ -59,6 +89,13 @@ describe("recentPlaysRepo", () => {
     expect(console.debug).toHaveBeenCalledWith(
       "Failed to record recent play:",
       expect.any(Error),
+    );
+    expect(mockCaptureIndexedDbUnavailableEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: "recent_plays_write",
+        retryable: false,
+        trackId: "track-1",
+      }),
     );
   });
 });

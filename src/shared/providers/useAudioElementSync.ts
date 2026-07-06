@@ -5,8 +5,16 @@ import type { Track } from "@/entities/track";
 import { setupAudioEventListeners } from "@/shared/lib/audioEventManager";
 import { logger } from "@/shared/lib/logger";
 import { setMasterAudioVolume, transitionAudioTrack } from "@/shared/lib/audioInstance";
+import {
+  capturePlaybackErrorEvent,
+  getCurrentBrowserRoute,
+} from "@/shared/lib/sentry/playbackEvents";
 import type { PlaybackError } from "./audioPlayerTypes";
-import { classifyPlaybackError } from "./audioPlaybackErrors";
+import {
+  classifyPlaybackError,
+  isPlaybackErrorRetryable,
+  PLAYBACK_ERROR_CODES,
+} from "./audioPlaybackErrors";
 
 type SeekingRef = {
   current: boolean;
@@ -58,6 +66,12 @@ export function useAudioElementSync({
       return;
     }
 
+    if (!isPlaying && audio.src !== trackUrl) {
+      setIsBuffering(false);
+      setPlaybackError(null);
+      return;
+    }
+
     if (audio.src !== trackUrl) {
       setCurrentTime(0);
     }
@@ -70,13 +84,25 @@ export function useAudioElementSync({
         }
       })
       .catch((error) => {
-        setPlaybackError(classifyPlaybackError(error, "source-load-failed"));
+        const errorCode = classifyPlaybackError(
+          error,
+          PLAYBACK_ERROR_CODES.sourceLoadFailed,
+        );
+        setPlaybackError(errorCode);
+        capturePlaybackErrorEvent({
+          errorCode,
+          retryable: isPlaybackErrorRetryable(errorCode),
+          route: getCurrentBrowserRoute(),
+          track: currentTrack,
+        });
         logger.warn("Error playing audio:", error);
         setIsPlaying(false);
       });
   }, [
     audio,
     audioContext,
+    currentTrack?.id,
+    currentTrack?.source,
     currentTrack?.streamUrl,
     crossfadeDurationSec,
     isPlaying,

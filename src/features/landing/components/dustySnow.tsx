@@ -1,130 +1,79 @@
-"use client";
+import type { CSSProperties } from "react";
 
-import { useMemo } from "react";
+type StarStyle = CSSProperties & Record<`--${string}`, string | number>;
 
-interface DustySnowProps {
-  reducedMotion?: boolean;
+type DustySnowProps = {
   count?: number;
-}
-
-const depthProfiles = [
-  {
-    depth: "far",
-    size: [1.2, 2.4],
-    opacity: [0.16, 0.34],
-    blur: [0.6, 1.4],
-    drift: [8, 18],
-    duration: [28, 44],
-  },
-  {
-    depth: "mid",
-    size: [2.1, 4.2],
-    opacity: [0.26, 0.52],
-    blur: [0.2, 0.8],
-    drift: [14, 30],
-    duration: [22, 36],
-  },
-  {
-    depth: "near",
-    size: [3.4, 6.8],
-    opacity: [0.42, 0.78],
-    blur: [0, 0.35],
-    drift: [22, 46],
-    duration: [16, 28],
-  },
-] as const;
-
-const pseudoRandom = (seed: number) => {
-  let value = seed >>> 0;
-  value = Math.imul(value ^ (value >>> 16), 0x45d9f3b);
-  value = Math.imul(value ^ (value >>> 16), 0x45d9f3b);
-  value = value ^ (value >>> 16);
-
-  return (value >>> 0) / 4294967296;
+  reducedMotion?: boolean;
 };
 
-const between = (seed: number, min: number, max: number) =>
-  min + pseudoRandom(seed) * (max - min);
+const DEFAULT_STAR_COUNT = 42;
+const REDUCED_MOTION_STAR_CAP = 54;
+const DEPTH_CLASSES = ["far", "mid", "near"] as const;
 
-const toFixed = (value: number, precision = 4) => value.toFixed(precision);
+function createStarStyle(index: number): StarStyle {
+  const left = (index * 37) % 100;
+  const top = (index * 53) % 100;
+  const startY = -8 - ((index * 29) % 28);
+  const duration = 14 + ((index * 7) % 18);
+  const twinkleDuration = 2.4 + ((index * 5) % 28) / 10;
+  const delay = -(((index * 997) % 12000) / 1000);
+  const drift = (index % 2 === 0 ? 1 : -1) * (12 + ((index * 5) % 30));
+  const sway = (index % 2 === 0 ? -1 : 1) * (8 + ((index * 9) % 24));
+  const fallDistance = 108 + ((index * 11) % 28);
+  const scale = 0.45 + ((index * 17) % 55) / 100;
+  const opacity = 0.18 + ((index * 13) % 42) / 100;
+  const size = 2 + ((index * 7) % 11) * 0.28;
+  const glowSize = 9 + ((index * 13) % 22);
+  const blur = ((index * 3) % 4) / 10;
 
-const createStars = (count: number) =>
-  Array.from({ length: count }, (_, index) => {
-    const seed = index + 1;
-    const profile = depthProfiles[index % depthProfiles.length];
-    const direction = index % 4 === 0 || index % 4 === 3 ? -1 : 1;
-    const drift = between(seed + 503, profile.drift[0], profile.drift[1]);
-    const sway = between(seed + 607, 4, 18) * (direction * -1);
+  return {
+    "--x": `${left}%`,
+    "--y": `${top}%`,
+    "--start-y": `${startY}vh`,
+    "--left": `${left}%`,
+    "--top": `${top}%`,
+    "--left-pos": `${left}%`,
+    "--duration": `${duration}s`,
+    "--twinkle-duration": `${twinkleDuration.toFixed(1)}s`,
+    "--delay": `${delay}s`,
+    "--drift": `${drift}px`,
+    "--drift-x": `${drift}px`,
+    "--sway-x": `${sway}px`,
+    "--fall-distance": `${fallDistance}vh`,
+    "--scale": scale.toFixed(2),
+    "--opacity": opacity.toFixed(2),
+    "--size": `${size.toFixed(2)}px`,
+    "--star-size": `${size.toFixed(2)}px`,
+    "--glow-size": `${glowSize}px`,
+    "--blur": `${blur.toFixed(1)}px`,
+  };
+}
 
-    return {
-      id: index,
-      depth: profile.depth,
-      left: `${(pseudoRandom(seed) * 100).toFixed(4)}%`,
-      startY: `${toFixed(-between(seed + 701, 2, 18), 3)}vh`,
-      size: `${toFixed(
-        between(seed + 101, profile.size[0], profile.size[1]),
-        3
-      )}px`,
-      opacity: Number(
-        toFixed(between(seed + 211, profile.opacity[0], profile.opacity[1]))
-      ),
-      scale: Number(toFixed(between(seed + 307, 0.78, 1.18))),
-      blur: `${toFixed(
-        between(seed + 409, profile.blur[0], profile.blur[1]),
-        3
-      )}px`,
-      driftX: `${toFixed(direction * drift, 3)}vw`,
-      swayX: `${toFixed(sway, 3)}vw`,
-      fallDistance: `${toFixed(between(seed + 809, 108, 128), 3)}vh`,
-      duration: `${toFixed(
-        between(seed + 907, profile.duration[0], profile.duration[1]),
-        3
-      )}s`,
-      delay: `${toFixed(-between(seed + 1009, 0, profile.duration[1]), 3)}s`,
-      twinkleDuration: `${toFixed(between(seed + 1301, 2.4, 5.8), 3)}s`,
-      glowSize: `${toFixed(between(seed + 1409, 12, 30), 3)}px`,
-    };
-  });
-
-export default function DustySnow({
+export function DustySnow({
+  count = DEFAULT_STAR_COUNT,
   reducedMotion = false,
-  count = 72,
 }: DustySnowProps) {
-  const starCount = reducedMotion ? Math.min(count, 54) : count;
-  const stars = useMemo(() => createStars(starCount), [starCount]);
+  const starCount = reducedMotion
+    ? Math.min(count, REDUCED_MOTION_STAR_CAP)
+    : count;
 
   return (
     <div
-      aria-hidden="true"
       className={`rose-starfield${reducedMotion ? " rose-starfield--reduced" : ""}`}
       data-testid="rose-starfield"
+      aria-hidden="true"
     >
-      {stars.map((star) => {
-        const style = {
-          "--left-pos": star.left,
-          "--start-y": star.startY,
-          "--size": star.size,
-          "--opacity": star.opacity,
-          "--scale": star.scale,
-          "--blur": star.blur,
-          "--drift-x": star.driftX,
-          "--sway-x": star.swayX,
-          "--fall-distance": star.fallDistance,
-          "--duration": star.duration,
-          "--delay": star.delay,
-          "--twinkle-duration": star.twinkleDuration,
-          "--glow-size": star.glowSize,
-        } as React.CSSProperties;
-
-        return (
-          <span
-            className={`rose-star rose-star--${star.depth}`}
-            data-depth={star.depth}
-            key={star.id}
-            style={style}
-          />
-        );
-      })}
+      {Array.from({ length: starCount }, (_, index) => (
+        <span
+          key={index}
+          className={`rose-star rose-star--${DEPTH_CLASSES[index % DEPTH_CLASSES.length]}`}
+          data-depth={(index % 3) + 1}
+          style={createStarStyle(index)}
+        />
+      ))}
     </div>
   );
 }
+
+export default DustySnow;

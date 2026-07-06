@@ -3,13 +3,13 @@ import Landing from "@/widgets/landing";
 
 jest.mock("cobe", () => ({
   __esModule: true,
-  default: jest.fn(() => ({ destroy: jest.fn() })),
+  default: jest.fn(() => ({ destroy: jest.fn(), update: jest.fn() })),
 }));
 
 jest.mock("@/features/landing/components/parallax", () => ({
   __esModule: true,
   default: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="parallax">{children}</div>
+    <div data-testid="rose-css-marquee">{children}</div>
   ),
 }));
 
@@ -43,7 +43,7 @@ describe("Landing", () => {
       "href",
       "/search"
     );
-    expect(screen.getAllByTestId("parallax")).toHaveLength(2);
+    expect(screen.getAllByTestId("rose-css-marquee")).toHaveLength(2);
     expect(container.querySelector(".rose-followup__links")).toBeNull();
     expect(screen.getByTestId("rose-footer")).toBeInTheDocument();
     expect(screen.getByText("@2026 EDMM / Made by Lucas")).toBeInTheDocument();

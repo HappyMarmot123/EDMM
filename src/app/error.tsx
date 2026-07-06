@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { logger } from "@/shared/lib/logger";
 
 interface ErrorProps {
@@ -15,6 +16,7 @@ interface ErrorProps {
 
 export default function Error({ error, reset }: ErrorProps) {
   useEffect(() => {
+    Sentry.captureException(error);
     logger.error(error);
   }, [error]);
 
