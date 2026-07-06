@@ -13,7 +13,6 @@ import { type VirtuosoHandle, Virtuoso } from "react-virtuoso";
 import type { Track } from "@/entities/track";
 import { isPlayable } from "@/entities/track";
 import { useFadePresence } from "@/shared/hooks/useFadePresence";
-import type { CatalogFallbackNotice } from "./catalogFallbackState";
 
 type MusicTrackListProps = {
   tracks: Track[];
@@ -23,14 +22,11 @@ type MusicTrackListProps = {
   isLoading?: boolean;
   isError?: boolean;
   emptyMessage?: string;
-  fallbackNotice?: CatalogFallbackNotice | null;
   canClearSearch?: boolean;
-  onFallbackNoticeSecondaryAction?: () => void;
   onClearSearch?: () => void;
   playOnSelect?: boolean;
   onSelect: (track: Track) => void;
   onPlay: (track: Track) => void;
-  onRetry?: () => void;
   scrollToTrackId?: string | null;
   scrollToTrackRequest?: number;
   onTrackZoneScrollHandled?: () => void;
@@ -96,14 +92,11 @@ export function MusicTrackList({
   isLoading = false,
   isError = false,
   emptyMessage = "No tracks in this view.",
-  fallbackNotice = null,
   canClearSearch = false,
-  onFallbackNoticeSecondaryAction,
   onClearSearch,
   playOnSelect = false,
   onSelect,
   onPlay,
-  onRetry,
   scrollToTrackId,
   scrollToTrackRequest,
   onTrackZoneScrollHandled,
@@ -218,45 +211,10 @@ export function MusicTrackList({
       behavior: "smooth",
     });
   }, []);
-  const fallbackNoticePanel = fallbackNotice ? (
-    <section
-      role={fallbackNotice.tone === "error" ? "alert" : "status"}
-      className={[
-        "mb-3 rounded-2xl border px-4 py-3 text-sm",
-        fallbackNotice.tone === "error"
-          ? "border-[#ff98a2]/35 bg-[#ff98a2]/10 text-white"
-          : "border-white/12 bg-white/[0.045] text-white/82",
-      ].join(" ")}
-    >
-      <h2 className="text-sm font-black text-white">{fallbackNotice.title}</h2>
-      <p className="mt-1 text-xs font-semibold text-white/62">
-        {fallbackNotice.description}
-      </p>
-      {fallbackNotice.primaryActionLabel && onRetry ? (
-        <button
-          type="button"
-          onClick={onRetry}
-          className="mt-3 rounded-full border border-[#ff98a2]/45 px-3 py-1 text-xs font-black text-[#ffb8c0] transition-colors hover:border-[#ff98a2]/75 hover:text-white"
-        >
-          {fallbackNotice.primaryActionLabel}
-        </button>
-      ) : null}
-      {fallbackNotice.secondaryActionLabel && onFallbackNoticeSecondaryAction ? (
-        <button
-          type="button"
-          onClick={onFallbackNoticeSecondaryAction}
-          className="mt-3 ml-2 rounded-full border border-white/15 px-3 py-1 text-xs font-black text-white/78 transition-colors hover:border-white/30 hover:text-white"
-        >
-          {fallbackNotice.secondaryActionLabel}
-        </button>
-      ) : null}
-    </section>
-  ) : null;
 
   if (isLoading) {
     return (
       <div className="space-y-2">
-        {fallbackNoticePanel}
         <div
           role="status"
           aria-live="polite"
@@ -275,34 +233,17 @@ export function MusicTrackList({
   }
 
   if (isError) {
-    if (fallbackNoticePanel) {
-      return <div className="space-y-3">{fallbackNoticePanel}</div>;
-    }
-
     return (
       <div className="rounded-md border border-[#ff98a2]/30 bg-[#ff98a2]/10 p-5">
         <h2 className="text-lg font-black text-white">Catalog unavailable</h2>
         <p className="mt-2 text-sm leading-6 text-white/62">
           The music catalog did not respond. Try loading it again.
         </p>
-        {onRetry ? (
-          <button
-            type="button"
-            onClick={onRetry}
-            className="mt-4 min-h-10 rounded-full bg-[#ff98a2] px-4 text-sm font-black text-black transition-transform hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb8c0]"
-          >
-            Retry
-          </button>
-        ) : null}
       </div>
     );
   }
 
   if (tracks.length === 0) {
-    if (fallbackNoticePanel) {
-      return <div className="space-y-3">{fallbackNoticePanel}</div>;
-    }
-
     return (
       <div
         role="status"
@@ -324,7 +265,6 @@ export function MusicTrackList({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {fallbackNoticePanel}
       <div
         className="music-track-list scroll-fade-bottom scroll-fade-bottom--mobile relative min-h-0 flex-1 overflow-hidden"
         data-at-bottom={isScrolledToBottom ? "true" : "false"}

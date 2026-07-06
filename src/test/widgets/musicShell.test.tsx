@@ -4,13 +4,11 @@ import type { JSX } from "react";
 import type { Track } from "@/entities/track";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import { useRecentPlays } from "@/features/library";
-import { getCachedTrack } from "@/shared/db";
-import { getCachedTracksResult } from "@/shared/db/repositories/trackCacheRepo";
+import { getCachedTrack, getCachedTracksResult } from "@/shared/db";
 import { captureSearchFallbackEvent } from "@/shared/lib/sentry/searchFallbackEvents";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { resolveCatalogFallbackState } from "@/widgets/musicShell/catalogFallbackState";
 import MusicShell from "@/widgets/musicShell";
-import MusicTrackList from "@/widgets/musicShell/musicTrackList";
 
 jest.mock("react-virtuoso", () => ({
   Virtuoso: ({
@@ -32,8 +30,7 @@ jest.mock("react-virtuoso", () => ({
 
 jest.mock("@/features/cloudinary/hooks/useCloudinaryTracks");
 jest.mock("@/features/library");
-jest.mock("@/shared/db");
-jest.mock("@/shared/db/repositories/trackCacheRepo", () => ({
+jest.mock("@/shared/db", () => ({
   getCachedTrack: jest.fn(),
   getCachedTracksResult: jest.fn(),
 }));
@@ -319,6 +316,50 @@ describe("MusicShell", () => {
     expect(refetch).toHaveBeenCalled();
   });
 
+  it("renders catalog fallback feedback outside the fixed track list section", async () => {
+    const user = userEvent.setup();
+    const staleSearchFallback = resolveCatalogFallbackState({
+      activeView: "all",
+      currentTracks: [],
+      previousCatalogTracks: cloudTracks,
+      isCatalogLoading: false,
+      isCatalogError: true,
+      hasSearchQuery: true,
+      recentUnavailable: false,
+    });
+
+    mockUseCloudinaryTracks.mockReturnValueOnce({
+      data: cloudTracks,
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+
+    const { rerender } = render(<MusicShell />);
+
+    mockUseCloudinaryTracks.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      refetch: jest.fn(),
+    });
+
+    await user.type(
+      screen.getByRole("searchbox", { name: /search catalog/i }),
+      "broken",
+    );
+    rerender(<MusicShell />);
+
+    const noticeTitle = screen.getByText(staleSearchFallback.notice?.title ?? "");
+
+    expect(
+      noticeTitle.closest("section[aria-label='Track list section']"),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Select Cloud Track One" }),
+    ).toBeInTheDocument();
+  });
+
   it("does not revive older catalog tracks after an empty successful search is followed by an error", async () => {
     const user = userEvent.setup();
     let phase: "initial" | "emptySuccess" | "error" = "initial";
@@ -486,51 +527,44 @@ describe("MusicShell", () => {
     });
   });
 
-  it("renders a fallback notice secondary action only when both label and handler are provided", () => {
-    const onSecondaryAction = jest.fn();
+  it("renders recent fallback action outside the fixed track list section", async () => {
+    const recentUnavailableState = resolveCatalogFallbackState({
+      activeView: "recent",
+      currentTracks: [],
+      previousCatalogTracks: [],
+      isCatalogLoading: false,
+      isCatalogError: false,
+      hasSearchQuery: false,
+      recentUnavailable: true,
+    });
 
-    const { rerender } = render(
-      <MusicTrackList
-        tracks={[]}
-        isLoading={false}
-        isError={false}
-        onSelect={jest.fn()}
-        onPlay={jest.fn()}
-        fallbackNotice={{
-          tone: "warning",
-          title: "Recent unavailable",
-          description: "Use the full catalog instead.",
-          secondaryActionLabel: "View all",
-        }}
-      />,
+    mockUseRecentPlays.mockReturnValue({
+      recentIds: [],
+      isUnavailable: true,
+    });
+
+    render(<MusicShell />);
+    fireEvent.click(getDesktopViewButton("Recent"));
+
+    const noticeTitle = await screen.findByText(
+      recentUnavailableState.notice?.title ?? "",
     );
+    const feedback = screen.getByTestId("music-shell-fallback-feedback");
 
     expect(
-      screen.queryByRole("button", { name: "View all" }),
-    ).not.toBeInTheDocument();
+      noticeTitle.closest("section[aria-label='Track list section']"),
+    ).toBeNull();
 
-    rerender(
-      <MusicTrackList
-        tracks={[]}
-        isLoading={false}
-        isError={false}
-        onSelect={jest.fn()}
-        onPlay={jest.fn()}
-        fallbackNotice={{
-          tone: "warning",
-          title: "Recent unavailable",
-          description: "Use the full catalog instead.",
-          secondaryActionLabel: "View all",
-        }}
-        onFallbackNoticeSecondaryAction={onSecondaryAction}
-      />,
+    fireEvent.click(
+      within(feedback).getByRole("button", {
+        name: recentUnavailableState.notice?.secondaryActionLabel ?? "",
+      }),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "View all" }));
-    expect(onSecondaryAction).toHaveBeenCalledTimes(1);
+    expect(getDesktopViewButton("All")).toHaveAttribute("aria-pressed", "true");
     expect(
-      screen.queryByText("No tracks in this view."),
-    ).not.toBeInTheDocument();
+      screen.getByRole("button", { name: "Select Cloud Track One" }),
+    ).toBeInTheDocument();
   });
 
   it("shows cached recent tracks in the Recent view", async () => {

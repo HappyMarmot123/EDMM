@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { getRecentPlaysResult } from "@/shared/db/repositories/recentPlaysRepo";
+import { getRecentPlaysResult } from "@/shared/db";
 
 export function useRecentPlays() {
   const recentResult = useLiveQuery(

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isPlayable, type Track } from "@/entities/track";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import { useRecentPlays } from "@/features/library";
-import { getCachedTracksResult } from "@/shared/db/repositories/trackCacheRepo";
+import { getCachedTracksResult } from "@/shared/db";
 import { addEdmmEventListener, EDMM_EVENTS } from "@/shared/lib/edmmEvents";
 import { captureSearchFallbackEvent } from "@/shared/lib/sentry/searchFallbackEvents";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
@@ -13,8 +13,11 @@ import MusicShellHeader, { type MusicView } from "./musicShellHeader";
 import MusicTrackList from "./musicTrackList";
 import SearchBackdrop from "./searchBackdrop";
 import TrackDetailAside from "./trackDetailAside";
-import { resolveCatalogFallbackState } from "./catalogFallbackState";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  type CatalogFallbackNotice,
+  resolveCatalogFallbackState,
+} from "./catalogFallbackState";
+import { ChevronLeft, ChevronRight, ListMusic, RefreshCw } from "lucide-react";
 import {
   buildTrackSeedFingerprint,
   dedupeIds,
@@ -42,6 +45,69 @@ const TRACK_SELECT_PLAYBACK_MEDIA_QUERY = "(max-width: 767px)";
 
 const isMusicView = (view: MusicView | undefined): view is MusicView =>
   view === "all" || view === "recent";
+
+type CatalogFallbackFeedbackProps = {
+  notice: CatalogFallbackNotice | null;
+  onPrimaryAction?: () => void;
+  onSecondaryAction?: () => void;
+};
+
+function CatalogFallbackFeedback({
+  notice,
+  onPrimaryAction,
+  onSecondaryAction,
+}: CatalogFallbackFeedbackProps) {
+  if (!notice) {
+    return null;
+  }
+
+  const isError = notice.tone === "error";
+
+  return (
+    <div className="pointer-events-none fixed inset-x-4 bottom-[calc(96px+max(env(safe-area-inset-bottom),16px))] z-40 flex justify-center md:bottom-[calc(126px+max(env(safe-area-inset-bottom),18px))] md:justify-end md:pr-8">
+      <section
+        role={isError ? "alert" : "status"}
+        aria-live={isError ? "assertive" : "polite"}
+        data-testid="music-shell-fallback-feedback"
+        className={[
+          "pointer-events-auto w-full max-w-sm rounded-lg border px-4 py-3 text-sm shadow-[0_18px_50px_rgba(0,0,0,0.42)] backdrop-blur-xl",
+          isError
+            ? "border-[#ff98a2]/45 bg-[#210910]/92 text-white"
+            : "border-white/14 bg-[#0b080d]/92 text-white",
+        ].join(" ")}
+      >
+        <h2 className="text-sm font-black text-white">{notice.title}</h2>
+        <p className="mt-1 text-xs font-semibold leading-5 text-white/64">
+          {notice.description}
+        </p>
+        {notice.primaryActionLabel || notice.secondaryActionLabel ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {notice.primaryActionLabel && onPrimaryAction ? (
+              <button
+                type="button"
+                onClick={onPrimaryAction}
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-[#ff98a2]/48 px-3 text-xs font-black text-[#ffb8c0] transition-colors hover:border-[#ff98a2]/78 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb8c0]"
+              >
+                <RefreshCw size={14} strokeWidth={2.2} aria-hidden="true" />
+                <span>{notice.primaryActionLabel}</span>
+              </button>
+            ) : null}
+            {notice.secondaryActionLabel && onSecondaryAction ? (
+              <button
+                type="button"
+                onClick={onSecondaryAction}
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-white/16 px-3 text-xs font-black text-white/78 transition-colors hover:border-white/32 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
+              >
+                <ListMusic size={14} strokeWidth={2.2} aria-hidden="true" />
+                <span>{notice.secondaryActionLabel}</span>
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+    </div>
+  );
+}
 
 function useTrackSelectPlaybackMode() {
   return useMediaQuery(TRACK_SELECT_PLAYBACK_MEDIA_QUERY, false);
@@ -180,6 +246,9 @@ export function MusicShell({
     isError: isCatalogError,
     refetch,
   } = useCloudinaryTracks(normalizedQuery, { resourceType: "all" });
+  const handleCatalogRetry = useCallback(() => {
+    void refetch?.();
+  }, [refetch]);
   const [lastSuccessfulCatalogTracks, setLastSuccessfulCatalogTracks] =
     useState<Track[]>([]);
   const catalogTracks = useMemo(() => cloudinaryData ?? [], [cloudinaryData]);
@@ -508,14 +577,14 @@ export function MusicShell({
     activeView === "all"
       ? catalogFallbackState.status === "loading_initial"
       : recentState.isLoading;
-  const isVisibleError =
-    activeView === "all"
-      ? catalogFallbackState.status === "catalog_error_empty"
-      : false;
   const emptyMessage = catalogFallbackState.emptyMessage;
   const catalogResultCount = catalogFallbackState.isShowingStaleData
     ? catalogFallbackState.visibleTracks.length
     : catalogTracks.length;
+  const fallbackNoticePrimaryAction =
+    activeView === "all" ? handleCatalogRetry : undefined;
+  const fallbackNoticeSecondaryAction =
+    activeView === "recent" ? () => handleViewChange("all") : undefined;
   return (
     <main className="app-viewport-height relative flex flex-col overflow-hidden bg-[#050306] px-4 pb-[calc(84px+max(env(safe-area-inset-bottom),10px))] pt-5 text-white sm:px-6 sm:pb-[calc(84px+max(env(safe-area-inset-bottom),12px))] md:pb-[calc(112px+max(env(safe-area-inset-bottom),12px))] lg:px-8">
       <SearchBackdrop />
@@ -546,9 +615,8 @@ export function MusicShell({
               currentTrackId={currentTrackId}
               isCurrentTrackPlaying={isCurrentTrackPlaying}
               isLoading={isVisibleLoading}
-              isError={isVisibleError}
+              isError={false}
               emptyMessage={emptyMessage}
-              fallbackNotice={catalogFallbackState.notice}
               canClearSearch={catalogFallbackState.status === "search_empty"}
               onClearSearch={() => setSearchQuery("")}
               playOnSelect={shouldPlayOnTrackSelect}
@@ -557,14 +625,6 @@ export function MusicShell({
               scrollToTrackId={playerZoneScrollRequest?.trackId ?? null}
               scrollToTrackRequest={playerZoneScrollRequest?.requestId}
               onTrackZoneScrollHandled={handleTrackZoneScrollHandled}
-              onRetry={
-                activeView === "all" ? () => void refetch?.() : undefined
-              }
-              onFallbackNoticeSecondaryAction={
-                activeView === "recent"
-                  ? () => handleViewChange("all")
-                  : undefined
-              }
             />
           </section>
         </main>
@@ -608,6 +668,11 @@ export function MusicShell({
           </aside>
         </section>
       </section>
+      <CatalogFallbackFeedback
+        notice={catalogFallbackState.notice}
+        onPrimaryAction={fallbackNoticePrimaryAction}
+        onSecondaryAction={fallbackNoticeSecondaryAction}
+      />
     </main>
   );
 }
