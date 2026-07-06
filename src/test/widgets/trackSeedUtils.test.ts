@@ -6,6 +6,7 @@ import {
   resolveRecentSeedTrack,
   resolveRecentSeedTrackWithCache,
   dedupeIds,
+  shouldClearVisibleSelection,
 } from "@/widgets/musicShell/trackSeedUtils";
 import type { Track } from "@/entities/track";
 
@@ -41,6 +42,28 @@ describe("trackSeedUtils", () => {
     expect(buildVisibleTrackFingerprint(createTrack("visible"))).toBe(
       "visible|https://example.com/artwork.jpg",
     );
+  });
+
+  it("does not clear selection while a hidden queue track is current", () => {
+    expect(
+      shouldClearVisibleSelection({
+        selectedTrackId: "cloudinary:edm-1",
+        currentTrackId: "cloudinary:edm-2",
+        selectionSource: "visible",
+        visibleTrackIds: new Set(["cloudinary:pop-1"]),
+      }),
+    ).toBe(false);
+  });
+
+  it("clears visible selection that leaves the view when nothing is playing", () => {
+    expect(
+      shouldClearVisibleSelection({
+        selectedTrackId: "cloudinary:recent-1",
+        currentTrackId: null,
+        selectionSource: "visible",
+        visibleTrackIds: new Set(["cloudinary:pop-1"]),
+      }),
+    ).toBe(true);
   });
 
   it("resolveInitialSeedTrack prefers visible selected track when selected is already visible", () => {

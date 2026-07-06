@@ -24,6 +24,7 @@ import {
   dedupeIds,
   findTrackById,
   firstPlayableTrack,
+  shouldClearVisibleSelection,
 } from "./trackSeedUtils";
 import {
   SelectionSource,
@@ -532,13 +533,9 @@ export function MusicShell({
 
       const isCurrentTrackSelected = selectedTrackId === currentTrackId;
       const nextSelectionSource =
-        isCurrentTrackSelected
-          ? selectionSource === "initial"
-            ? "initial"
-            : "visible"
-          : visibleTrackIds.has(currentTrackId)
-            ? "visible"
-            : "initial";
+        isCurrentTrackSelected && selectionSource === "initial"
+          ? "initial"
+          : "visible";
 
       setSelectedTrackId((previousId) =>
         previousId === currentTrackId ? previousId : currentTrackId,
@@ -565,31 +562,16 @@ export function MusicShell({
     normalizedInitialTrackId,
     selectedTrackId,
     selectionSource,
-    visibleTrackIds,
   ]);
 
   useEffect(() => {
-    if (!currentTrackId || selectionSource === "initial") {
-      return;
-    }
-
     if (
-      selectedTrackId !== currentTrackId &&
-      !visibleTrackIds.has(currentTrackId)
-    ) {
-      setSelectedTrackId(null);
-      setSelectionSource(null);
-    }
-  }, [currentTrackId, selectedTrackId, selectionSource, visibleTrackIds]);
-
-  useEffect(() => {
-    if (!selectedTrackId || selectionSource !== "visible") {
-      return;
-    }
-
-    if (
-      selectedTrackId !== currentTrackId &&
-      !visibleTrackIds.has(selectedTrackId)
+      shouldClearVisibleSelection({
+        selectedTrackId,
+        currentTrackId,
+        selectionSource,
+        visibleTrackIds,
+      })
     ) {
       setSelectedTrackId(null);
       setSelectionSource(null);

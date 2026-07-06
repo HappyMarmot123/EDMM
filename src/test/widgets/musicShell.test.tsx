@@ -885,6 +885,52 @@ describe("MusicShell", () => {
     expect(screen.queryByRole("heading", { name: "Select a track" })).not.toBeInTheDocument();
   }, 12000);
 
+  it("keeps detail synced to hidden queue changes after switching tabs", async () => {
+    const onPlay = jest.fn();
+    mockCategoryCatalogs();
+    mockGetCachedTrack.mockImplementation(async (trackId: string) =>
+      edmTracks.find((track) => track.id === trackId),
+    );
+    mockUseAudioPlayer.mockReturnValue({
+      ...mockAudioState,
+      currentTrack: edmTracks[0],
+      isPlaying: true,
+    });
+
+    const { rerender } = render(<MusicShell initialView="edm" onPlay={onPlay} />);
+
+    expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
+      "EDM Track One",
+    );
+
+    fireEvent.click(getDesktopViewButton("Pop"));
+    expect(getDesktopViewButton("Pop")).toHaveAttribute("aria-pressed", "true");
+    onPlay.mockClear();
+
+    mockUseAudioPlayer.mockReturnValue({
+      ...mockAudioState,
+      currentTrack: edmTracks[1],
+      isPlaying: true,
+    });
+    rerender(<MusicShell initialView="edm" onPlay={onPlay} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("track-detail-title")).toHaveTextContent(
+        "EDM Track Two",
+      );
+      expect(
+        screen.queryByRole("heading", { name: "Select a track" }),
+      ).not.toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(onPlay).not.toHaveBeenCalledWith(
+        edmTracks[1],
+        [edmTracks[1]],
+        false,
+      );
+    });
+  });
+
   it("keeps an initial track detail loading while catalog data is still resolving", async () => {
     const onPlay = jest.fn();
     mockUseCloudinaryTracks.mockReturnValue({

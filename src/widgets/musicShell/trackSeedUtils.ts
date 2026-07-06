@@ -28,6 +28,28 @@ export const buildTrackSeedFingerprint = (track: Track, queue: Track[]) => {
 export const buildVisibleTrackFingerprint = (track: Track | null) =>
   track ? `${track.id}|${normalizeArtworkUrl(track.artworkUrl)}` : "none";
 
+export const shouldClearVisibleSelection = ({
+  selectedTrackId,
+  currentTrackId,
+  selectionSource,
+  visibleTrackIds,
+}: {
+  selectedTrackId: string | null;
+  currentTrackId: string | null;
+  selectionSource: "initial" | "visible" | null;
+  visibleTrackIds: Set<string>;
+}) => {
+  if (!selectedTrackId || selectionSource !== "visible") {
+    return false;
+  }
+
+  if (currentTrackId) {
+    return false;
+  }
+
+  return !visibleTrackIds.has(selectedTrackId);
+};
+
 export const resolveInitialSeedTrack = ({
   selectedTrackId,
   selectedTrack,
