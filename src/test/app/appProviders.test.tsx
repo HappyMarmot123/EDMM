@@ -1,7 +1,7 @@
 import { act, render, screen } from "@testing-library/react";
 import { readFileSync } from "fs";
 import path from "path";
-import { AppProviders } from "@/app/appProviders";
+import { AppProviders, isDevErrorRemoteEnabled } from "@/app/appProviders";
 
 jest.mock("@/shared/providers/tanstackProvider", () => ({
   TanstackProvider: ({ children }: { children: React.ReactNode }) => (
@@ -24,6 +24,11 @@ jest.mock("@/shared/providers/toggleProvider", () => ({
 jest.mock("@/widgets/audioPlayer", () => ({
   __esModule: true,
   default: () => <div data-testid="audio-widget" />,
+}));
+
+jest.mock("@/shared/dev/devErrorRemote", () => ({
+  __esModule: true,
+  default: () => <div data-testid="dev-error-remote" />,
 }));
 
 const installIdleCallbackMock = () => {
@@ -62,6 +67,13 @@ const installIdleCallbackMock = () => {
 };
 
 describe("AppProviders", () => {
+  const originalDevRemoteFlag =
+    process.env.NEXT_PUBLIC_ENABLE_DEV_ERROR_REMOTE;
+
+  afterEach(() => {
+    process.env.NEXT_PUBLIC_ENABLE_DEV_ERROR_REMOTE = originalDevRemoteFlag;
+  });
+
   it("keeps audio providers and player widget mounted above route content", async () => {
     const idle = installIdleCallbackMock();
 
@@ -123,5 +135,33 @@ describe("AppProviders", () => {
     expect(source).not.toMatch(
       /^import\s+AudioPlayerWidget\s+from\s+["']@\/widgets\/audioPlayer["'];/m,
     );
+  });
+
+  it("does not render the dev error remote by default", () => {
+    delete process.env.NEXT_PUBLIC_ENABLE_DEV_ERROR_REMOTE;
+
+    render(
+      <AppProviders>
+        <main data-testid="route-content">Route</main>
+      </AppProviders>
+    );
+
+    expect(screen.queryByTestId("dev-error-remote")).not.toBeInTheDocument();
+  });
+
+  it("renders the dev error remote when explicitly enabled", async () => {
+    process.env.NEXT_PUBLIC_ENABLE_DEV_ERROR_REMOTE = "true";
+
+    render(
+      <AppProviders>
+        <main data-testid="route-content">Route</main>
+      </AppProviders>
+    );
+
+    expect(await screen.findByTestId("dev-error-remote")).toBeInTheDocument();
+  });
+
+  it("does not enable the dev error remote in production even when flagged", () => {
+    expect(isDevErrorRemoteEnabled("production", "true")).toBe(false);
   });
 });

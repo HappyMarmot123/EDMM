@@ -11,7 +11,16 @@ const AudioPlayerWidget = dynamic(() => import("@/widgets/audioPlayer"), {
   ssr: false,
   loading: () => null,
 });
+const DevErrorRemote = dynamic(() => import("@/shared/dev/devErrorRemote"), {
+  ssr: false,
+  loading: () => null,
+});
 const AUDIO_PLAYER_WIDGET_IDLE_TIMEOUT_MS = 1800;
+
+export const isDevErrorRemoteEnabled = (
+  nodeEnv = process.env.NODE_ENV,
+  flag = process.env.NEXT_PUBLIC_ENABLE_DEV_ERROR_REMOTE,
+) => nodeEnv === "development" || (nodeEnv === "test" && flag === "true");
 
 function useAudioPlayerWidgetReady() {
   const [isReady, setIsReady] = useState(false);
@@ -44,6 +53,7 @@ function useAudioPlayerWidgetReady() {
 
 export function AppProviders({ children }: PropsWithChildren) {
   const isAudioPlayerWidgetReady = useAudioPlayerWidgetReady();
+  const shouldShowDevErrorRemote = isDevErrorRemoteEnabled();
 
   return (
     <TanstackProvider>
@@ -55,6 +65,7 @@ export function AppProviders({ children }: PropsWithChildren) {
               <AudioPlayerWidget />
             </Suspense>
           ) : null}
+          {shouldShowDevErrorRemote ? <DevErrorRemote /> : null}
         </ToggleProvider>
       </AudioPlayerProvider>
     </TanstackProvider>

@@ -55,6 +55,40 @@ Set this value in the Vercel project:
 6. Confirm no replay is created for normal non-error browsing.
 7. Confirm event payloads do not include cookies, request headers, email, username, or IP address.
 
+## Replay Missing Triage (Production Incident Runbook)
+
+When a real-user report says "an error happened but replay is missing", check in this order:
+
+1. Confirm Sentry ingested the error event
+   - Open the issue and verify there is at least one matching event (`issue`, `fingerprint`, `request.url`).
+   - If no event exists, this is a capture problem.
+   - Re-check:
+     - `NEXT_PUBLIC_SENTRY_DSN` in the target environment.
+     - Browser capture path (`Sentry.captureException`) in `src/app/error.tsx` / `src/app/global-error.tsx`.
+
+2. Check whether the event has replay context
+   - Open event details (JSON / raw event data) and verify either:
+     - `contexts.replay`
+     - `tags.replay_id`
+   - If both are absent, replay was not attached to that event.
+
+3. Separate sampling miss from hard miss
+   - Sampling miss is normal with `replaysOnErrorSampleRate = 0.2`: expected replay coverage is about 1 in 5 error events.
+   - Hard miss candidates:
+     - Sentry Replay integration did not initialize on the client.
+     - Replay initialization was effectively disabled because DSN is empty/missing.
+     - Event is only server-side or not coming from the browser replay path.
+     - Browser/device blocks replay capture (unsupported environment).
+
+4. Validate the actual runtime settings
+   - `SENTRY_REPLAYS_SESSION_SAMPLE_RATE = 0`
+   - `SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE = 0.2`
+   - `src/instrumentation-client.ts` includes `Sentry.replayIntegration`.
+
+5. Escalation rule
+   - Missing replay on many events from many users: treat as rollout issue and verify DSN, Sentry init, and deployment bundle first.
+   - Missing replay on only some sampled events: treat as expected sampling variance.
+
 ## PASS Criteria
 
 - Sentry receives a controlled client error from the deployed app.
