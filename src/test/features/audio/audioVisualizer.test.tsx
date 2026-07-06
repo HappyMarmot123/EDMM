@@ -73,6 +73,85 @@ describe("AudioVisualizer", () => {
     expect(getByteFrequencyData).not.toHaveBeenCalled();
   });
 
+  it("caps canvas pixel density to avoid oversized visualizer buffers", () => {
+    const originalPixelRatio = window.devicePixelRatio;
+    Object.defineProperty(window, "devicePixelRatio", {
+      configurable: true,
+      value: 3,
+    });
+    jest
+      .spyOn(HTMLCanvasElement.prototype, "getBoundingClientRect")
+      .mockImplementation(
+        () =>
+          ({
+            width: 224,
+            height: 120,
+          }) as DOMRect,
+      );
+
+    try {
+      render(<AudioVisualizer analyser={analyser} isActive />);
+      const canvas = screen.getByTestId(
+        "audio-visualizer-canvas",
+      ) as HTMLCanvasElement;
+
+      expect(canvas.width).toBe(448);
+      expect(canvas.height).toBe(240);
+    } finally {
+      Object.defineProperty(window, "devicePixelRatio", {
+        configurable: true,
+        value: originalPixelRatio,
+      });
+    }
+  });
+
+  it("pauses live visualizer reads when the document is hidden", () => {
+    const originalVisibilityState = document.visibilityState;
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      value: "hidden",
+    });
+
+    try {
+      render(<AudioVisualizer analyser={analyser} isActive />);
+
+      expect(window.requestAnimationFrame).not.toHaveBeenCalled();
+      expect(getByteFrequencyData).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(document, "visibilityState", {
+        configurable: true,
+        value: originalVisibilityState,
+      });
+    }
+  });
+
+  it("throttles live drawing work to the visualizer frame budget", () => {
+    const frameCallbacks: FrameRequestCallback[] = [];
+    let nextFrameId = 1;
+    jest
+      .mocked(window.requestAnimationFrame)
+      .mockImplementation((callback) => {
+        frameCallbacks.push(callback);
+        return nextFrameId++;
+      });
+
+    render(<AudioVisualizer analyser={analyser} isActive />);
+
+    expect(getByteFrequencyData).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      frameCallbacks.shift()?.(10);
+    });
+
+    expect(getByteFrequencyData).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      frameCallbacks.shift()?.(34);
+    });
+
+    expect(getByteFrequencyData).toHaveBeenCalledTimes(2);
+  });
+
   it("keeps the live drawing loop briefly when playback becomes inactive", () => {
     jest.useFakeTimers();
     jest.spyOn(window, "requestAnimationFrame").mockReturnValue(7);

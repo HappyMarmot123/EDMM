@@ -36,7 +36,8 @@
   --rose-hot: #ff4f87;
   --rose-deep: #a8184f;
   --rose-gold: #ffd6a5;
-  --font-display: "Segoe UI Variable Display", "SF Pro Display", "Inter", Arial, sans-serif;
+  --font-display:
+    "Segoe UI Variable Display", "SF Pro Display", "Inter", Arial, sans-serif;
   --font-body: "Segoe UI", "Inter", Arial, sans-serif;
 }
 
@@ -155,7 +156,8 @@ h1 {
   will-change: transform, opacity;
   animation:
     rose-star-glow var(--twinkle-duration) ease-in-out infinite alternate,
-    rose-star-fall var(--duration) var(--delay) cubic-bezier(0.42, 0, 0.58, 1) infinite;
+    rose-star-fall var(--duration) var(--delay) cubic-bezier(0.42, 0, 0.58, 1)
+      infinite;
 }
 
 .rose-star--far {
@@ -181,13 +183,16 @@ h1 {
     transform: translate3d(0, 0, 0) scale(var(--scale));
   }
   34% {
-    transform: translate3d(calc(var(--sway-x) * -0.5), 38vh, 0) scale(var(--scale));
+    transform: translate3d(calc(var(--sway-x) * -0.5), 38vh, 0)
+      scale(var(--scale));
   }
   68% {
-    transform: translate3d(calc(var(--drift-x) * 0.72), 82vh, 0) scale(var(--scale));
+    transform: translate3d(calc(var(--drift-x) * 0.72), 82vh, 0)
+      scale(var(--scale));
   }
   to {
-    transform: translate3d(var(--drift-x), var(--fall-distance), 0) scale(var(--scale));
+    transform: translate3d(var(--drift-x), var(--fall-distance), 0)
+      scale(var(--scale));
   }
 }
 
@@ -196,7 +201,8 @@ h1 {
     opacity: calc(var(--opacity) * 0.62);
     box-shadow:
       0 0 calc(var(--glow-size) * 0.32) 1px rgba(255, 152, 162, 0.34),
-      0 0 calc(var(--glow-size) * 0.72) calc(var(--size) * 0.5) rgba(255, 152, 162, 0.1);
+      0 0 calc(var(--glow-size) * 0.72) calc(var(--size) * 0.5)
+        rgba(255, 152, 162, 0.1);
   }
   to {
     opacity: var(--opacity);
@@ -305,7 +311,11 @@ h1 {
   border-radius: 8px;
   padding: 0 22px;
   font-weight: 800;
-  transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .rose-hero__cta--primary {
@@ -396,8 +406,7 @@ h1 {
   display: block;
   width: 100%;
   height: 100%;
-  filter:
-    drop-shadow(0 0 24px rgba(255, 79, 135, 0.22))
+  filter: drop-shadow(0 0 24px rgba(255, 79, 135, 0.22))
     drop-shadow(0 0 68px rgba(255, 152, 162, 0.16));
 }
 
@@ -451,8 +460,7 @@ h1 {
   grid-template-columns: 1fr;
   gap: 18px;
   border-top: 1px solid rgba(255, 152, 162, 0.14);
-  padding: 34px clamp(20px, 6vw, 96px)
-    calc(140px + max(env(safe-area-inset-bottom), 12px));
+  padding: 2rem clamp(20px, 6vw, 96px);
   color: rgba(255, 247, 251, 0.72);
 }
 
@@ -497,10 +505,6 @@ h1 {
   transform: translateY(-1px);
 }
 @media (min-width: 768px) {
-  .rose-footer {
-    padding-bottom: calc(156px + max(env(safe-area-inset-bottom), 12px));
-  }
-
   .rose-footer {
     grid-template-columns: minmax(0, 1fr) minmax(0, auto);
     align-items: center;
@@ -890,7 +894,9 @@ h1 {
 .glow-button {
   position: relative;
   overflow: hidden;
-  transition: transform 0.1s ease-out, box-shadow 0.3s ease-out;
+  transition:
+    transform 0.1s ease-out,
+    box-shadow 0.3s ease-out;
   cursor: pointer;
   user-select: none;
   z-index: 0;
@@ -1003,8 +1009,7 @@ h1 {
 
 .radix-tooltip-arrow-edmm {
   fill: rgba(8, 5, 9, 0.96);
-  filter:
-    drop-shadow(0 1px 0 rgba(255, 152, 162, 0.3))
+  filter: drop-shadow(0 1px 0 rgba(255, 152, 162, 0.3))
     drop-shadow(0 3px 8px rgba(0, 0, 0, 0.35));
 }
 
@@ -1036,3 +1041,55 @@ h1 {
   }
 }
 
+.parallax {
+  --marquee-duration: 36s;
+}
+
+.parallax .scroller {
+  animation: rose-marquee var(--marquee-duration) linear infinite;
+}
+
+.parallax[data-direction="reverse"] .scroller {
+  animation-direction: reverse;
+}
+
+.rose-cobe-orbit--shell {
+  pointer-events: none;
+}
+
+.rose-cobe-orbit__canvas--shell {
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(255, 255, 255, 0.18),
+      transparent 52%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(244, 114, 182, 0.16),
+      transparent 66%
+    );
+  opacity: 0.72;
+}
+
+@keyframes rose-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rose-star {
+    animation: none;
+    transform: translate3d(0, 0, 0) scale(var(--scale, 1));
+  }
+
+  .parallax .scroller {
+    animation: none;
+    transform: none;
+  }
+}

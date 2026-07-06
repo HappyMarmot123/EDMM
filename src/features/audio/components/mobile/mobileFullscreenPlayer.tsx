@@ -20,7 +20,7 @@ import MFullscreenBackdrop from "@/features/audio/components/mobile/mFullscreenB
 import { useAlbumColorPalette } from "@/features/audio/components/visualizers/albumColorPalette";
 import { useArtworkCrossfade } from "@/features/audio/hooks/useArtworkCrossfade";
 
-type MobileFullscreenPlayerProps = {
+export type MobileFullscreenPlayerProps = {
   currentTrackInfo: Track | null;
   duration: number;
   seek: (time: number) => void;

@@ -23,11 +23,13 @@ export {
 export {
   addRecentPlay,
   getRecentPlays,
+  getRecentPlaysResult,
 } from "./repositories/recentPlaysRepo";
 export {
   cacheTrack,
   getCachedTrack,
   getCachedTracks,
+  getCachedTracksResult,
 } from "./repositories/trackCacheRepo";
 export {
   getEqualizerPreset,

@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "@/shared/styles/global.css";
 import { HYDRATION_EXTENSION_ATTRIBUTE_GUARD_SCRIPT } from "@/shared/lib/hydrationExtensionAttributeGuard";
-import { AppProviders } from "./appProviders";
+import { PerformanceInsights } from "./performanceInsights";
 
 // 라이트 컬러 스킴을 명시해 모바일의 자동 다크 보정이 페이지 색상 해석에 개입하지 않도록 한다.
 export const viewport: Viewport = {
@@ -88,7 +88,8 @@ const RootLayout = ({ children }: { children: React.ReactNode }) => {
             `,
           }}
         />
-        <AppProviders>{children}</AppProviders>
+        {children}
+        <PerformanceInsights />
       </body>
     </html>
   );

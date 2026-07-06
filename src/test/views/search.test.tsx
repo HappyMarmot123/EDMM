@@ -3,16 +3,16 @@ import type { JSX } from "react";
 import type { Track } from "@/entities/track";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
 import { useRecentPlays } from "@/features/library";
-import {
-  getCachedTrack,
-  getCachedTracks,
-} from "@/shared/db";
+import { getCachedTrack, getCachedTracksResult } from "@/shared/db";
 import { SearchView } from "@/views/search";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 
 jest.mock("@/features/cloudinary/hooks/useCloudinaryTracks");
 jest.mock("@/features/library");
-jest.mock("@/shared/db");
+jest.mock("@/shared/db", () => ({
+  getCachedTrack: jest.fn(),
+  getCachedTracksResult: jest.fn(),
+}));
 jest.mock("@/shared/providers/audioPlayerProvider", () => ({
   useAudioPlayer: jest.fn(),
 }));
@@ -38,8 +38,8 @@ jest.mock("react-virtuoso", () => ({
 
 const mockUseCloudinaryTracks = useCloudinaryTracks as jest.Mock;
 const mockUseRecentPlays = useRecentPlays as jest.Mock;
-const mockGetCachedTracks = getCachedTracks as jest.MockedFunction<
-  typeof getCachedTracks
+const mockGetCachedTracksResult = getCachedTracksResult as jest.MockedFunction<
+  typeof getCachedTracksResult
 >;
 const mockGetCachedTrack = getCachedTrack as jest.MockedFunction<
   typeof getCachedTrack
@@ -126,7 +126,10 @@ describe("SearchView", () => {
       refetch: jest.fn(),
     });
     mockUseRecentPlays.mockReturnValue({ recentIds: [] });
-    mockGetCachedTracks.mockResolvedValue([]);
+    mockGetCachedTracksResult.mockResolvedValue({
+      tracks: [],
+      unavailable: false,
+    });
     mockGetCachedTrack.mockImplementation(async (trackId: string) =>
       [wrapperTrack, recentTrack, deepLinkedTrack].find((track) => track.id === trackId),
     );
@@ -162,7 +165,10 @@ describe("SearchView", () => {
     mockUseRecentPlays.mockReturnValue({
       recentIds: ["cloudinary:recent-1"],
     });
-    mockGetCachedTracks.mockResolvedValue([recentTrack]);
+    mockGetCachedTracksResult.mockResolvedValue({
+      tracks: [recentTrack],
+      unavailable: false,
+    });
 
     render(<SearchView initialView="recent" />);
 

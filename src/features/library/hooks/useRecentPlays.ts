@@ -1,13 +1,20 @@
 import { useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { getRecentPlays } from "@/shared/db";
+import { getRecentPlaysResult } from "@/shared/db";
 
 export function useRecentPlays() {
-  const recentPlays = useLiveQuery(getRecentPlays, [], []);
+  const recentResult = useLiveQuery(
+    getRecentPlaysResult,
+    [],
+    { recentPlays: [], unavailable: false },
+  );
   const recentIds = useMemo(
-    () => recentPlays.map((recentPlay) => recentPlay.trackId),
-    [recentPlays],
+    () => recentResult.recentPlays.map((recentPlay) => recentPlay.trackId),
+    [recentResult.recentPlays],
   );
 
-  return { recentIds };
+  return {
+    recentIds,
+    isUnavailable: recentResult.unavailable,
+  };
 }

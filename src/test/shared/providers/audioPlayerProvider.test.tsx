@@ -68,6 +68,13 @@ jest.mock("@/shared/db", () => ({
   getCachedTrack: jest.fn(async () => undefined),
 }));
 
+const mockCapturePlaybackErrorEvent = jest.fn();
+jest.mock("@/shared/lib/sentry/playbackEvents", () => ({
+  capturePlaybackErrorEvent: (...args: unknown[]) =>
+    mockCapturePlaybackErrorEvent(...args),
+  getCurrentBrowserRoute: () => "/",
+}));
+
 function AudioConsumer() {
   const { audioInstance } = useAudioPlayer();
 
@@ -226,6 +233,17 @@ describe("AudioPlayerProvider", () => {
       "Error playing audio:",
       expect.any(DOMException),
     );
+    expect(mockCapturePlaybackErrorEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        errorCode: "autoplay-blocked",
+        retryable: true,
+        route: "/",
+        track: expect.objectContaining({
+          id: "track-1",
+          source: "cloudinary",
+        }),
+      }),
+    );
   });
 
   it("keeps Track as the exposed current track model", async () => {
@@ -241,5 +259,25 @@ describe("AudioPlayerProvider", () => {
       expect(screen.getByTestId("current-track-id")).toHaveTextContent("track-1");
       expect(screen.getByTestId("current-track-title")).toHaveTextContent("Track One");
     });
+  });
+
+  it("does not load a media source when a track is queued without playback", async () => {
+    render(
+      <AudioPlayerProvider>
+        <CurrentTrackConsumer />
+      </AudioPlayerProvider>,
+    );
+    mockTransitionAudioTrack.mockClear();
+
+    fireEvent.click(screen.getByRole("button", { name: "Queue track" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("current-track-id")).toHaveTextContent("track-1");
+    });
+    expect(
+      mockTransitionAudioTrack.mock.calls.some(
+        ([source]) => source === playableTrack.streamUrl,
+      ),
+    ).toBe(false);
   });
 });
