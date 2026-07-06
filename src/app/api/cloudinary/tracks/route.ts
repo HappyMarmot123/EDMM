@@ -5,6 +5,10 @@ import {
   getCloudinaryTrackCachePolicy,
   type ResourceTypeFilter,
 } from "@/shared/api/cloudinary/cloudinaryClient";
+import {
+  parseCloudinaryCategory,
+  type CloudinaryTrackCategory,
+} from "@/shared/api/cloudinary/cloudinaryCategory";
 
 const parseResourceType = (value: string | null): ResourceTypeFilter => {
   const normalized = value?.trim().toLowerCase();
@@ -32,15 +36,25 @@ export async function GET(request: Request) {
   const filterPlayable = parseFilterPlayable(
     requestUrl.searchParams.get("filterPlayable"),
   );
+  const category = parseCloudinaryCategory(
+    requestUrl.searchParams.get("category"),
+  );
   const cachePolicy = getCloudinaryTrackCachePolicy(resourceType);
-  const fetchOptions: { resourceType: ResourceTypeFilter; filterPlayable?: boolean } =
-    {
-      resourceType,
-    };
+  const fetchOptions: {
+    resourceType: ResourceTypeFilter;
+    filterPlayable?: boolean;
+    category?: CloudinaryTrackCategory;
+  } = {
+    resourceType,
+  };
 
   try {
     if (filterPlayable !== undefined) {
       fetchOptions.filterPlayable = filterPlayable;
+    }
+
+    if (category) {
+      fetchOptions.category = category;
     }
 
     const tracks = await fetchCloudinaryTracks(query, {

@@ -237,6 +237,22 @@ describe("fetchCloudinaryTracks", () => {
     );
   });
 
+  it("scopes the search to the category subfolder when provided", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ resources: [rawResource] }),
+    });
+
+    await fetchCloudinaryTracks("", { resourceType: "all", category: "pop" });
+
+    const requestUrl = mockFetch.mock.calls[0][0];
+    const url = new URL(requestUrl.toString());
+
+    expect(url.searchParams.get("expression")).toBe(
+      '(resource_type:video OR resource_type:image) AND (asset_folder="edmm/media-pipeline/pop" OR folder="edmm/media-pipeline/pop")',
+    );
+  });
+
   it("returns mixed resources when resourceType=all and filterPlayable is disabled", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,

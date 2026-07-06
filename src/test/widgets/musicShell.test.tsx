@@ -157,9 +157,65 @@ describe("MusicShell", () => {
     expect(container.querySelector("main.relative")).toHaveClass(
       "app-viewport-height",
     );
-    expect(mockUseCloudinaryTracks).toHaveBeenLastCalledWith("", { resourceType: "all" });
+    expect(mockUseCloudinaryTracks).toHaveBeenLastCalledWith("", {
+      resourceType: "all",
+      category: "pop",
+    });
     expect(screen.getByRole("button", { name: "Select Cloud Track One" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Select Cloud Track Two" })).toBeInTheDocument();
+  });
+
+  it("renders the view tabs in order Pop, EDM, Recent", () => {
+    render(<MusicShell />);
+
+    const pop = getDesktopViewButton("Pop");
+    const edm = getDesktopViewButton("EDM");
+    const recent = getDesktopViewButton("Recent");
+
+    expect(
+      pop.compareDocumentPosition(edm) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      edm.compareDocumentPosition(recent) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("defaults to the Pop catalog and fetches the pop category", () => {
+    render(<MusicShell />);
+
+    expect(getDesktopViewButton("Pop")).toHaveAttribute("aria-pressed", "true");
+    expect(mockUseCloudinaryTracks).toHaveBeenLastCalledWith("", {
+      resourceType: "all",
+      category: "pop",
+    });
+    expect(
+      screen.getByRole("button", { name: "Select Cloud Track One" }),
+    ).toBeInTheDocument();
+  });
+
+  it("fetches the edm category when the EDM tab is active", async () => {
+    render(<MusicShell />);
+    fireEvent.click(getDesktopViewButton("EDM"));
+
+    expect(getDesktopViewButton("EDM")).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() => {
+      expect(mockUseCloudinaryTracks).toHaveBeenLastCalledWith("", {
+        resourceType: "all",
+        category: "edm",
+      });
+    });
+  });
+
+  it("shows the folder total count on both Pop and EDM tabs, including the inactive one", () => {
+    render(<MusicShell />);
+
+    const pop = getDesktopViewButton("Pop");
+    const edm = getDesktopViewButton("EDM");
+
+    expect(pop).toHaveAttribute("aria-pressed", "true");
+    expect(edm).toHaveAttribute("aria-pressed", "false");
+    expect(within(pop).getByText("3")).toBeInTheDocument();
+    expect(within(edm).getByText("3")).toBeInTheDocument();
   });
 
   it("loads initial viewport artwork immediately and defers the rest", () => {
@@ -256,7 +312,10 @@ describe("MusicShell", () => {
       "  lemonade  ",
     );
 
-    expect(mockUseCloudinaryTracks).toHaveBeenLastCalledWith("lemonade", { resourceType: "all" });
+    expect(mockUseCloudinaryTracks).toHaveBeenLastCalledWith("lemonade", {
+      resourceType: "all",
+      category: "pop",
+    });
     expect(screen.getByRole("button", { name: "Select Cloud Track Two" })).toBeInTheDocument();
   });
 
@@ -264,7 +323,7 @@ describe("MusicShell", () => {
     const user = userEvent.setup();
     const refetch = jest.fn();
     const staleSearchFallback = resolveCatalogFallbackState({
-      activeView: "all",
+      activeView: "pop",
       currentTracks: [],
       previousCatalogTracks: cloudTracks,
       isCatalogLoading: false,
@@ -319,7 +378,7 @@ describe("MusicShell", () => {
   it("renders catalog fallback feedback outside the fixed track list section", async () => {
     const user = userEvent.setup();
     const staleSearchFallback = resolveCatalogFallbackState({
-      activeView: "all",
+      activeView: "pop",
       currentTracks: [],
       previousCatalogTracks: cloudTracks,
       isCatalogLoading: false,
@@ -365,7 +424,7 @@ describe("MusicShell", () => {
     let phase: "initial" | "emptySuccess" | "error" = "initial";
     const refetch = jest.fn();
     const searchEmptyState = resolveCatalogFallbackState({
-      activeView: "all",
+      activeView: "pop",
       currentTracks: [],
       previousCatalogTracks: [],
       isCatalogLoading: false,
@@ -374,7 +433,7 @@ describe("MusicShell", () => {
       recentUnavailable: false,
     });
     const searchErrorState = resolveCatalogFallbackState({
-      activeView: "all",
+      activeView: "pop",
       currentTracks: [],
       previousCatalogTracks: [],
       isCatalogLoading: false,
@@ -561,7 +620,7 @@ describe("MusicShell", () => {
       }),
     );
 
-    expect(getDesktopViewButton("All")).toHaveAttribute("aria-pressed", "true");
+    expect(getDesktopViewButton("Pop")).toHaveAttribute("aria-pressed", "true");
     expect(
       screen.getByRole("button", { name: "Select Cloud Track One" }),
     ).toBeInTheDocument();
@@ -607,17 +666,18 @@ describe("MusicShell", () => {
     ).toBeInTheDocument();
   });
 
-  it("does not render the mobile bottom tab navigation", () => {
+  it("shows the view tabs on mobile", () => {
     mockTrackSelectPlaybackMedia(true);
 
     render(<MusicShell />);
 
     expect(
-      screen.queryByRole("navigation", { name: "Bottom tab navigation" }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("navigation", { name: "Music views" }),
+    ).toBeInTheDocument();
+    expect(getDesktopViewButton("Pop")).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("forces the mobile view to stay on All even when initialView is recent", async () => {
+  it("respects initialView and shows recent tracks on mobile", async () => {
     mockTrackSelectPlaybackMedia(true);
     mockUseRecentPlays.mockReturnValue({
       recentIds: ["cloudinary:recent-1"],
@@ -630,11 +690,14 @@ describe("MusicShell", () => {
 
     render(<MusicShell initialView="recent" />);
 
+    expect(getDesktopViewButton("Recent")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     // 모바일 모드에서는 playOnSelect가 켜져 접근성 이름이 "Select and play {title}"가 된다
     expect(
-      await screen.findByRole("button", { name: "Select and play Cloud Track One" }),
+      await screen.findByRole("button", { name: "Select and play Recent Track" }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Recent Track/ })).not.toBeInTheDocument();
   });
 
   it("updates detail selection when initialTrackId changes", async () => {
@@ -754,7 +817,7 @@ describe("MusicShell", () => {
       expect(mockCaptureSearchFallbackEvent).toHaveBeenCalledWith({
         type: "selected_track_unavailable",
         route: "/search",
-        view: "all",
+        view: "pop",
         hasTrackId: true,
       });
     });
@@ -890,7 +953,7 @@ describe("MusicShell", () => {
       "Recent Track",
     );
 
-    fireEvent.click(getDesktopViewButton("All"));
+    fireEvent.click(getDesktopViewButton("Pop"));
     await waitFor(() => {
       expect(screen.queryByTestId("track-detail-title")).not.toBeInTheDocument();
     });
@@ -1011,7 +1074,7 @@ describe("MusicShell", () => {
 
   it("shows loading and empty states without live services", async () => {
     const emptyCatalogState = resolveCatalogFallbackState({
-      activeView: "all",
+      activeView: "pop",
       currentTracks: [],
       previousCatalogTracks: [],
       isCatalogLoading: false,
@@ -1068,7 +1131,7 @@ describe("MusicShell", () => {
       await screen.findByText(recentUnavailableState.notice?.title ?? ""),
     ).toBeInTheDocument();
 
-    fireEvent.click(getDesktopViewButton("All"));
+    fireEvent.click(getDesktopViewButton("Pop"));
 
     expect(
       screen.getByRole("button", { name: "Select Cloud Track One" }),

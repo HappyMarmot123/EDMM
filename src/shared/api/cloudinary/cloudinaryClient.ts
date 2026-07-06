@@ -100,6 +100,7 @@ type FetchCloudinaryTrackOptions = {
   resourceType?: ResourceTypeFilter;
   filterPlayable?: boolean;
   cachePolicy?: CloudinaryCachePolicy;
+  category?: string;
 };
 
 const getCloudinaryTrackPolicy = (
@@ -177,7 +178,9 @@ export async function fetchCloudinaryTracks(
     options.cachePolicy ?? getCloudinaryTrackPolicy(resourceType);
   const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
   const tracks: Track[] = [];
-  const expression = buildCloudinaryExpression(folder, resourceType);
+  const category = options.category?.trim();
+  const scopedFolder = category ? `${folder}/${category}` : folder;
+  const expression = buildCloudinaryExpression(scopedFolder, resourceType);
   const queryTokens = searchTokens(normalizedQuery.toLowerCase());
   let nextCursor: string | null = null;
   let page = 0;

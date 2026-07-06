@@ -103,6 +103,24 @@ it("calls Cloudinary with video resource type in the video endpoint", async () =
   expect(body).toEqual([trackFixture]);
 });
 
+it("passes a known category to the video endpoint", async () => {
+  await GET_VIDEO(request("http://x/api/cloudinary/tracks/video?category=pop"));
+
+  expect(fetchCloudinaryTracks).toHaveBeenCalledWith("", {
+    resourceType: "video",
+    category: "pop",
+  });
+});
+
+it("passes a known category to the image endpoint", async () => {
+  await GET_IMAGE(request("http://x/api/cloudinary/tracks/image?category=edm"));
+
+  expect(fetchCloudinaryTracks).toHaveBeenCalledWith("", {
+    resourceType: "image",
+    category: "edm",
+  });
+});
+
 it("returns 500 when Cloudinary configuration is missing", async () => {
   mockFetchCloudinaryTracks.mockRejectedValueOnce(
     new Error("Cloudinary configuration is missing"),

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isPlayable, type Track } from "@/entities/track";
 import { useCloudinaryTracks } from "@/features/cloudinary/hooks/useCloudinaryTracks";
+import type { CloudinaryTrackCategory } from "@/shared/api/cloudinary/cloudinaryCategory";
 import { useRecentPlays } from "@/features/library";
 import { getCachedTracksResult } from "@/shared/db";
 import { addEdmmEventListener, EDMM_EVENTS } from "@/shared/lib/edmmEvents";
@@ -44,7 +45,7 @@ const noop: NonNullable<MusicShellProps["onPlay"]> = () => {};
 const TRACK_SELECT_PLAYBACK_MEDIA_QUERY = "(max-width: 767px)";
 
 const isMusicView = (view: MusicView | undefined): view is MusicView =>
-  view === "all" || view === "recent";
+  view === "pop" || view === "edm" || view === "recent";
 
 type CatalogFallbackFeedbackProps = {
   notice: CatalogFallbackNotice | null;
@@ -158,7 +159,7 @@ export function MusicShell({
   initialView,
   initialTrackId = null,
 }: MusicShellProps) {
-  const normalizedInitialView = isMusicView(initialView) ? initialView : "all";
+  const normalizedInitialView = isMusicView(initialView) ? initialView : "pop";
   const isMobileView = useTrackSelectPlaybackMode();
   const normalizedInitialTrackId = initialTrackId?.trim().length
     ? initialTrackId
@@ -166,9 +167,7 @@ export function MusicShell({
 
   const [query, setQuery] = useState("");
   const setSearchQuery = setQuery;
-  const [view, setView] = useState<MusicView>(
-    isMobileView ? "all" : normalizedInitialView,
-  );
+  const [view, setView] = useState<MusicView>(normalizedInitialView);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(
     normalizedInitialTrackId,
   );
@@ -192,30 +191,21 @@ export function MusicShell({
   const reportedFallbackKeysRef = useRef<Set<string>>(new Set());
   const isCurrentTrackPlaying = Boolean(currentTrackId && isPlaying);
   const shouldPlayOnTrackSelect = isMobileView;
-  const activeView = useMemo<MusicView>(() => {
-    return isMobileView ? "all" : view;
-  }, [isMobileView, view]);
+  const activeView = view;
 
   const handleTrackZoneScrollHandled = useCallback(
     () => setPlayerZoneScrollRequest(null),
     [],
   );
 
-  const handleViewChange = useCallback(
-    (nextView: MusicView) => {
-      if (isMobileView) {
-        return;
-      }
-
-      setView(nextView);
-    },
-    [isMobileView],
-  );
+  const handleViewChange = useCallback((nextView: MusicView) => {
+    setView(nextView);
+  }, []);
 
   const seededTrackIdRef = useRef<string | null>(null);
   useEffect(() => {
-    setView(isMobileView ? "all" : normalizedInitialView);
-  }, [isMobileView, normalizedInitialView]);
+    setView(normalizedInitialView);
+  }, [normalizedInitialView]);
 
   useEffect(() => {
     const cleanup = addEdmmEventListener(
@@ -240,12 +230,33 @@ export function MusicShell({
   }, []);
 
   const normalizedQuery = query.trim();
+  const catalogCategory: CloudinaryTrackCategory =
+    activeView === "edm" ? "edm" : "pop";
+  // 두 폴더의 전체 트랙 수를 미리 받아 탭 배지에 노출한다(검색어와 무관한 총 개수).
+  const { data: popCatalogData } = useCloudinaryTracks("", {
+    resourceType: "all",
+    category: "pop",
+  });
+  const { data: edmCatalogData } = useCloudinaryTracks("", {
+    resourceType: "all",
+    category: "edm",
+  });
+  const catalogCounts = useMemo(
+    () => ({
+      pop: popCatalogData?.length ?? 0,
+      edm: edmCatalogData?.length ?? 0,
+    }),
+    [popCatalogData, edmCatalogData],
+  );
   const {
     data: cloudinaryData,
     isLoading: isCatalogLoading,
     isError: isCatalogError,
     refetch,
-  } = useCloudinaryTracks(normalizedQuery, { resourceType: "all" });
+  } = useCloudinaryTracks(normalizedQuery, {
+    resourceType: "all",
+    category: catalogCategory,
+  });
   const handleCatalogRetry = useCallback(() => {
     void refetch?.();
   }, [refetch]);
@@ -256,10 +267,7 @@ export function MusicShell({
   const { recentIds, isUnavailable: isRecentPlaysUnavailable } = useRecentPlays();
 
   const allRecentTrackIds = useMemo(() => dedupeIds(recentIds), [recentIds]);
-  const recentTrackIds = useMemo(
-    () => (isMobileView ? [] : allRecentTrackIds),
-    [allRecentTrackIds, isMobileView],
-  );
+  const recentTrackIds = allRecentTrackIds;
   const recentState = useCachedTrackList(recentTrackIds);
 
   useEffect(() => {
@@ -583,17 +591,14 @@ export function MusicShell({
   });
 
   const isVisibleLoading =
-    activeView === "all"
-      ? catalogFallbackState.status === "loading_initial"
-      : recentState.isLoading;
+    activeView === "recent"
+      ? recentState.isLoading
+      : catalogFallbackState.status === "loading_initial";
   const emptyMessage = catalogFallbackState.emptyMessage;
-  const catalogResultCount = catalogFallbackState.isShowingStaleData
-    ? catalogFallbackState.visibleTracks.length
-    : catalogTracks.length;
   const fallbackNoticePrimaryAction =
-    activeView === "all" ? handleCatalogRetry : undefined;
+    activeView === "recent" ? undefined : handleCatalogRetry;
   const fallbackNoticeSecondaryAction =
-    activeView === "recent" ? () => handleViewChange("all") : undefined;
+    activeView === "recent" ? () => handleViewChange("pop") : undefined;
   return (
     <main className="app-viewport-height relative flex flex-col overflow-hidden bg-[#050306] px-4 pb-[calc(84px+max(env(safe-area-inset-bottom),10px))] pt-5 text-white sm:px-6 sm:pb-[calc(84px+max(env(safe-area-inset-bottom),12px))] md:pb-[calc(112px+max(env(safe-area-inset-bottom),12px))] lg:px-8">
       <SearchBackdrop />
@@ -608,8 +613,7 @@ export function MusicShell({
           <MusicShellHeader
             query={query}
             view={activeView}
-            resultCount={catalogResultCount}
-            recentCount={allRecentTrackIds.length}
+            catalogCounts={catalogCounts}
             onQueryChange={setQuery}
             onViewChange={handleViewChange}
           />

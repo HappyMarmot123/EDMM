@@ -100,6 +100,23 @@ it("passes resourceType query parameter through", async () => {
   });
 });
 
+it("passes a known category to the Cloudinary client", async () => {
+  await GET(request("http://x/api/cloudinary/tracks?category=pop"));
+
+  expect(fetchCloudinaryTracks).toHaveBeenCalledWith("", {
+    resourceType: "all",
+    category: "pop",
+  });
+});
+
+it("ignores an unknown category", async () => {
+  await GET(request("http://x/api/cloudinary/tracks?category=hacker"));
+
+  expect(fetchCloudinaryTracks).toHaveBeenCalledWith("", {
+    resourceType: "all",
+  });
+});
+
 it("returns 500 when Cloudinary configuration is missing", async () => {
   mockFetchCloudinaryTracks.mockRejectedValueOnce(
     new Error("Cloudinary configuration is missing"),

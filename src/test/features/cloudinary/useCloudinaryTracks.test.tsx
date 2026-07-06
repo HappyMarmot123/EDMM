@@ -176,6 +176,31 @@ it("calls video and image endpoints when resourceType=all with filterPlayable", 
   );
 });
 
+it("passes category to the video and image endpoints for resourceType all", async () => {
+  mockFetch.mockResolvedValue({
+    ok: true,
+    json: async () => [],
+  });
+
+  const { result } = renderHook(
+    () => useCloudinaryTracks("", { resourceType: "all", category: "pop" }),
+    {
+      wrapper: createWrapper(),
+    },
+  );
+
+  await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+  expect(mockFetch).toHaveBeenNthCalledWith(
+    1,
+    "/api/cloudinary/tracks/video?v=2&category=pop",
+  );
+  expect(mockFetch).toHaveBeenNthCalledWith(
+    2,
+    "/api/cloudinary/tracks/image?v=2&category=pop",
+  );
+});
+
 it("omits q for blank queries", async () => {
   mockFetch.mockResolvedValue({
     ok: true,

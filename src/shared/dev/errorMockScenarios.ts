@@ -103,7 +103,7 @@ const devErrorMockResults: Record<DevErrorMockScenarioId, DevErrorMockResult> =
   };
 
 const mockRoute = "/search";
-const mockView: MusicView = "all";
+const mockView: MusicView = "edm";
 const mockTrack = {
   id: "dev-error-remote-track",
   source: "cloudinary",

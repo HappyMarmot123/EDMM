@@ -41,7 +41,7 @@ describe("dev error mock scenarios", () => {
         tags: expect.objectContaining({
           error_class: "catalog_fetch_failed",
           route: "/search",
-          view: "all",
+          view: "edm",
         }),
       }),
     );

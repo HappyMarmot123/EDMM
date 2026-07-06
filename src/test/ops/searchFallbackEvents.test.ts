@@ -16,7 +16,7 @@ describe("captureSearchFallbackEvent", () => {
     captureSearchFallbackEvent({
       type: "catalog_fetch_failed",
       route: "/search",
-      view: "all",
+      view: "edm",
       queryLength: 13,
       hasQuery: true,
       hasStaleData: true,
@@ -29,7 +29,7 @@ describe("captureSearchFallbackEvent", () => {
         tags: expect.objectContaining({
           error_class: "catalog_fetch_failed",
           route: "/search",
-          view: "all",
+          view: "edm",
         }),
         contexts: expect.objectContaining({
           search: expect.objectContaining({
@@ -52,7 +52,7 @@ describe("captureSearchFallbackEvent", () => {
     captureSearchFallbackEvent({
       type: "selected_track_unavailable",
       route: "/search",
-      view: "all",
+      view: "edm",
       hasTrackId: true,
     });
 
@@ -63,7 +63,7 @@ describe("captureSearchFallbackEvent", () => {
         tags: expect.objectContaining({
           error_class: "selected_track_unavailable",
           route: "/search",
-          view: "all",
+          view: "edm",
         }),
         contexts: expect.objectContaining({
           search: expect.objectContaining({
