@@ -1,8 +1,9 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import DesktopFullscreenPlayer from "@/features/audio/components/desktopFullscreenPlayer";
+import type { DesktopFullscreenPlayerProps } from "@/features/audio/components/desktopFullscreenPlayer";
 import PlayerTrackDetails, {
   PlayerTrackSummary,
 } from "@/features/audio/components/playerTrackDetails";
@@ -23,6 +24,14 @@ import type { Track } from "@/entities/track";
 
 const FULLSCREEN_VIEWPORT_QUERY = "(min-width: 768px)";
 const FULLSCREEN_EXIT_MS = 250;
+
+const DesktopFullscreenPlayer = dynamic<DesktopFullscreenPlayerProps>(
+  () => import("@/features/audio/components/desktopFullscreenPlayer"),
+  {
+    ssr: false,
+    loading: () => null,
+  },
+);
 
 function useCanUseFullscreenViewport() {
   return useMediaQuery(FULLSCREEN_VIEWPORT_QUERY, false);
@@ -52,6 +61,8 @@ export default function AudioPlayer() {
     isFullscreenOpen && canUseFullscreen,
     FULLSCREEN_EXIT_MS,
   );
+  const isFullscreenSurfaceMounted =
+    fullscreenPresence.mounted && canUseFullscreen;
   const currentTrackId = currentTrack?.id;
   const fullscreenTrackInfo = fullscreenTrackOverride ?? currentTrack;
   const isFullscreenTrackCurrent =
@@ -75,6 +86,12 @@ export default function AudioPlayer() {
     }
   }, [canUseFullscreen]);
 
+  useEffect(() => {
+    dispatchEdmmEvent(window, EDMM_EVENTS.playerFullscreenStateChange, {
+      isOpen: isFullscreenSurfaceMounted,
+    });
+  }, [isFullscreenSurfaceMounted]);
+
   const previousCurrentTrackIdRef = useRef(currentTrackId);
   useEffect(() => {
     if (previousCurrentTrackIdRef.current === currentTrackId) {
@@ -94,13 +111,13 @@ export default function AudioPlayer() {
       window,
       EDMM_EVENTS.openPlayerFullscreen,
       (event) => {
-      if (!canUseFullscreen) {
-        return;
-      }
+        if (!canUseFullscreen) {
+          return;
+        }
 
-      const nextTrack = event.detail.track ?? null;
-      setFullscreenTrackOverride(nextTrack);
-      setIsFullscreenOpen(true);
+        const nextTrack = event.detail.track ?? null;
+        setFullscreenTrackOverride(nextTrack);
+        setIsFullscreenOpen(true);
       },
     );
 
@@ -131,7 +148,7 @@ export default function AudioPlayer() {
 
   return (
     <>
-      {fullscreenPresence.mounted ? (
+      {isFullscreenSurfaceMounted ? (
         <div
           data-testid="fullscreen-fade-layer"
           className={

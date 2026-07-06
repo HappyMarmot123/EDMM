@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import type { Track } from "@/entities/track";
 import { getCachedTrack } from "@/shared/db";
 import TrackDetailAside from "@/widgets/musicShell/trackDetailAside";
@@ -10,7 +10,14 @@ jest.mock("@/shared/providers/audioPlayerProvider", () => ({
   useAudioPlayer: jest.fn(),
 }));
 jest.mock("@/features/audio", () => ({
-  AudioVisualizer: () => <div>Audio visualizer</div>,
+  AudioVisualizer: ({ isActive }: { isActive: boolean }) => (
+    <div
+      data-active={String(isActive)}
+      data-testid="track-detail-audio-visualizer"
+    >
+      Audio visualizer
+    </div>
+  ),
   EqualizerPanel: () => <div>Equalizer panel</div>,
 }));
 
@@ -71,6 +78,38 @@ describe("TrackDetailAside", () => {
     expect(
       screen.queryByRole("button", { name: /^(play|pause) /i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("pauses the aside visualizer while the player fullscreen surface is open", async () => {
+    mockGetCachedTrack.mockResolvedValue(track);
+    mockUseAudioPlayer.mockReturnValue({
+      ...mockAudioState,
+      isPlaying: true,
+      audioAnalyser: {} as AnalyserNode,
+    });
+
+    render(
+      <TrackDetailAside activeView="all" selectedTrackId="cloudinary:asset-1" />,
+    );
+
+    expect(await screen.findByTestId("track-detail-title")).toBeInTheDocument();
+    expect(screen.getByTestId("track-detail-audio-visualizer")).toHaveAttribute(
+      "data-active",
+      "true",
+    );
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent("edmm:player-fullscreen-state-change", {
+          detail: { isOpen: true },
+        }),
+      );
+    });
+
+    expect(screen.getByTestId("track-detail-audio-visualizer")).toHaveAttribute(
+      "data-active",
+      "false",
+    );
   });
 
   it("shows details unavailable when cached metadata is missing", async () => {

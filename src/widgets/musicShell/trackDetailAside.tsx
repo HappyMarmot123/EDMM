@@ -6,7 +6,11 @@ import type { Track } from "@/entities/track";
 import { AudioVisualizer, EqualizerPanel } from "@/features/audio";
 import { getCachedTrack } from "@/shared/db";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
-import { dispatchEdmmEvent, EDMM_EVENTS } from "@/shared/lib/edmmEvents";
+import {
+  addEdmmEventListener,
+  dispatchEdmmEvent,
+  EDMM_EVENTS,
+} from "@/shared/lib/edmmEvents";
 import { captureSearchFallbackEvent } from "@/shared/lib/sentry/searchFallbackEvents";
 import { pickArtworkUrl } from "@/shared/lib/trackArtwork";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
@@ -57,6 +61,7 @@ export function TrackDetailAside({
   const [isLoading, setIsLoading] = useState(false);
   const [reportedUnavailableSelectionKey, setReportedUnavailableSelectionKey] =
     useState<string | null>(null);
+  const [isPlayerFullscreenOpen, setIsPlayerFullscreenOpen] = useState(false);
   const canUseArtworkFullscreen = useMediaQuery(
     TRACK_DETAIL_FULLSCREEN_VIEWPORT_QUERY,
     false,
@@ -146,7 +151,9 @@ export function TrackDetailAside({
   }, [cachedTrack, fallbackTrack, selectedTrackId, liveTrackFallback]);
 
   const isCurrentTrack = track && currentTrack?.id === track.id;
-  const isVisualizerActive = Boolean(isCurrentTrack && isPlaying);
+  const isVisualizerActive = Boolean(
+    isCurrentTrack && isPlaying && !isPlayerFullscreenOpen,
+  );
   const canOpenArtworkFullscreen = Boolean(
     canUseArtworkFullscreen && track?.artworkUrl,
   );
@@ -192,6 +199,16 @@ export function TrackDetailAside({
     selectedTrackId,
     shouldShowUnavailableState,
   ]);
+
+  useEffect(() => {
+    return addEdmmEventListener(
+      window,
+      EDMM_EVENTS.playerFullscreenStateChange,
+      (event) => {
+        setIsPlayerFullscreenOpen(event.detail.isOpen);
+      },
+    );
+  }, []);
 
   const handleOpenArtworkFullscreen = () => {
     if (!track || !canOpenArtworkFullscreen || typeof window === "undefined") {

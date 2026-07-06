@@ -264,12 +264,12 @@ describe("AudioPlayer", () => {
     expect(screen.getByRole("button", { name: "No track artwork" })).toBeDisabled();
   });
 
-  it("opens and closes the desktop fullscreen player without changing playback", () => {
+  it("opens and closes the desktop fullscreen player without changing playback", async () => {
     render(<AudioPlayer />);
 
     fireEvent.click(screen.getByRole("button", { name: "Toggle fullscreen view" }));
 
-    const fullscreenDialog = screen.getByRole("dialog", {
+    const fullscreenDialog = await screen.findByRole("dialog", {
       name: "Fullscreen player",
     });
     expect(fullscreenDialog).toBeInTheDocument();
@@ -333,7 +333,7 @@ describe("AudioPlayer", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Toggle fullscreen view" }));
 
-    const fullscreenDialog = screen.getByRole("dialog", {
+    const fullscreenDialog = await screen.findByRole("dialog", {
       name: "Fullscreen player",
     });
     await waitFor(() => expect(fullscreenDialog).toHaveFocus());
@@ -356,7 +356,7 @@ describe("AudioPlayer", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Toggle fullscreen view" }));
 
-    const fullscreenDialog = screen.getByRole("dialog", {
+    const fullscreenDialog = await screen.findByRole("dialog", {
       name: "Fullscreen player",
     });
     const shortcutButton = within(fullscreenDialog).getByRole("button", {
@@ -389,7 +389,7 @@ describe("AudioPlayer", () => {
       await screen.findByRole("button", { name: "Toggle fullscreen view" }),
     );
 
-    const fullscreenDialog = screen.getByRole("dialog", {
+    const fullscreenDialog = await screen.findByRole("dialog", {
       name: "Fullscreen player",
     });
     const shortcutButton = within(fullscreenDialog).getByRole("button", {
@@ -413,7 +413,7 @@ describe("AudioPlayer", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Toggle fullscreen view" }));
 
-    const fullscreenDialog = screen.getByRole("dialog", {
+    const fullscreenDialog = await screen.findByRole("dialog", {
       name: "Fullscreen player",
     });
     const shortcutButton = within(fullscreenDialog).getByRole("button", {
@@ -436,7 +436,7 @@ describe("AudioPlayer", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Toggle fullscreen view" }));
 
-    const fullscreenDialog = screen.getByRole("dialog", {
+    const fullscreenDialog = await screen.findByRole("dialog", {
       name: "Fullscreen player",
     });
     const shortcutButton = within(fullscreenDialog).getByRole("button", {
@@ -531,7 +531,7 @@ describe("AudioPlayer", () => {
       render(<MobileAudioPlayer />);
 
       fireEvent.click(screen.getByRole("button", { name: "Open fullscreen player" }));
-      const dialog = screen.getByRole("dialog", {
+      const dialog = await screen.findByRole("dialog", {
         name: "Mobile fullscreen player",
       });
       const closeButton = within(dialog).getByRole("button", {

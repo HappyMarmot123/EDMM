@@ -2,6 +2,7 @@ import type { Track } from "@/entities/track";
 
 export const EDMM_EVENTS = {
   openPlayerFullscreen: "edmm:open-player-fullscreen",
+  playerFullscreenStateChange: "edmm:player-fullscreen-state-change",
   playerTrackZoneSelect: "edmm:player-track-zone-select",
 } as const;
 
@@ -10,6 +11,9 @@ export type EdmmEventName = (typeof EDMM_EVENTS)[keyof typeof EDMM_EVENTS];
 type EdmmEventPayloadMap = {
   [EDMM_EVENTS.openPlayerFullscreen]: {
     track: Track | null;
+  };
+  [EDMM_EVENTS.playerFullscreenStateChange]: {
+    isOpen: boolean;
   };
   [EDMM_EVENTS.playerTrackZoneSelect]: {
     trackId: string;

@@ -1,12 +1,22 @@
 "use client";
 
-import { useRef, useState, type KeyboardEvent } from "react";
+import dynamic from "next/dynamic";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import MPlayerTrackDetails from "@/features/audio/components/mobile/m_playerTrackDetails";
 import MPlayerControlsSection from "@/features/audio/components/mobile/m_playerControlsSection";
 import MAlbumArtwork from "@/features/audio/components/mobile/m_albumArtwork";
-import MobileFullscreenPlayer from "@/features/audio/components/mobile/mobileFullscreenPlayer";
+import type { MobileFullscreenPlayerProps } from "@/features/audio/components/mobile/mobileFullscreenPlayer";
 import PlaybackErrorFeedback from "@/features/audio/components/playbackErrorFeedback";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
+import { dispatchEdmmEvent, EDMM_EVENTS } from "@/shared/lib/edmmEvents";
+
+const MobileFullscreenPlayer = dynamic<MobileFullscreenPlayerProps>(
+  () => import("@/features/audio/components/mobile/mobileFullscreenPlayer"),
+  {
+    ssr: false,
+    loading: () => null,
+  },
+);
 
 // Root here
 export default function MobileAudioPlayer() {
@@ -22,6 +32,12 @@ export default function MobileAudioPlayer() {
   } = useAudioPlayer();
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
   const seekBarContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    dispatchEdmmEvent(window, EDMM_EVENTS.playerFullscreenStateChange, {
+      isOpen: isFullscreenOpen,
+    });
+  }, [isFullscreenOpen]);
 
   const currentProgress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const openFullscreen = () => {
