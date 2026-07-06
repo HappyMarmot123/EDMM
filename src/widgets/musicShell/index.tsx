@@ -429,9 +429,12 @@ export function MusicShell({
         return;
       }
 
+      const isCurrentTrackSelected = selectedTrackId === currentTrackId;
       const nextSelectionSource =
-        selectionSource === "initial" && selectedTrackId === currentTrackId
-          ? "initial"
+        isCurrentTrackSelected
+          ? selectionSource === "initial"
+            ? "initial"
+            : "visible"
           : visibleTrackIds.has(currentTrackId)
             ? "visible"
             : "initial";
@@ -469,22 +472,28 @@ export function MusicShell({
       return;
     }
 
-    if (!visibleTrackIds.has(currentTrackId)) {
+    if (
+      selectedTrackId !== currentTrackId &&
+      !visibleTrackIds.has(currentTrackId)
+    ) {
       setSelectedTrackId(null);
       setSelectionSource(null);
     }
-  }, [currentTrackId, selectionSource, visibleTrackIds]);
+  }, [currentTrackId, selectedTrackId, selectionSource, visibleTrackIds]);
 
   useEffect(() => {
     if (!selectedTrackId || selectionSource !== "visible") {
       return;
     }
 
-    if (!visibleTrackIds.has(selectedTrackId)) {
+    if (
+      selectedTrackId !== currentTrackId &&
+      !visibleTrackIds.has(selectedTrackId)
+    ) {
       setSelectedTrackId(null);
       setSelectionSource(null);
     }
-  }, [selectedTrackId, selectionSource, visibleTrackIds]);
+  }, [currentTrackId, selectedTrackId, selectionSource, visibleTrackIds]);
 
   const selectedTrack = useMemo(() => {
     if (!selectedTrackId) return null;

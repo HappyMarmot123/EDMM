@@ -763,6 +763,38 @@ describe("MusicShell", () => {
     ).toBeInTheDocument();
   });
 
+  it("does not reseed playback when switching to recent while current track is still playing", async () => {
+    const onPlay = jest.fn();
+    mockUseAudioPlayer.mockReturnValue({
+      ...mockAudioState,
+      currentTrack: cloudTracks[0],
+      isPlaying: true,
+    });
+    mockUseRecentPlays.mockReturnValue({
+      recentIds: ["cloudinary:recent-1"],
+      isUnavailable: false,
+    });
+    mockGetCachedTracksResult.mockResolvedValue({
+      tracks: [recentTrack],
+      unavailable: false,
+    });
+
+    render(<MusicShell onPlay={onPlay} />);
+
+    expect(await screen.findByTestId("track-detail-title")).toHaveTextContent(
+      "Cloud Track One",
+    );
+    expect(onPlay).not.toHaveBeenCalled();
+
+    fireEvent.click(getDesktopViewButton("Recent"));
+
+    await waitFor(() => {
+      expect(onPlay).not.toHaveBeenCalled();
+    });
+    expect(screen.getByText("Recent Track")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Select a track" })).not.toBeInTheDocument();
+  }, 12000);
+
   it("keeps an initial track detail loading while catalog data is still resolving", async () => {
     const onPlay = jest.fn();
     mockUseCloudinaryTracks.mockReturnValue({
