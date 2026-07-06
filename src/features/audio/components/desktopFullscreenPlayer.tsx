@@ -14,7 +14,7 @@ import { useArtworkCrossfade } from "@/features/audio/hooks/useArtworkCrossfade"
 import type { Track } from "@/entities/track";
 import MyTooltip from "@/shared/components/myTooltip";
 
-type DesktopFullscreenPlayerProps = {
+export type DesktopFullscreenPlayerProps = {
   currentTrackInfo: Track | null;
   analyser: AnalyserNode | null;
   isPlaying: boolean;

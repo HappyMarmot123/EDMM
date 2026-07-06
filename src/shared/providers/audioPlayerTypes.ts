@@ -1,11 +1,8 @@
 import type { Track } from "@/entities/track";
 import type { AudioCapabilities } from "@/shared/lib/audioInstance";
+import type { PlaybackErrorCode } from "./audioPlaybackErrors";
 
-export type PlaybackError =
-  | "autoplay-blocked"
-  | "unsupported-audio-context"
-  | "source-load-failed"
-  | null;
+export type PlaybackError = PlaybackErrorCode | null;
 
 export interface AudioPlayerState {
   currentTrack: Track | null;

@@ -1,18 +1,43 @@
 "use client";
 
-import { useRef, useState, type KeyboardEvent } from "react";
+import dynamic from "next/dynamic";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import MPlayerTrackDetails from "@/features/audio/components/mobile/m_playerTrackDetails";
 import MPlayerControlsSection from "@/features/audio/components/mobile/m_playerControlsSection";
 import MAlbumArtwork from "@/features/audio/components/mobile/m_albumArtwork";
-import MobileFullscreenPlayer from "@/features/audio/components/mobile/mobileFullscreenPlayer";
+import type { MobileFullscreenPlayerProps } from "@/features/audio/components/mobile/mobileFullscreenPlayer";
+import PlaybackErrorFeedback from "@/features/audio/components/playbackErrorFeedback";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
+import { dispatchEdmmEvent, EDMM_EVENTS } from "@/shared/lib/edmmEvents";
+
+const MobileFullscreenPlayer = dynamic<MobileFullscreenPlayerProps>(
+  () => import("@/features/audio/components/mobile/mobileFullscreenPlayer"),
+  {
+    ssr: false,
+    loading: () => null,
+  },
+);
 
 // Root here
 export default function MobileAudioPlayer() {
-  const { currentTrack, isPlaying, isBuffering, currentTime, duration, seek } =
-    useAudioPlayer();
+  const {
+    currentTrack,
+    isPlaying,
+    isBuffering,
+    currentTime,
+    duration,
+    seek,
+    playbackError,
+    togglePlayPause,
+  } = useAudioPlayer();
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
   const seekBarContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    dispatchEdmmEvent(window, EDMM_EVENTS.playerFullscreenStateChange, {
+      isOpen: isFullscreenOpen,
+    });
+  }, [isFullscreenOpen]);
 
   const currentProgress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const openFullscreen = () => {
@@ -44,6 +69,12 @@ export default function MobileAudioPlayer() {
         style={{ bottom: "max(env(safe-area-inset-bottom), 10px)" }}
         aria-label="Audio Player"
       >
+        <PlaybackErrorFeedback
+          error={playbackError}
+          canRetry={Boolean(currentTrack?.streamUrl)}
+          onRetry={togglePlayPause}
+          className="px-0"
+        />
         <div
           id="player-mobile"
           className="relative min-h-[64px] overflow-hidden rounded-lg"

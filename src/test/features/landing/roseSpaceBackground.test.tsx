@@ -1,13 +1,13 @@
 import fs from "fs";
 import path from "path";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import DustySnow from "@/features/landing/components/dustySnow";
 import RoseSpaceBackground from "@/features/landing/components/roseSpaceBackground";
 
 const styles = fs.readFileSync(
   path.join(process.cwd(), "src/shared/styles/global.css"),
-  "utf8"
+  "utf8",
 );
 
 const extractRule = (selector: string) => {
@@ -24,89 +24,54 @@ const extractRule = (selector: string) => {
   return styles.slice(start, end + 2);
 };
 
-const originalMatchMedia = window.matchMedia;
-
 describe("RoseSpaceBackground", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  afterEach(() => {
-    window.matchMedia = originalMatchMedia;
-  });
-
-  it("renders an aria-hidden rose space background", async () => {
+  it("renders an aria-hidden rose space background without client motion state", () => {
     render(<RoseSpaceBackground />);
 
     const background = screen.getByTestId("rose-space-background");
     expect(background).toHaveAttribute("aria-hidden", "true");
     expect(background).toHaveClass("rose-space-background");
-
-    await waitFor(() => {
-      expect(screen.getByTestId("rose-starfield")).toBeInTheDocument();
-    });
+    expect(background).not.toHaveAttribute("data-reduced-motion");
+    expect(screen.getByTestId("rose-starfield")).toBeInTheDocument();
   });
 
-  it("marks the background as reduced when prefers-reduced-motion is active", async () => {
-    window.matchMedia = jest.fn().mockImplementation((query) => ({
-      matches: query === "(prefers-reduced-motion: reduce)",
-      media: query,
-      onchange: null,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      dispatchEvent: jest.fn(),
-    }));
-
-    render(<RoseSpaceBackground />);
-
-    expect(screen.getByTestId("rose-space-background")).toHaveAttribute(
-      "data-reduced-motion",
-      "true"
-    );
-
-    await waitFor(() => {
-      expect(screen.getByTestId("rose-starfield")).toHaveClass(
-        "rose-starfield--reduced"
-      );
-    });
-  });
-
-  it("uses legacy media query listeners when event listeners are unavailable", () => {
-    const addListener = jest.fn();
-    const removeListener = jest.fn();
-    window.matchMedia = jest.fn().mockImplementation((query) => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener,
-      removeListener,
-      dispatchEvent: jest.fn(),
-    }));
-
-    const { unmount } = render(<RoseSpaceBackground />);
-
-    expect(addListener).toHaveBeenCalledTimes(1);
-    unmount();
-    expect(removeListener).toHaveBeenCalledTimes(1);
+  it("uses CSS media queries for reduced motion instead of JS listeners", () => {
+    expect(styles).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(styles).toContain(".rose-star");
   });
 });
 
 describe("DustySnow", () => {
-  it("renders an inert aria-hidden starfield when mounted directly", async () => {
+  it("renders an inert aria-hidden starfield when mounted directly", () => {
     render(<DustySnow />);
 
-    const starfield = await screen.findByTestId("rose-starfield");
+    const starfield = screen.getByTestId("rose-starfield");
     expect(starfield).toHaveAttribute("aria-hidden", "true");
     expect(starfield).toHaveClass("rose-starfield");
   });
 
-  it("renders 72 stars by default", async () => {
+  it("renders 42 stars by default for a lighter initial landing render", () => {
     render(<DustySnow />);
 
-    const starfield = await screen.findByTestId("rose-starfield");
-    expect(starfield.querySelectorAll(".rose-star")).toHaveLength(72);
+    const starfield = screen.getByTestId("rose-starfield");
+    expect(starfield.querySelectorAll(".rose-star")).toHaveLength(42);
+  });
+
+  it("provides the CSS variables required by the rose-star animations", () => {
+    render(<DustySnow count={1} />);
+
+    const star = screen
+      .getByTestId("rose-starfield")
+      .querySelector<HTMLElement>(".rose-star");
+
+    expect(star).not.toBeNull();
+    expect(star).toHaveClass("rose-star--far");
+    expect(star?.style.getPropertyValue("--start-y")).toBeTruthy();
+    expect(star?.style.getPropertyValue("--twinkle-duration")).toBeTruthy();
+    expect(star?.style.getPropertyValue("--glow-size")).toBeTruthy();
+    expect(star?.style.getPropertyValue("--blur")).toBeTruthy();
+    expect(star?.style.getPropertyValue("--sway-x")).toBeTruthy();
+    expect(star?.style.getPropertyValue("--fall-distance")).toBeTruthy();
   });
 
   it("keeps the starfield right aligned at 80 percent width", () => {
@@ -119,22 +84,19 @@ describe("DustySnow", () => {
     expect(starfieldRule).not.toContain("inset: 0;");
   });
 
-  it("caps reduced-motion stars at 54", async () => {
+  it("still supports an explicit reduced-motion cap when mounted directly", () => {
     render(<DustySnow reducedMotion count={150} />);
 
-    const starfield = await screen.findByTestId("rose-starfield");
-    await waitFor(() => {
-      expect(starfield.querySelectorAll(".rose-star")).toHaveLength(54);
-    });
+    const starfield = screen.getByTestId("rose-starfield");
+    expect(starfield).toHaveClass("rose-starfield--reduced");
+    expect(starfield.querySelectorAll(".rose-star")).toHaveLength(54);
   });
 
-  it("keeps reduced-motion stars below the cap when count is lower", async () => {
+  it("keeps reduced-motion stars below the cap when count is lower", () => {
     render(<DustySnow reducedMotion count={12} />);
 
-    const starfield = await screen.findByTestId("rose-starfield");
-    await waitFor(() => {
-      expect(starfield.querySelectorAll(".rose-star")).toHaveLength(12);
-    });
+    const starfield = screen.getByTestId("rose-starfield");
+    expect(starfield.querySelectorAll(".rose-star")).toHaveLength(12);
   });
 
   it("does not create random stars during server render", () => {
@@ -154,12 +116,12 @@ describe("DustySnow", () => {
     expect(html.match(/class="rose-star\b/g)).toHaveLength(3);
   });
 
-  it("uses starfield-relative percent left positions", async () => {
+  it("uses starfield-relative percent left positions", () => {
     render(<DustySnow count={8} />);
 
-    const starfield = await screen.findByTestId("rose-starfield");
+    const starfield = screen.getByTestId("rose-starfield");
     const leftPositions = Array.from(
-      starfield.querySelectorAll<HTMLElement>(".rose-star")
+      starfield.querySelectorAll<HTMLElement>(".rose-star"),
     ).map((star) => star.style.getPropertyValue("--left-pos"));
 
     expect(leftPositions).toHaveLength(8);
@@ -167,18 +129,18 @@ describe("DustySnow", () => {
     expect(leftPositions.some((value) => value.endsWith("vw"))).toBe(false);
   });
 
-  it("varies star size, depth, and movement direction naturally", async () => {
+  it("varies star size, depth, and movement direction naturally", () => {
     render(<DustySnow count={18} />);
 
-    const starfield = await screen.findByTestId("rose-starfield");
+    const starfield = screen.getByTestId("rose-starfield");
     const stars = Array.from(
-      starfield.querySelectorAll<HTMLElement>(".rose-star")
+      starfield.querySelectorAll<HTMLElement>(".rose-star"),
     );
 
     const styleValues = (property: string) =>
       stars.map((star) => star.style.getPropertyValue(property));
     const driftValues = styleValues("--drift-x").map((value) =>
-      Number.parseFloat(value)
+      Number.parseFloat(value),
     );
 
     expect(new Set(styleValues("--size")).size).toBeGreaterThan(6);

@@ -4,7 +4,17 @@ import {
   cacheTrack,
   getCachedTrack,
   getCachedTracks,
+  getCachedTracksResult,
 } from "../trackCacheRepo";
+
+const mockCaptureIndexedDbUnavailableEvent = jest.fn();
+jest.mock("@/shared/lib/sentry/indexedDbEvents", () => ({
+  captureIndexedDbUnavailableEvent: (...args: unknown[]) =>
+    mockCaptureIndexedDbUnavailableEvent(...args),
+  INDEXEDDB_OPERATIONS: {
+    trackCacheWrite: "track_cache_write",
+  },
+}));
 
 afterEach(async () => {
   jest.restoreAllMocks();
@@ -27,6 +37,10 @@ const makeTrack = (overrides: Partial<Track> = {}): Track => ({
 });
 
 describe("trackCacheRepo", () => {
+  beforeEach(() => {
+    mockCaptureIndexedDbUnavailableEvent.mockClear();
+  });
+
   it("caches and retrieves a track", async () => {
     jest.spyOn(Date, "now").mockReturnValue(1234);
     const track = makeTrack();
@@ -79,6 +93,17 @@ describe("trackCacheRepo", () => {
     await expect(getCachedTracks(["track-1"])).resolves.toEqual([]);
   });
 
+  it("returns unavailable true when reading cached tracks result fails", async () => {
+    jest
+      .spyOn(db.trackCache, "bulkGet")
+      .mockRejectedValueOnce(new Error("IndexedDB unavailable"));
+
+    await expect(getCachedTracksResult(["track-1"])).resolves.toEqual({
+      tracks: [],
+      unavailable: true,
+    });
+  });
+
   it("does not reject when writing a cached track fails", async () => {
     jest.spyOn(console, "debug").mockImplementation(() => {});
     jest
@@ -89,6 +114,13 @@ describe("trackCacheRepo", () => {
     expect(console.debug).toHaveBeenCalledWith(
       "Failed to cache track:",
       expect.any(Error),
+    );
+    expect(mockCaptureIndexedDbUnavailableEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: "track_cache_write",
+        retryable: false,
+        trackId: "track-1",
+      }),
     );
   });
 });

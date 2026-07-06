@@ -1,0 +1,38 @@
+[
+  {
+    "url": "http://localhost:4001/",
+    "isRepresentativeRun": true,
+    "htmlPath": "C:\\Users\\SR83\\test\\EDMM\\docs\\performance\\lighthouse-reports\\root-2026_07_06_06_21_34-2-report.html",
+    "jsonPath": "C:\\Users\\SR83\\test\\EDMM\\docs\\performance\\lighthouse-reports\\root-2026_07_06_06_21_34-2-report.json",
+    "summary": {
+      "performance": 0.91,
+      "accessibility": 1,
+      "best-practices": 0.96,
+      "seo": 1
+    }
+  },
+  {
+    "url": "http://localhost:4001/search?view=all",
+    "isRepresentativeRun": true,
+    "htmlPath": "C:\\Users\\SR83\\test\\EDMM\\docs\\performance\\lighthouse-reports\\search-view-all-2026_07_06_06_22_01-2-report.html",
+    "jsonPath": "C:\\Users\\SR83\\test\\EDMM\\docs\\performance\\lighthouse-reports\\search-view-all-2026_07_06_06_22_01-2-report.json",
+    "summary": {
+      "performance": 0.96,
+      "accessibility": 0.95,
+      "best-practices": 0.96,
+      "seo": 1
+    }
+  },
+  {
+    "url": "http://localhost:4001/search?view=recent",
+    "isRepresentativeRun": true,
+    "htmlPath": "C:\\Users\\SR83\\test\\EDMM\\docs\\performance\\lighthouse-reports\\search-view-recent-2026_07_06_06_22_26-2-report.html",
+    "jsonPath": "C:\\Users\\SR83\\test\\EDMM\\docs\\performance\\lighthouse-reports\\search-view-recent-2026_07_06_06_22_26-2-report.json",
+    "summary": {
+      "performance": 0.96,
+      "accessibility": 0.95,
+      "best-practices": 0.96,
+      "seo": 1
+    }
+  }
+]
