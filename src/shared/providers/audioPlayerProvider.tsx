@@ -43,6 +43,9 @@ const AudioPlayerContext = createContext<
 
 const DEFAULT_TRACK_CROSSFADE_DURATION_SEC = 3;
 
+const queueHasTrack = (tracks: Track[], trackId: string) =>
+  tracks.some((track) => track.id === trackId);
+
 function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
   const audio = useAudioInstanceStore((state) => state.audioInstance);
   const audioContext = useAudioInstanceStore((state) => state.audioContext);
@@ -243,15 +246,18 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
       }
 
       const tracksForQueue = nextQueue?.length ? nextQueue : [track];
-      const queueInfo = await Promise.all(
-        tracksForQueue.map(async (queuedTrack) => {
-          if (queuedTrack.id !== track.id) {
-            return queuedTrack;
-          }
+      const shouldKeepExistingQueue =
+        currentTrackRef.current?.id === track.id &&
+        tracksForQueue.length <= 1 &&
+        activeQueue.length > 1 &&
+        queueHasTrack(activeQueue, track.id);
+      const queueInfo = tracksForQueue.map((queuedTrack) => {
+        if (queuedTrack.id !== track.id) {
+          return queuedTrack;
+        }
 
-          return mergeTrack(queuedTrack, resolvedTrack);
-        }),
-      );
+        return mergeTrack(queuedTrack, resolvedTrack);
+      });
       if (requestId !== playTrackRequestRef.current) {
         return;
       }
@@ -266,11 +272,13 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
 
       const shouldAutoPlay = playImmediately && isPlayable(track);
 
-      const nextPlaybackQueue = isShuffleEnabled
-        ? buildShuffleQueue(queueInfo, primaryTrackInfo.id)
-        : queueInfo;
-      setQueue(queueInfo);
-      setPlaybackQueue(nextPlaybackQueue);
+      if (!shouldKeepExistingQueue) {
+        const nextPlaybackQueue = isShuffleEnabled
+          ? buildShuffleQueue(queueInfo, primaryTrackInfo.id)
+          : queueInfo;
+        setQueue(queueInfo);
+        setPlaybackQueue(nextPlaybackQueue);
+      }
 
       const isSameTrack = currentTrackRef.current?.id === primaryTrackInfo.id;
 
@@ -333,6 +341,7 @@ function useAudioPlayerLogic(): AudioPlayerLogicReturnType {
     [
       audio,
       audioContext,
+      activeQueue,
       cacheArtwork,
       buildShuffleQueue,
       clearArtworkRecovery,

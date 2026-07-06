@@ -204,6 +204,38 @@ function QueueNavigationConsumer() {
   );
 }
 
+function SeededQueueReplayConsumer() {
+  const player = useAudioPlayer();
+
+  return (
+    <div>
+      <span data-testid="seeded-current-track-id">
+        {player.currentTrack?.id ?? "none"}
+      </span>
+      <span data-testid="seeded-is-playing">{String(player.isPlaying)}</span>
+      <button
+        type="button"
+        onClick={() => {
+          void player.playTrack(playableTrack, playbackQueue, false);
+        }}
+      >
+        Seed queue
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          void player.playTrack(playableTrack, [playableTrack], true);
+        }}
+      >
+        Replay seeded track
+      </button>
+      <button type="button" onClick={player.nextTrack}>
+        Next seeded track
+      </button>
+    </div>
+  );
+}
+
 describe("AudioPlayerProvider", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -364,6 +396,42 @@ describe("AudioPlayerProvider", () => {
         "track-1",
       );
       expect(mockAddRecentPlay).toHaveBeenCalledWith("track-1");
+    });
+  });
+
+  it("keeps the seeded queue when replaying the current track without list context", async () => {
+    render(
+      <AudioPlayerProvider>
+        <SeededQueueReplayConsumer />
+      </AudioPlayerProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Seed queue" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("seeded-current-track-id")).toHaveTextContent(
+        "track-1",
+      );
+      expect(screen.getByTestId("seeded-is-playing")).toHaveTextContent(
+        "false",
+      );
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Replay seeded track" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("seeded-current-track-id")).toHaveTextContent(
+        "track-1",
+      );
+      expect(screen.getByTestId("seeded-is-playing")).toHaveTextContent("true");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Next seeded track" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("seeded-current-track-id")).toHaveTextContent(
+        "track-2",
+      );
     });
   });
 });
