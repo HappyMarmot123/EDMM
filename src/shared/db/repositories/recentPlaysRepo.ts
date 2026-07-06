@@ -1,4 +1,8 @@
 import { db, type RecentPlayRow } from "@/shared/db/edmmDB";
+import {
+  captureIndexedDbUnavailableEvent,
+  INDEXEDDB_OPERATIONS,
+} from "@/shared/lib/sentry/indexedDbEvents";
 import { logger } from "@/shared/lib/logger";
 
 const RECENT_PLAYS_LIMIT = 10;
@@ -28,6 +32,11 @@ export async function addRecentPlay(trackId: string): Promise<void> {
       }
     });
   } catch (error) {
+    captureIndexedDbUnavailableEvent({
+      operation: INDEXEDDB_OPERATIONS.recentPlaysWrite,
+      retryable: false,
+      trackId,
+    });
     logger.debug("Failed to record recent play:", error);
   }
 }

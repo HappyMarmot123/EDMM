@@ -1,5 +1,9 @@
 import type { Track } from "@/entities/track";
 import { db } from "@/shared/db/edmmDB";
+import {
+  captureIndexedDbUnavailableEvent,
+  INDEXEDDB_OPERATIONS,
+} from "@/shared/lib/sentry/indexedDbEvents";
 import { logger } from "@/shared/lib/logger";
 
 export type CachedTracksResult = {
@@ -15,6 +19,11 @@ export async function cacheTrack(track: Track): Promise<void> {
       cachedAt: Date.now(),
     });
   } catch (error) {
+    captureIndexedDbUnavailableEvent({
+      operation: INDEXEDDB_OPERATIONS.trackCacheWrite,
+      retryable: false,
+      trackId: track.id,
+    });
     logger.debug("Failed to cache track:", error);
   }
 }

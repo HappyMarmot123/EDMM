@@ -5,6 +5,15 @@ import {
   getRecentPlaysResult,
 } from "../recentPlaysRepo";
 
+const mockCaptureIndexedDbUnavailableEvent = jest.fn();
+jest.mock("@/shared/lib/sentry/indexedDbEvents", () => ({
+  captureIndexedDbUnavailableEvent: (...args: unknown[]) =>
+    mockCaptureIndexedDbUnavailableEvent(...args),
+  INDEXEDDB_OPERATIONS: {
+    recentPlaysWrite: "recent_plays_write",
+  },
+}));
+
 afterEach(async () => {
   jest.restoreAllMocks();
   await db.delete();
@@ -12,6 +21,10 @@ afterEach(async () => {
 });
 
 describe("recentPlaysRepo", () => {
+  beforeEach(() => {
+    mockCaptureIndexedDbUnavailableEvent.mockClear();
+  });
+
   it("returns recent plays newest first and dedupes repeated tracks", async () => {
     jest
       .spyOn(Date, "now")
@@ -76,6 +89,13 @@ describe("recentPlaysRepo", () => {
     expect(console.debug).toHaveBeenCalledWith(
       "Failed to record recent play:",
       expect.any(Error),
+    );
+    expect(mockCaptureIndexedDbUnavailableEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: "recent_plays_write",
+        retryable: false,
+        trackId: "track-1",
+      }),
     );
   });
 });
