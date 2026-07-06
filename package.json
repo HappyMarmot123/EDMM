@@ -17,6 +17,7 @@
     "test:coverage": "jest --coverage",
     "lint:fix": "eslint . --fix",
     "perf:lighthouse": "npm run build && lhci autorun --config=./lighthouserc.cjs",
+    "perf:lighthouse:local": "npm run build && node scripts/run-lighthouse-local.mjs",
     "perf:lighthouse:collect": "lhci collect --config=./lighthouserc.cjs",
     "perf:lighthouse:assert": "lhci assert --config=./lighthouserc.cjs",
     "perf:summary:baseline": "node scripts/write-lighthouse-summary.mjs baseline",

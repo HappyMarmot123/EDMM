@@ -24,7 +24,7 @@ const eslintConfig = [
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ["**/*.{js,jsx,mjs,ts,tsx,mts,cts}"],
+    files: ["**/*.{cjs,js,jsx,mjs,ts,tsx,mts,cts}"],
     plugins: {
       "@next/next": nextPlugin,
     },

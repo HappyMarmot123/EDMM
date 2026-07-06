@@ -17,12 +17,14 @@ type UseCanvasAudioVisualizerOptions = {
   analyser: AnalyserNode | null;
   isActive: boolean;
   inactiveDecayMs?: number;
+  maxPixelRatio?: number;
   smoothingTimeConstant?: number;
   renderFrame: (params: VisualizerRenderFrameParams) => void;
   renderIdle?: (params: VisualizerRenderIdleParams) => void;
 };
 
 const DEFAULT_INACTIVE_DECAY_MS = 280;
+const DEFAULT_MAX_PIXEL_RATIO = 2;
 
 function getCanvasContext(canvas: HTMLCanvasElement) {
   try {
@@ -32,8 +34,22 @@ function getCanvasContext(canvas: HTMLCanvasElement) {
   }
 }
 
-function syncCanvasSize(canvas: HTMLCanvasElement) {
-  const pixelRatio = window.devicePixelRatio || 1;
+function getIsDocumentVisible() {
+  if (typeof document === "undefined") {
+    return true;
+  }
+
+  return document.visibilityState !== "hidden";
+}
+
+function syncCanvasSize(canvas: HTMLCanvasElement, maxPixelRatio: number) {
+  const safeMaxPixelRatio = Number.isFinite(maxPixelRatio)
+    ? Math.max(1, maxPixelRatio)
+    : DEFAULT_MAX_PIXEL_RATIO;
+  const pixelRatio = Math.min(
+    Math.max(1, window.devicePixelRatio || 1),
+    safeMaxPixelRatio,
+  );
   const rect = canvas.getBoundingClientRect();
   const width = Math.max(1, Math.round((rect.width || 224) * pixelRatio));
   const height = Math.max(1, Math.round((rect.height || 224) * pixelRatio));
@@ -50,6 +66,7 @@ export function useCanvasAudioVisualizer({
   analyser,
   isActive,
   inactiveDecayMs = DEFAULT_INACTIVE_DECAY_MS,
+  maxPixelRatio = DEFAULT_MAX_PIXEL_RATIO,
   smoothingTimeConstant = 0.72,
   renderFrame,
   renderIdle,
@@ -57,6 +74,8 @@ export function useCanvasAudioVisualizer({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameIdRef = useRef<number | null>(null);
   const [shouldRenderLive, setShouldRenderLive] = useState(isActive);
+  const [isDocumentVisible, setIsDocumentVisible] =
+    useState(getIsDocumentVisible);
 
   useEffect(() => {
     if (isActive) {
@@ -74,15 +93,29 @@ export function useCanvasAudioVisualizer({
   }, [inactiveDecayMs, isActive]);
 
   useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const handleVisibilityChange = () => {
+      setIsDocumentVisible(getIsDocumentVisible());
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const context = getCanvasContext(canvas);
     if (!context) return;
 
-    const pixelRatioRef = { current: syncCanvasSize(canvas) };
+    const pixelRatioRef = { current: syncCanvasSize(canvas, maxPixelRatio) };
     const syncSize = () => {
-      pixelRatioRef.current = syncCanvasSize(canvas);
+      pixelRatioRef.current = syncCanvasSize(canvas, maxPixelRatio);
     };
     const resizeObserver =
       typeof ResizeObserver !== "undefined"
@@ -104,7 +137,7 @@ export function useCanvasAudioVisualizer({
 
     context.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (!analyser || !shouldRenderLive) {
+    if (!analyser || !shouldRenderLive || !isDocumentVisible) {
       renderIdle?.({
         context,
         canvas,
@@ -123,9 +156,8 @@ export function useCanvasAudioVisualizer({
     analyser.smoothingTimeConstant = smoothingTimeConstant;
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-    const draw = () => {
+    const renderCurrentFrame = () => {
       context.clearRect(0, 0, canvas.width, canvas.height);
-      animationFrameIdRef.current = requestAnimationFrame(draw);
       analyser.getByteFrequencyData(dataArray);
       renderFrame({
         context,
@@ -135,7 +167,14 @@ export function useCanvasAudioVisualizer({
       });
     };
 
-    draw();
+    const draw = () => {
+      renderCurrentFrame();
+
+      animationFrameIdRef.current = requestAnimationFrame(draw);
+    };
+
+    renderCurrentFrame();
+    animationFrameIdRef.current = requestAnimationFrame(draw);
 
     return () => {
       cleanupResize();
@@ -144,7 +183,15 @@ export function useCanvasAudioVisualizer({
         animationFrameIdRef.current = null;
       }
     };
-  }, [analyser, shouldRenderLive, renderFrame, renderIdle, smoothingTimeConstant]);
+  }, [
+    analyser,
+    isDocumentVisible,
+    maxPixelRatio,
+    renderFrame,
+    renderIdle,
+    shouldRenderLive,
+    smoothingTimeConstant,
+  ]);
 
   return canvasRef;
 }

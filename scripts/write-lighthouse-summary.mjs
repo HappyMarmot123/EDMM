@@ -169,7 +169,7 @@ const markdown = `# ${runDate} ${
 ## Context
 
 - Environment: local production build served with \`next start\` on ${measuredPortLabel}.
-- Command: \`npm run perf:lighthouse\`.
+- Command: \`npm run perf:lighthouse:local\`.
 - Runs per route: 3.
 - Routes: \`/\`, \`/search?view=all\`, \`/search?view=recent\`.
 
@@ -186,5 +186,5 @@ Production Speed Insights is checked in the Vercel dashboard after deployment. T
 
 const markdownOutputPath = path.join(resultsDir, `${runDate}-${mode}.md`);
 fs.writeFileSync(markdownOutputPath, markdown);
-console.log(`Wrote ${markdownOutputPath}`);
-console.log(`Wrote ${jsonOutputPath}`);
+process.stdout.write(`Wrote ${markdownOutputPath}\n`);
+process.stdout.write(`Wrote ${jsonOutputPath}\n`);
