@@ -1,7 +1,9 @@
+import { RouteFeedbackShell } from "@/shared/components/routeFeedbackShell";
+
 export default function Loading() {
   return (
-    <div className="bg-black flex h-screen w-full items-center justify-center">
-      Loading...
-    </div>
+    <RouteFeedbackShell>
+      <p>Loading...</p>
+    </RouteFeedbackShell>
   );
 }
