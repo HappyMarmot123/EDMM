@@ -37,7 +37,11 @@ const createMediaSessionMock = () => {
       },
     ),
     setPositionState: jest.fn(),
-  } as MediaSession & {
+    metadata: null as MediaMetadata | null,
+    playbackState: "none" as MediaSession["playbackState"],
+    setCameraActive: jest.fn(),
+    setMicrophoneActive: jest.fn(),
+  } as unknown as MediaSession & {
     handlers?: Record<MediaSessionActionType, MediaSessionActionHandler>;
   };
 
