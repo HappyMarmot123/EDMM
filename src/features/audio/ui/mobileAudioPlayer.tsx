@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 import MPlayerTrackDetails from "@/features/audio/components/mobile/m_playerTrackDetails";
 import MPlayerControlsSection from "@/features/audio/components/mobile/m_playerControlsSection";
 import MAlbumArtwork from "@/features/audio/components/mobile/m_albumArtwork";
@@ -31,7 +31,6 @@ export default function MobileAudioPlayer() {
     togglePlayPause,
   } = useAudioPlayer();
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
-  const seekBarContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     dispatchEdmmEvent(window, EDMM_EVENTS.playerFullscreenStateChange, {
@@ -86,7 +85,6 @@ export default function MobileAudioPlayer() {
         >
           <div
             id="seek-bar-container-mobile"
-            ref={seekBarContainerRef}
             className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px]"
             aria-label="Track progress"
           >
@@ -108,15 +106,7 @@ export default function MobileAudioPlayer() {
                 isBuffering={isBuffering}
                 currentTrackInfo={currentTrack}
               />
-              <MPlayerTrackDetails
-                isPlaying={isPlaying}
-                currentTime={currentTime}
-                duration={duration}
-                currentProgress={currentProgress}
-                seekBarContainerRef={seekBarContainerRef}
-                seek={seek}
-                currentTrackInfo={currentTrack}
-              />
+              <MPlayerTrackDetails currentTrackInfo={currentTrack} />
             </div>
             <div onClick={(event) => event.stopPropagation()}>
               <MPlayerControlsSection currentTrackInfo={currentTrack} />

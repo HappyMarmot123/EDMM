@@ -10,7 +10,7 @@ import { addEdmmEventListener, EDMM_EVENTS } from "@/shared/lib/edmmEvents";
 import { captureSearchFallbackEvent } from "@/shared/lib/sentry/searchFallbackEvents";
 import { useAudioPlayer } from "@/shared/providers/audioPlayerProvider";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
-import MusicShellHeader, { type MusicView } from "./musicShellHeader";
+import MusicShellHeader from "./musicShellHeader";
 import MusicTrackList from "./musicTrackList";
 import SearchBackdrop from "./searchBackdrop";
 import TrackDetailAside from "./trackDetailAside";
@@ -30,6 +30,7 @@ import {
   SelectionSource,
   useMusicShellTrackSeed,
 } from "./useMusicShellTrackSeed";
+import { isMusicView, type MusicView } from "./musicView";
 
 export interface MusicShellProps {
   onPlay?: (track: Track, queue?: Track[], playImmediately?: boolean) => void;
@@ -66,9 +67,6 @@ function useDebouncedSearchQuery(query: string) {
 
   return debouncedQuery;
 }
-
-const isMusicView = (view: MusicView | undefined): view is MusicView =>
-  view === "pop" || view === "edm" || view === "recent";
 
 type CatalogMusicView = Extract<MusicView, "pop" | "edm">;
 
@@ -728,21 +726,27 @@ export function MusicShell({
     [onPlay, queueForTrack],
   );
 
-  const handleSelect = (track: Track) => {
-    if (shouldPlayOnTrackSelect && isPlayable(track)) {
+  const handleSelect = useCallback(
+    (track: Track) => {
+      if (shouldPlayOnTrackSelect && isPlayable(track)) {
+        activateTrackInPlayer(track, true, "visible", queueForTrack(track));
+        return;
+      }
+
+      setSelectedTrackId(track.id);
+      setSelectionSource("visible");
+    },
+    [activateTrackInPlayer, isPlayable, queueForTrack, shouldPlayOnTrackSelect],
+  );
+
+  const handlePlay = useCallback(
+    (track: Track) => {
+      setSelectedTrackId(track.id);
+      setSelectionSource("visible");
       activateTrackInPlayer(track, true, "visible", queueForTrack(track));
-      return;
-    }
-
-    setSelectedTrackId(track.id);
-    setSelectionSource("visible");
-  };
-
-  const handlePlay = (track: Track) => {
-    setSelectedTrackId(track.id);
-    setSelectionSource("visible");
-    activateTrackInPlayer(track, true, "visible", queueForTrack(track));
-  };
+    },
+    [activateTrackInPlayer, queueForTrack],
+  );
 
   const fallbackToFirstPlayable = useCallback(() => {
     const fallbackTrack = firstPlayableTrack(visibleTracks);

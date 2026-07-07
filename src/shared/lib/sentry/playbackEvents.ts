@@ -9,6 +9,7 @@ import {
   buildSafeContext,
   getErrorSeverity,
 } from "./errorTaxonomy";
+import { getSafeText, resolveBrowserEventFields } from "./eventPayload";
 
 type PlaybackEventTrack = {
   id?: string | null;
@@ -25,18 +26,7 @@ export type PlaybackErrorEvent = {
 
 const playbackErrorEventCounts = new Map<string, number>();
 
-const getSafeText = (value: string | null | undefined): string | undefined => {
-  const text = value?.trim();
-  return text && text.length > 0 ? text : undefined;
-};
-
-export const getCurrentBrowserRoute = (): string => {
-  if (typeof window === "undefined") {
-    return "unknown";
-  }
-
-  return window.location.pathname || "/";
-};
+export { getCurrentBrowserRoute } from "./eventPayload";
 
 export const resetPlaybackErrorEventCounts = (): void => {
   playbackErrorEventCounts.clear();
@@ -46,8 +36,10 @@ export function capturePlaybackErrorEvent(event: PlaybackErrorEvent): void {
   const errorClass = PLAYBACK_ERROR_CLASS_BY_CODE[event.errorCode];
   const trackId = getSafeText(event.track?.id);
   const trackSource = getSafeText(event.track?.source);
-  const route = getSafeText(event.route) ?? getCurrentBrowserRoute();
-  const runtime = event.runtime ?? "browser";
+  const { route, runtime } = resolveBrowserEventFields({
+    route: event.route,
+    runtime: event.runtime,
+  });
   const eventKey = `${event.errorCode}:${trackId ?? "none"}`;
   const occurrence = (playbackErrorEventCounts.get(eventKey) ?? 0) + 1;
 

@@ -2,8 +2,9 @@
 
 import { useRef } from "react";
 import { Clock3, Library, Search, Sparkles, X } from "lucide-react";
+import type { MusicView } from "./musicView";
 
-export type MusicView = "pop" | "edm" | "recent";
+export type { MusicView } from "./musicView";
 
 type MusicShellHeaderProps = {
   query: string;
