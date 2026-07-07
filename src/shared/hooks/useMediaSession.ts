@@ -189,7 +189,31 @@ function useMediaSessionPositionState({
   }, [currentTime, duration, trackId]);
 }
 
+function useMediaSessionPlaybackState({
+  trackId,
+  isPlaying,
+}: Pick<MediaSessionState, "isPlaying"> & { trackId: string | null }) {
+  useEffect(() => {
+    if (!trackId) return;
+    const mediaSession = getMediaSession();
+    if (!mediaSession) return;
+
+    return () => {
+      mediaSession.playbackState = "none";
+    };
+  }, [trackId]);
+
+  useEffect(() => {
+    if (!trackId) return;
+    const mediaSession = getMediaSession();
+    if (!mediaSession) return;
+
+    mediaSession.playbackState = isPlaying ? "playing" : "paused";
+  }, [isPlaying, trackId]);
+}
+
 export function useMediaSession({
+  isPlaying,
   currentTrack,
   currentTime,
   duration,
@@ -213,5 +237,9 @@ export function useMediaSession({
     trackId: trackMetadata.trackId,
     currentTime,
     duration,
+  });
+  useMediaSessionPlaybackState({
+    trackId: trackMetadata.trackId,
+    isPlaying,
   });
 }

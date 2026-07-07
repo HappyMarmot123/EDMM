@@ -212,6 +212,21 @@ describe("useMediaSession", () => {
     unmount();
   });
 
+  it("sets playback state for mobile system media controls", () => {
+    const { mediaSession } = installMediaSession();
+    const { rerender, unmount } = render(
+      <TestHost track={TRACK} isPlayingOverride={false} />,
+    );
+
+    expect(mediaSession.playbackState).toBe("paused");
+
+    rerender(<TestHost track={TRACK} isPlayingOverride={true} />);
+    expect(mediaSession.playbackState).toBe("playing");
+
+    unmount();
+    expect(mediaSession.playbackState).toBe("none");
+  });
+
   it("does not reset artwork metadata when only action callbacks change", () => {
     const { metadataAssignments } = installMediaSession();
 
