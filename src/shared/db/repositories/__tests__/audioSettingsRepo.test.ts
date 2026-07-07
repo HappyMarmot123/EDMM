@@ -16,13 +16,23 @@ describe("audioSettingsRepo", () => {
   });
 
   it("stores and loads a valid equalizer preset", async () => {
-    await setEqualizerPreset("edm");
+    await setEqualizerPreset("bass");
 
-    expect(await getEqualizerPreset()).toBe("edm");
+    expect(await getEqualizerPreset()).toBe("bass");
     expect(await db.audioSettings.get("equalizer.preset")).toEqual({
       key: "equalizer.preset",
-      value: "edm",
+      value: "bass",
     });
+  });
+
+  it("falls back to flat for legacy/removed presets (e.g. edm or vocal)", async () => {
+    await db.audioSettings.put({ key: "equalizer.preset", value: "edm" });
+
+    await expect(getEqualizerPreset()).resolves.toBe("flat");
+
+    await db.audioSettings.put({ key: "equalizer.preset", value: "vocal" });
+
+    await expect(getEqualizerPreset()).resolves.toBe("flat");
   });
 
   it("falls back to flat when stored preset is invalid", async () => {

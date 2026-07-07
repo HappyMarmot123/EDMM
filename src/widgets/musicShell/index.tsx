@@ -802,6 +802,7 @@ export function MusicShell({
             query={query}
             view={activeView}
             catalogCounts={catalogCounts}
+            showCatalogCounts={!isMobileView}
             onQueryChange={setQuery}
             onViewChange={handleViewChange}
           />

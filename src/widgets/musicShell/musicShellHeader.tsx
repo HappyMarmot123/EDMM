@@ -10,6 +10,7 @@ type MusicShellHeaderProps = {
   query: string;
   view: MusicView;
   catalogCounts: Record<"pop" | "edm", number>;
+  showCatalogCounts?: boolean;
   onQueryChange: (query: string) => void;
   onViewChange: (view: MusicView) => void;
 };
@@ -28,6 +29,7 @@ export function MusicShellHeader({
   query,
   view,
   catalogCounts,
+  showCatalogCounts = true,
   onQueryChange,
   onViewChange,
 }: MusicShellHeaderProps) {
@@ -106,7 +108,7 @@ export function MusicShellHeader({
             >
               <Icon size={17} strokeWidth={2.2} aria-hidden="true" />
               <span>{label}</span>
-              {value !== "recent" ? (
+              {showCatalogCounts && value !== "recent" ? (
                 <span
                   aria-hidden="true"
                   className={[

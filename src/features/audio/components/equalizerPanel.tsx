@@ -4,18 +4,16 @@ import {
 import { useEqualizerPresetController } from "../hooks/useEqualizerPresetController";
 import MyTooltip from "@/shared/components/myTooltip";
 
+const EQ_ENABLED_QUERY = "(min-width: 768px)";
+
 const PRESET_LABELS: Record<EQPresetName, string> = {
   flat: "Flat",
-  edm: "EDM",
-  bass: "Bass",
-  vocal: "Vocal",
+  bass: "Bass Boost",
 };
 
 const PRESET_HELP_TEXT: Record<EQPresetName, string> = {
-  flat: "Keeps the original balance without EQ boosts.",
-  edm: "Boosts bass, presence, and air for energetic electronic tracks.",
-  bass: "Emphasizes kick and sub-bass while trimming some midrange.",
-  vocal: "Pulls vocals and upper mids forward for clearer lead lines.",
+  flat: "Keeps the original balance with no EQ coloring, the neutral reference.",
+  bass: "Big sub and low-end punch with a clean midrange scoop.",
 };
 
 export default function EqualizerPanel() {
@@ -38,7 +36,11 @@ export default function EqualizerPanel() {
             <MyTooltip key={preset} tooltipText={helpText}>
               <button
                 type="button"
-                onClick={() => applyPreset(preset)}
+                onClick={() => {
+                  if (isEqEnabled) {
+                    applyPreset(preset);
+                  }
+                }}
                 className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-black transition-all duration-150 ${
                   currentPreset === preset
                     ? "bg-[#ff98a2] text-black"
