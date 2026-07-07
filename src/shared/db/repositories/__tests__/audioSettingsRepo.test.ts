@@ -16,13 +16,19 @@ describe("audioSettingsRepo", () => {
   });
 
   it("stores and loads a valid equalizer preset", async () => {
-    await setEqualizerPreset("edm");
+    await setEqualizerPreset("bass");
 
-    expect(await getEqualizerPreset()).toBe("edm");
+    expect(await getEqualizerPreset()).toBe("bass");
     expect(await db.audioSettings.get("equalizer.preset")).toEqual({
       key: "equalizer.preset",
-      value: "edm",
+      value: "bass",
     });
+  });
+
+  it("falls back to flat for legacy/removed presets (e.g. edm)", async () => {
+    await db.audioSettings.put({ key: "equalizer.preset", value: "edm" });
+
+    await expect(getEqualizerPreset()).resolves.toBe("flat");
   });
 
   it("falls back to flat when stored preset is invalid", async () => {
@@ -44,6 +50,6 @@ describe("audioSettingsRepo", () => {
       .spyOn(db.audioSettings, "put")
       .mockRejectedValueOnce(new Error("Quota exceeded"));
 
-    await expect(setEqualizerPreset("bass")).resolves.toBeUndefined();
+    await expect(setEqualizerPreset("vocal")).resolves.toBeUndefined();
   });
 });
