@@ -36,11 +36,7 @@ export default function EqualizerPanel() {
             <MyTooltip key={preset} tooltipText={helpText}>
               <button
                 type="button"
-                onClick={() => {
-                  if (isEqEnabled) {
-                    applyPreset(preset);
-                  }
-                }}
+                onClick={() => applyPreset(preset)}
                 className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-black transition-all duration-150 ${
                   currentPreset === preset
                     ? "bg-[#ff98a2] text-black"
