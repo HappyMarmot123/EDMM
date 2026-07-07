@@ -14,13 +14,11 @@ const EQ_ENABLED_QUERY = "(min-width: 768px)";
 const PRESET_LABELS: Record<EQPresetName, string> = {
   flat: "Flat",
   bass: "Bass Boost",
-  vocal: "Clear Vocal",
 };
 
 const PRESET_HELP_TEXT: Record<EQPresetName, string> = {
   flat: "Keeps the original balance with no EQ coloring, the neutral reference.",
   bass: "Big sub and low-end punch with a clean midrange scoop.",
-  vocal: "Pushes vocal presence and clarity while trimming low-end mud.",
 };
 
 const PRESET_OPTIONS = Object.keys(EQ_PRESET_GAINS) as EQPresetName[];

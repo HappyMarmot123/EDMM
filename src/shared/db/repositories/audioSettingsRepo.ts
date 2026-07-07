@@ -4,7 +4,7 @@ import { db } from "../edmmDB";
 const EQ_PRESET_KEY = "equalizer.preset";
 
 const isEQPresetName = (value: string): value is EQPresetName => {
-  return value === "flat" || value === "bass" || value === "vocal";
+  return value === "flat" || value === "bass";
 };
 
 export async function getEqualizerPreset(): Promise<EQPresetName> {

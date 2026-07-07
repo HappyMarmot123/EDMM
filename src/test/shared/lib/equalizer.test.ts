@@ -15,10 +15,10 @@ import {
 } from "@/shared/lib/equalizer";
 
 describe("equalizer", () => {
-  it("exposes 3 presets, 10 bands and flat default", () => {
+  it("exposes 2 presets, 10 bands and flat default", () => {
     expect(getDefaultPreset()).toBe("flat");
     expect(EQ_CONFIG.bands).toHaveLength(10);
-    expect(Object.keys(EQ_PRESET_GAINS)).toEqual(["flat", "bass", "vocal"]);
+    expect(Object.keys(EQ_PRESET_GAINS)).toEqual(["flat", "bass"]);
   });
 
   it("uses 10-band ISO octave center frequencies", () => {
@@ -64,18 +64,6 @@ describe("equalizer", () => {
       1,
       2,
     ]);
-    expect(getPresetGainValues("vocal")).toEqual([
-      -4,
-      -3,
-      -2,
-      0,
-      1,
-      3,
-      4,
-      5,
-      3,
-      1,
-    ]);
     Object.values(EQ_PRESET_GAINS).forEach((gains) =>
       expect(gains).toHaveLength(10),
     );
@@ -84,7 +72,6 @@ describe("equalizer", () => {
   it("provides per-preset preamp headroom (flat = 0dB, boosts negative)", () => {
     expect(getPresetPreampDb("flat")).toBe(0);
     expect(getPresetPreampDb("bass")).toBe(-5);
-    expect(getPresetPreampDb("vocal")).toBe(-3);
     expect(EQ_PRESET_PREAMP_DB.flat).toBe(0);
   });
 

@@ -39,7 +39,7 @@ describe("EqualizerPanel", () => {
     mockUseMediaQuery.mockReturnValue(true);
   });
 
-  it("renders the three pro presets with labels", () => {
+  it("renders the available pro presets with labels", () => {
     render(<EqualizerPanel />);
 
     expect(screen.getByRole("button", { name: "Flat" })).toBeInTheDocument();
@@ -47,8 +47,8 @@ describe("EqualizerPanel", () => {
       screen.getByRole("button", { name: "Bass Boost" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Clear Vocal" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: "Clear Vocal" }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "EDM" })).not.toBeInTheDocument();
   });
 
@@ -69,12 +69,12 @@ describe("EqualizerPanel", () => {
   it("applies and persists chosen preset on click (desktop)", async () => {
     render(<EqualizerPanel />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Clear Vocal" }));
+    fireEvent.click(screen.getByRole("button", { name: "Bass Boost" }));
 
     await waitFor(() => {
-      expect(mockApplyAudioEqualizerPreset).toHaveBeenCalledWith("vocal");
-      expect(mockSetEqualizerPreset).toHaveBeenCalledWith("vocal");
-      expect(screen.getByRole("button", { name: "Clear Vocal" })).toHaveAttribute(
+      expect(mockApplyAudioEqualizerPreset).toHaveBeenCalledWith("bass");
+      expect(mockSetEqualizerPreset).toHaveBeenCalledWith("bass");
+      expect(screen.getByRole("button", { name: "Bass Boost" })).toHaveAttribute(
         "aria-pressed",
         "true",
       );
@@ -104,9 +104,7 @@ describe("EqualizerPanel", () => {
       "Big sub and low-end punch with a clean midrange scoop.",
     );
     expect(
-      screen.getByRole("button", { name: "Clear Vocal" }),
-    ).toHaveAccessibleDescription(
-      "Pushes vocal presence and clarity while trimming low-end mud.",
-    );
+      screen.queryByRole("button", { name: "Clear Vocal" }),
+    ).not.toBeInTheDocument();
   });
 });

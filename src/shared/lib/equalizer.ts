@@ -3,7 +3,7 @@ import { logger } from "@/shared/lib/logger";
 const MIN_DB_GAIN = -24;
 const MAX_DB_GAIN = 24;
 
-export type EQPresetName = "flat" | "bass" | "vocal";
+export type EQPresetName = "flat" | "bass";
 
 export interface EQBand {
   frequency: number;
@@ -43,13 +43,11 @@ export const EQ_BANDS: readonly Omit<EQBand, "gain">[] = [
 export const EQ_PRESET_GAINS: Record<EQPresetName, readonly number[]> = {
   flat: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   bass: [8, 7, 5, 2, 0, -1, -1, 0, 1, 2],
-  vocal: [-4, -3, -2, 0, 1, 3, 4, 5, 3, 1],
 };
 
 export const EQ_PRESET_PREAMP_DB: Record<EQPresetName, number> = {
   flat: 0,
   bass: -5,
-  vocal: -3,
 };
 
 export const LIMITER_SETTINGS: LimiterSettings = {
