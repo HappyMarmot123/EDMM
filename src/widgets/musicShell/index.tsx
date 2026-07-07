@@ -726,21 +726,27 @@ export function MusicShell({
     [onPlay, queueForTrack],
   );
 
-  const handleSelect = (track: Track) => {
-    if (shouldPlayOnTrackSelect && isPlayable(track)) {
+  const handleSelect = useCallback(
+    (track: Track) => {
+      if (shouldPlayOnTrackSelect && isPlayable(track)) {
+        activateTrackInPlayer(track, true, "visible", queueForTrack(track));
+        return;
+      }
+
+      setSelectedTrackId(track.id);
+      setSelectionSource("visible");
+    },
+    [activateTrackInPlayer, isPlayable, queueForTrack, shouldPlayOnTrackSelect],
+  );
+
+  const handlePlay = useCallback(
+    (track: Track) => {
+      setSelectedTrackId(track.id);
+      setSelectionSource("visible");
       activateTrackInPlayer(track, true, "visible", queueForTrack(track));
-      return;
-    }
-
-    setSelectedTrackId(track.id);
-    setSelectionSource("visible");
-  };
-
-  const handlePlay = (track: Track) => {
-    setSelectedTrackId(track.id);
-    setSelectionSource("visible");
-    activateTrackInPlayer(track, true, "visible", queueForTrack(track));
-  };
+    },
+    [activateTrackInPlayer, queueForTrack],
+  );
 
   const fallbackToFirstPlayable = useCallback(() => {
     const fallbackTrack = firstPlayableTrack(visibleTracks);
