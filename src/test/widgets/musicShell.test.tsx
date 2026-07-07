@@ -798,7 +798,12 @@ describe("MusicShell", () => {
     expect(
       screen.getByRole("navigation", { name: "Music views" }),
     ).toBeInTheDocument();
-    expect(getDesktopViewButton("Pop")).toHaveAttribute("aria-pressed", "true");
+    const pop = getDesktopViewButton("Pop");
+    const edm = getDesktopViewButton("EDM");
+
+    expect(pop).toHaveAttribute("aria-pressed", "true");
+    expect(within(pop).queryByText("3")).not.toBeInTheDocument();
+    expect(within(edm).queryByText("3")).not.toBeInTheDocument();
   });
 
   it("respects initialView and shows recent tracks on mobile", async () => {
