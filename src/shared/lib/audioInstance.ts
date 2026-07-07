@@ -2,8 +2,12 @@ import { applyCrossfadeSchedule, computeFade } from "@/shared/lib/crossfade";
 import { logger } from "@/shared/lib/logger";
 import {
   applyEqualizerPreset,
+  applyPreampForPreset,
   createEqualizerFilters,
+  createLimiterNode,
+  createPreampNode,
   getDefaultPreset,
+  type EQPresetName,
 } from "@/shared/lib/equalizer";
 
 /*
@@ -66,6 +70,8 @@ class AudioSingletonInstance {
   public audioContext: AudioContext | null = null;
   public analyser: AnalyserNode | null = null;
   public equalizerFilters: BiquadFilterNode[] = [];
+  public preamp: GainNode | null = null;
+  public limiter: DynamicsCompressorNode | null = null;
   public audioCapabilities: AudioCapabilities = {
     ...DEFAULT_AUDIO_CAPABILITIES,
   };
@@ -160,10 +166,11 @@ class AudioSingletonInstance {
       this.activeSlotIndex = 0;
       this.audio = first.audio;
 
-      this.equalizerFilters = createEqualizerFilters(this.audioContext);
-      applyEqualizerPreset(getDefaultPreset(), this.equalizerFilters);
-
       this.analyser = this.audioContext.createAnalyser();
+      this.equalizerFilters = createEqualizerFilters(this.audioContext);
+      this.preamp = createPreampNode(this.audioContext);
+      this.limiter = createLimiterNode(this.audioContext);
+      this.applyPresetToEngine(getDefaultPreset());
       this.connectSignalChain();
       this.analyser.connect(this.audioContext.destination);
       this.analyser.fftSize = 512;
@@ -181,36 +188,50 @@ class AudioSingletonInstance {
     }
     const analyser = this.analyser;
 
-    this.equalizerFilters.forEach((filter) => filter.disconnect());
     this.audioSlots.forEach((slot) => slot.gain.disconnect());
+    if (this.preamp) this.preamp.disconnect();
+    this.equalizerFilters.forEach((filter) => filter.disconnect());
+    if (this.limiter) this.limiter.disconnect();
 
-    if (this.equalizerFilters.length === 0) {
+    const chain: AudioNode[] = [];
+    if (this.preamp) chain.push(this.preamp);
+    this.equalizerFilters.forEach((filter) => chain.push(filter));
+    if (this.limiter) chain.push(this.limiter);
+
+    if (chain.length === 0) {
       this.audioSlots.forEach((slot) => {
         slot.gain.connect(analyser);
       });
       return;
     }
 
-    const firstFilter = this.equalizerFilters[0];
-    if (!firstFilter) {
+    const firstNode = chain[0];
+    if (!firstNode) {
       return;
     }
 
     this.audioSlots.forEach((slot) => {
-      slot.gain.connect(firstFilter);
+      slot.gain.connect(firstNode);
     });
 
-    for (let index = 0; index < this.equalizerFilters.length; index += 1) {
-      const filter = this.equalizerFilters[index];
-      const nextFilter = this.equalizerFilters[index + 1];
-      if (nextFilter) {
-        filter.connect(nextFilter);
+    for (let index = 0; index < chain.length - 1; index += 1) {
+      const node = chain[index];
+      const nextNode = chain[index + 1];
+      if (node && nextNode) {
+        node.connect(nextNode);
       }
     }
 
-    const lastFilter = this.equalizerFilters[this.equalizerFilters.length - 1];
-    if (lastFilter) {
-      lastFilter.connect(analyser);
+    const lastNode = chain[chain.length - 1];
+    if (lastNode) {
+      lastNode.connect(analyser);
+    }
+  }
+
+  public applyPresetToEngine(preset: EQPresetName): void {
+    applyEqualizerPreset(preset, this.equalizerFilters);
+    if (this.preamp) {
+      applyPreampForPreset(preset, this.preamp);
     }
   }
 
@@ -588,6 +609,14 @@ class AudioSingletonInstance {
 
     this.equalizerFilters.forEach((filter) => filter.disconnect());
     this.equalizerFilters = [];
+    if (this.preamp) {
+      this.preamp.disconnect();
+      this.preamp = null;
+    }
+    if (this.limiter) {
+      this.limiter.disconnect();
+      this.limiter = null;
+    }
 
     this.audio = this.fallbackAudio;
     this.audioSlots = [];
@@ -623,6 +652,14 @@ class AudioSingletonInstance {
 
       instance.equalizerFilters.forEach((filter) => filter.disconnect());
       instance.equalizerFilters = [];
+      if (instance.preamp) {
+        instance.preamp.disconnect();
+        instance.preamp = null;
+      }
+      if (instance.limiter) {
+        instance.limiter.disconnect();
+        instance.limiter = null;
+      }
 
       if (instance.audio) {
         instance.audio.pause();
@@ -683,6 +720,12 @@ export const getEqualizerFilters = () => {
   if (typeof window === "undefined") return [];
   const instance = AudioSingletonInstance.getInstance();
   return instance.equalizerFilters;
+};
+
+export const applyAudioEqualizerPreset = (preset: EQPresetName): void => {
+  if (typeof window === "undefined") return;
+  const instance = AudioSingletonInstance.getInstance();
+  instance.applyPresetToEngine(preset);
 };
 
 export const getAudioCapabilities = (): AudioCapabilities => {

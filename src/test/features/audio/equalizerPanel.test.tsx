@@ -1,15 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import EqualizerPanel from "@/features/audio/components/equalizerPanel";
-import { EQ_PRESET_GAINS } from "@/shared/lib/equalizer";
+import { applyAudioEqualizerPreset } from "@/shared/lib/audioInstance";
 import { getEqualizerPreset, setEqualizerPreset } from "@/shared/db";
-
-const mockFilters = [
-  { gain: { value: 0 } },
-  { gain: { value: 0 } },
-  { gain: { value: 0 } },
-  { gain: { value: 0 } },
-  { gain: { value: 0 } },
-] as BiquadFilterNode[];
+import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 
 jest.mock("@/shared/db", () => ({
   getEqualizerPreset: jest.fn(),
@@ -17,7 +10,11 @@ jest.mock("@/shared/db", () => ({
 }));
 
 jest.mock("@/shared/lib/audioInstance", () => ({
-  getEqualizerFilters: () => mockFilters,
+  applyAudioEqualizerPreset: jest.fn(),
+}));
+
+jest.mock("@/shared/hooks/useMediaQuery", () => ({
+  useMediaQuery: jest.fn(),
 }));
 
 const mockGetEqualizerPreset = getEqualizerPreset as jest.MockedFunction<
@@ -26,69 +23,88 @@ const mockGetEqualizerPreset = getEqualizerPreset as jest.MockedFunction<
 const mockSetEqualizerPreset = setEqualizerPreset as jest.MockedFunction<
   typeof setEqualizerPreset
 >;
+const mockApplyAudioEqualizerPreset =
+  applyAudioEqualizerPreset as jest.MockedFunction<
+    typeof applyAudioEqualizerPreset
+  >;
+const mockUseMediaQuery = useMediaQuery as jest.MockedFunction<
+  typeof useMediaQuery
+>;
 
 describe("EqualizerPanel", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockFilters.forEach((filter) => {
-      filter.gain.value = 0;
-    });
     mockGetEqualizerPreset.mockResolvedValue("flat");
     mockSetEqualizerPreset.mockResolvedValue(undefined);
+    mockUseMediaQuery.mockReturnValue(true);
   });
 
-  it("loads persisted preset and applies preset gains on mount", async () => {
+  it("renders the available pro presets with labels", () => {
+    render(<EqualizerPanel />);
+
+    expect(screen.getByRole("button", { name: "Flat" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Bass Boost" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Clear Vocal" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "EDM" })).not.toBeInTheDocument();
+  });
+
+  it("hydrates persisted preset through the engine on mount (desktop)", async () => {
+    mockGetEqualizerPreset.mockResolvedValue("bass");
+
     render(<EqualizerPanel />);
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Bass" })).toHaveAttribute(
-        "aria-pressed",
-        "false",
-      );
-      expect(screen.getByRole("button", { name: "Flat" })).toHaveAttribute(
+      expect(mockApplyAudioEqualizerPreset).toHaveBeenCalledWith("bass");
+      expect(screen.getByRole("button", { name: "Bass Boost" })).toHaveAttribute(
         "aria-pressed",
         "true",
       );
     });
-
-    expect(mockFilters.map((filter) => filter.gain.value)).toEqual(
-      EQ_PRESET_GAINS.flat,
-    );
   });
 
-  it("applies and persists chosen preset on click", async () => {
-    mockGetEqualizerPreset.mockResolvedValue("flat");
-
+  it("applies and persists chosen preset on click (desktop)", async () => {
     render(<EqualizerPanel />);
 
-    fireEvent.click(screen.getByRole("button", { name: "EDM" }));
+    fireEvent.click(screen.getByRole("button", { name: "Bass Boost" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "EDM" })).toHaveAttribute(
+      expect(mockApplyAudioEqualizerPreset).toHaveBeenCalledWith("bass");
+      expect(mockSetEqualizerPreset).toHaveBeenCalledWith("bass");
+      expect(screen.getByRole("button", { name: "Bass Boost" })).toHaveAttribute(
         "aria-pressed",
         "true",
-      );
-      expect(mockSetEqualizerPreset).toHaveBeenCalledWith("edm");
-      expect(mockFilters.map((filter) => filter.gain.value)).toEqual(
-        EQ_PRESET_GAINS.edm,
       );
     });
   });
 
-  it("explains each preset with tooltip help text", () => {
+  it("does NOT touch the global engine on mobile (<768px)", async () => {
+    mockUseMediaQuery.mockReturnValue(false);
+
     render(<EqualizerPanel />);
 
-    expect(screen.getByRole("button", { name: "Flat" })).not.toHaveAttribute(
-      "title",
+    await Promise.resolve();
+    expect(mockApplyAudioEqualizerPreset).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Bass Boost" }));
+
+    expect(mockApplyAudioEqualizerPreset).not.toHaveBeenCalled();
+    expect(mockSetEqualizerPreset).not.toHaveBeenCalled();
+  });
+
+  it("describes each preset with accessible help text", () => {
+    render(<EqualizerPanel />);
+
+    expect(
+      screen.getByRole("button", { name: "Bass Boost" }),
+    ).toHaveAccessibleDescription(
+      "Big sub and low-end punch with a clean midrange scoop.",
     );
-    expect(screen.getByRole("button", { name: "EDM" })).toHaveAccessibleDescription(
-      "Boosts bass, presence, and air for energetic electronic tracks.",
-    );
-    expect(screen.getByRole("button", { name: "Bass" })).toHaveAccessibleDescription(
-      "Emphasizes kick and sub-bass while trimming some midrange.",
-    );
-    expect(screen.getByRole("button", { name: "Vocal" })).toHaveAccessibleDescription(
-      "Pulls vocals and upper mids forward for clearer lead lines.",
-    );
+    expect(
+      screen.queryByRole("button", { name: "Clear Vocal" }),
+    ).not.toBeInTheDocument();
   });
 });
