@@ -1,18 +1,24 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { safeSessionStorage } from "@/shared/lib/safeSessionStorage";
+
+const shouldRunOncePerSession = (storageKey: string): boolean => {
+  const stored = safeSessionStorage.getItem(storageKey);
+
+  if (!stored.isBrowser) {
+    return false;
+  }
+
+  return stored.value !== "1";
+};
 
 export function useOncePerSession(key: string) {
   const storageKey = `edmm:once:${key}`;
-  const [shouldRun, setShouldRun] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.sessionStorage.getItem(storageKey) !== "1";
-  });
+  const [shouldRun, setShouldRun] = useState(() => shouldRunOncePerSession(storageKey));
 
   const markDone = useCallback(() => {
-    if (typeof window !== "undefined") {
-      window.sessionStorage.setItem(storageKey, "1");
-    }
+    safeSessionStorage.setItem(storageKey, "1");
     setShouldRun(false);
   }, [storageKey]);
 

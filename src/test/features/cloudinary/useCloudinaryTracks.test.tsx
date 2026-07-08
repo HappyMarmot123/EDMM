@@ -54,8 +54,8 @@ it("calls the Cloudinary tracks route with encoded nonblank query", async () => 
   );
 });
 
-it("fetches and merges video and image tracks when resourceType is all", async () => {
-  mockFetch.mockResolvedValueOnce({
+it("fetches and merges video and image tracks with a single all request", async () => {
+  mockFetch.mockResolvedValue({
     ok: true,
     json: async () => [
       {
@@ -69,12 +69,6 @@ it("fetches and merges video and image tracks when resourceType is all", async (
         durationMs: 120000,
         metadata: {},
       },
-    ],
-  });
-
-  mockFetch.mockResolvedValueOnce({
-    ok: true,
-    json: async () => [
       {
         id: "cloudinary:image-1",
         source: "cloudinary",
@@ -84,7 +78,9 @@ it("fetches and merges video and image tracks when resourceType is all", async (
         albumName: "Default album",
         artworkUrl: "https://example.com/track-one.jpg",
         durationMs: 120000,
-        metadata: {},
+        metadata: {
+          resourceType: "image",
+        },
       },
     ],
   });
@@ -101,15 +97,10 @@ it("fetches and merges video and image tracks when resourceType is all", async (
 
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-  expect(mockFetch).toHaveBeenNthCalledWith(
-    1,
-    "/api/cloudinary/tracks/video?v=4&q=lemonade",
+  expect(mockFetch).toHaveBeenCalledWith(
+    "/api/cloudinary/tracks?v=4&resourceType=all&q=lemonade",
   );
-  expect(mockFetch).toHaveBeenNthCalledWith(
-    2,
-    "/api/cloudinary/tracks/image?v=4&q=lemonade",
-  );
-  expect(mockFetch).toHaveBeenCalledTimes(2);
+  expect(mockFetch).toHaveBeenCalledTimes(1);
   expect(result.current.data).toHaveLength(1);
   expect(result.current.data?.[0]).toMatchObject({
     id: "video:asset-1",
@@ -135,20 +126,49 @@ it("calls the dedicated image tracks route", async () => {
   expect(mockFetch).toHaveBeenCalledWith("/api/cloudinary/tracks/image?v=4&q=lemonade");
 });
 
-it("calls video and image endpoints when resourceType=all with filterPlayable", async () => {
+it("calls a single request for resourceType=all and applies playable filtering in the hook", async () => {
   mockFetch.mockResolvedValue({
     ok: true,
     json: async () => [
       {
-        id: "cloudinary:video-1",
+        id: "video:asset-1",
         source: "cloudinary",
         title: "Track One",
-        artistId: "artist:1",
+        artistId: "artist:Track One",
         artistName: "Cloudinary Artist",
         albumName: "Default album",
         artworkUrl: "",
         durationMs: 120000,
-        metadata: {},
+        streamUrl: "https://example.com/track-one.mp3",
+        metadata: {
+          resourceType: "video",
+        },
+      },
+      {
+        id: "video:asset-2",
+        source: "cloudinary",
+        title: "Track Two",
+        artistId: "artist:Track Two",
+        artistName: "Cloudinary Artist",
+        albumName: "Default album",
+        artworkUrl: "",
+        durationMs: 120000,
+        metadata: {
+          resourceType: "video",
+        },
+      },
+      {
+        id: "cloudinary:image-1",
+        source: "cloudinary",
+        title: "Track One",
+        artistId: "artist:Track One",
+        artistName: "Cloudinary Artist",
+        albumName: "Default album",
+        artworkUrl: "https://example.com/track-one.jpg",
+        durationMs: 120000,
+        metadata: {
+          resourceType: "image",
+        },
       },
     ],
   });
@@ -157,7 +177,7 @@ it("calls video and image endpoints when resourceType=all with filterPlayable", 
     () =>
       useCloudinaryTracks("  lemonade  ", {
         resourceType: "all",
-        filterPlayable: false,
+        filterPlayable: true,
       }),
     {
       wrapper: createWrapper(),
@@ -166,17 +186,18 @@ it("calls video and image endpoints when resourceType=all with filterPlayable", 
 
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-  expect(mockFetch).toHaveBeenNthCalledWith(
-    1,
-    "/api/cloudinary/tracks/video?v=4&q=lemonade&filterPlayable=false",
+  expect(mockFetch).toHaveBeenCalledWith(
+    "/api/cloudinary/tracks?v=4&resourceType=all&q=lemonade",
   );
-  expect(mockFetch).toHaveBeenNthCalledWith(
-    2,
-    "/api/cloudinary/tracks/image?v=4&q=lemonade",
-  );
+  expect(mockFetch).toHaveBeenCalledTimes(1);
+  expect(result.current.data).toHaveLength(1);
+  expect(result.current.data?.[0]).toMatchObject({
+    id: "video:asset-1",
+    artworkUrl: "https://example.com/track-one.jpg",
+  });
 });
 
-it("passes category to the video and image endpoints for resourceType all", async () => {
+it("passes category with a single all request for resourceType=all", async () => {
   mockFetch.mockResolvedValue({
     ok: true,
     json: async () => [],
@@ -191,14 +212,10 @@ it("passes category to the video and image endpoints for resourceType all", asyn
 
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-  expect(mockFetch).toHaveBeenNthCalledWith(
-    1,
-    "/api/cloudinary/tracks/video?v=4&category=pop",
+  expect(mockFetch).toHaveBeenCalledWith(
+    "/api/cloudinary/tracks?v=4&resourceType=all&category=pop",
   );
-  expect(mockFetch).toHaveBeenNthCalledWith(
-    2,
-    "/api/cloudinary/tracks/image?v=4&category=pop",
-  );
+  expect(mockFetch).toHaveBeenCalledTimes(1);
 });
 
 it("omits q for blank queries", async () => {

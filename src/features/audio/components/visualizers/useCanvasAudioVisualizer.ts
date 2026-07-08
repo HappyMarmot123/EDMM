@@ -25,6 +25,7 @@ type UseCanvasAudioVisualizerOptions = {
 
 const DEFAULT_INACTIVE_DECAY_MS = 280;
 const DEFAULT_MAX_PIXEL_RATIO = 2;
+const LIVE_FRAME_BUDGET_MS = 32;
 
 function getCanvasContext(canvas: HTMLCanvasElement) {
   try {
@@ -167,8 +168,12 @@ export function useCanvasAudioVisualizer({
       });
     };
 
-    const draw = () => {
-      renderCurrentFrame();
+    let lastLiveFrameAt = 0;
+    const draw = (timestamp: number) => {
+      if (timestamp - lastLiveFrameAt >= LIVE_FRAME_BUDGET_MS) {
+        renderCurrentFrame();
+        lastLiveFrameAt = timestamp;
+      }
 
       animationFrameIdRef.current = requestAnimationFrame(draw);
     };

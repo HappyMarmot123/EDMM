@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { Track } from "@/entities/track";
+import { isPlayable, type Track } from "@/entities/track";
 import { cacheTrack } from "@/shared/db";
 import { useHydrated } from "@/shared/hooks/useHydrated";
 import type { ResourceTypeFilter } from "@/shared/api/cloudinary/cloudinaryClient";
@@ -229,6 +229,39 @@ const mergeImageTracksIntoVideos = (videos: Track[], images: Track[]) => {
   });
 };
 
+const separateByResourceType = (tracks: Track[]) => {
+  const videos: Track[] = [];
+  const images: Track[] = [];
+
+  for (const track of tracks) {
+    const resourceType = (() => {
+      const value = track.metadata?.resourceType;
+
+      return typeof value === "string" ? value.toLowerCase() : "video";
+    })();
+
+    if (resourceType === "image") {
+      images.push(track);
+      continue;
+    }
+
+    videos.push(track);
+  }
+
+  return { videos, images };
+};
+
+const applyPlayableFilter = (
+  tracks: Track[],
+  filterPlayable?: boolean,
+) => {
+  if (!filterPlayable) {
+    return tracks;
+  }
+
+  return tracks.filter((track) => isPlayable(track));
+};
+
 async function getCloudinaryTracks(
   query: string,
   options?: CloudinaryTrackQueryOptions,
@@ -237,12 +270,14 @@ async function getCloudinaryTracks(
   const category = options?.category;
 
   if (resourceType === "all") {
-    const [videoTracks, imageTracks] = await Promise.all([
-      resolveTrackList(query, "video", options?.filterPlayable, category),
-      resolveTrackList(query, "image", undefined, category),
-    ]);
-    const mergedVideos = mergeImageTracksIntoVideos(videoTracks, imageTracks);
-    await cacheTracks([...mergedVideos, ...imageTracks]);
+    const allTracks = await resolveTrackList(query, "all", undefined, category);
+    const { videos, images } = separateByResourceType(allTracks);
+    const filteredVideos = applyPlayableFilter(videos, options?.filterPlayable);
+    const mergedVideos = mergeImageTracksIntoVideos(
+      filteredVideos,
+      images,
+    );
+    await cacheTracks([...mergedVideos, ...images]);
 
     return mergedVideos;
   }

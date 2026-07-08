@@ -1,65 +1,24 @@
-import { useCallback, useEffect, useState } from "react";
 import {
-  EQ_PRESET_GAINS,
-  applyEqualizerPreset,
-  getDefaultPreset,
   type EQPresetName,
 } from "@/shared/lib/equalizer";
-import { getEqualizerFilters } from "@/shared/lib/audioInstance";
-import { getEqualizerPreset, setEqualizerPreset } from "@/shared/db";
+import { useEqualizerPresetController } from "../hooks/useEqualizerPresetController";
 import MyTooltip from "@/shared/components/myTooltip";
+
+const EQ_ENABLED_QUERY = "(min-width: 768px)";
 
 const PRESET_LABELS: Record<EQPresetName, string> = {
   flat: "Flat",
-  edm: "EDM",
-  bass: "Bass",
-  vocal: "Vocal",
+  bass: "Bass Boost",
 };
 
 const PRESET_HELP_TEXT: Record<EQPresetName, string> = {
-  flat: "Keeps the original balance without EQ boosts.",
-  edm: "Boosts bass, presence, and air for energetic electronic tracks.",
-  bass: "Emphasizes kick and sub-bass while trimming some midrange.",
-  vocal: "Pulls vocals and upper mids forward for clearer lead lines.",
+  flat: "Keeps the original balance with no EQ coloring, the neutral reference.",
+  bass: "Big sub and low-end punch with a clean midrange scoop.",
 };
 
-const PRESET_OPTIONS = Object.keys(EQ_PRESET_GAINS) as EQPresetName[];
-
 export default function EqualizerPanel() {
-  const [currentPreset, setCurrentPreset] = useState<EQPresetName>(
-    getDefaultPreset(),
-  );
-
-  const applyPreset = useCallback((preset: EQPresetName) => {
-    const filters = getEqualizerFilters();
-    applyEqualizerPreset(preset, filters);
-    setCurrentPreset(preset);
-    void setEqualizerPreset(preset).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const hydratePreset = async () => {
-      try {
-        const savedPreset = await getEqualizerPreset();
-        if (!cancelled) {
-          applyPreset(savedPreset);
-        }
-      } catch {
-        if (!cancelled) {
-          setCurrentPreset(getDefaultPreset());
-          applyEqualizerPreset(getDefaultPreset(), getEqualizerFilters());
-        }
-      }
-    };
-
-    hydratePreset();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [applyPreset]);
+  const { currentPreset, applyPreset, presetOptions } =
+    useEqualizerPresetController();
 
   return (
     <section
@@ -68,7 +27,7 @@ export default function EqualizerPanel() {
     >
       <p className="text-xs font-black uppercase text-[#ff98a2]">EQ Presets</p>
       <div className="flex flex-wrap gap-2">
-        {PRESET_OPTIONS.map((preset) => {
+        {presetOptions.map((preset) => {
           const descriptionId = `eq-preset-${preset}-description`;
           const label = PRESET_LABELS[preset];
           const helpText = PRESET_HELP_TEXT[preset];
