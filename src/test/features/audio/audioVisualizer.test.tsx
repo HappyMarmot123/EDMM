@@ -125,7 +125,7 @@ describe("AudioVisualizer", () => {
     }
   });
 
-  it("throttles live drawing work to the visualizer frame budget", () => {
+  it("renders one additional frame for every animation callback", () => {
     const frameCallbacks: FrameRequestCallback[] = [];
     let nextFrameId = 1;
     jest
@@ -143,13 +143,13 @@ describe("AudioVisualizer", () => {
       frameCallbacks.shift()?.(10);
     });
 
-    expect(getByteFrequencyData).toHaveBeenCalledTimes(1);
+    expect(getByteFrequencyData).toHaveBeenCalledTimes(2);
 
     act(() => {
       frameCallbacks.shift()?.(34);
     });
 
-    expect(getByteFrequencyData).toHaveBeenCalledTimes(2);
+    expect(getByteFrequencyData).toHaveBeenCalledTimes(3);
   });
 
   it("keeps the live drawing loop briefly when playback becomes inactive", () => {

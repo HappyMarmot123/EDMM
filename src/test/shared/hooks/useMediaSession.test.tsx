@@ -37,6 +37,10 @@ const createMediaSessionMock = () => {
       },
     ),
     setPositionState: jest.fn(),
+    metadata: null as MediaMetadata | null,
+    playbackState: "none" as MediaSession["playbackState"],
+    setCameraActive: jest.fn(),
+    setMicrophoneActive: jest.fn(),
   } as unknown as MediaSession & {
     handlers?: Record<MediaSessionActionType, MediaSessionActionHandler>;
   };
@@ -206,6 +210,21 @@ describe("useMediaSession", () => {
       playbackRate: 1,
     });
     unmount();
+  });
+
+  it("sets playback state for mobile system media controls", () => {
+    const { mediaSession } = installMediaSession();
+    const { rerender, unmount } = render(
+      <TestHost track={TRACK} isPlayingOverride={false} />,
+    );
+
+    expect(mediaSession.playbackState).toBe("paused");
+
+    rerender(<TestHost track={TRACK} isPlayingOverride={true} />);
+    expect(mediaSession.playbackState).toBe("playing");
+
+    unmount();
+    expect(mediaSession.playbackState).toBe("none");
   });
 
   it("does not reset artwork metadata when only action callbacks change", () => {

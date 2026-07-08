@@ -4,6 +4,7 @@ import { ArrowUp, Disc3, Pause, Play } from "lucide-react";
 import {
   type ComponentPropsWithoutRef,
   type MouseEvent,
+  memo,
   useCallback,
   useEffect,
   useRef,
@@ -480,4 +481,4 @@ export function MusicTrackList({
   );
 }
 
-export default MusicTrackList;
+export default memo(MusicTrackList);

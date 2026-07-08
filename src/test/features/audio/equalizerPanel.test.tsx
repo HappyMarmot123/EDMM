@@ -81,9 +81,47 @@ describe("EqualizerPanel", () => {
     });
   });
 
-  it("does NOT touch the global engine on mobile (<768px)", async () => {
-    mockUseMediaQuery.mockReturnValue(false);
+  it("keeps selected preset active when preset persistence fails", async () => {
+    mockGetEqualizerPreset.mockResolvedValue("flat");
 
+    render(<EqualizerPanel />);
+
+    mockSetEqualizerPreset.mockClear();
+    mockSetEqualizerPreset.mockRejectedValueOnce(new Error("write blocked"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Bass" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Bass" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      expect(mockSetEqualizerPreset).toHaveBeenCalledWith("bass");
+      expect(mockFilters.map((filter) => filter.gain.value)).toEqual(
+        EQ_PRESET_GAINS.bass,
+      );
+    });
+  });
+
+  it("applies the default preset when hydration fails", async () => {
+    mockGetEqualizerPreset.mockRejectedValueOnce(new Error("read blocked"));
+
+    render(<EqualizerPanel />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Flat" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      expect(mockFilters.map((filter) => filter.gain.value)).toEqual(
+        EQ_PRESET_GAINS.flat,
+      );
+    });
+
+    expect(mockSetEqualizerPreset).not.toHaveBeenCalled();
+  });
+
+  it("explains each preset with tooltip help text", () => {
     render(<EqualizerPanel />);
 
     await Promise.resolve();

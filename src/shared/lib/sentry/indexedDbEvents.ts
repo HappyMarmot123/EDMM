@@ -5,6 +5,7 @@ import {
   ERROR_CLASSES,
   getErrorSeverity,
 } from "./errorTaxonomy";
+import { getSafeText, resolveBrowserEventFields } from "./eventPayload";
 
 export const INDEXEDDB_OPERATIONS = {
   recentPlaysWrite: "recent_plays_write",
@@ -22,24 +23,10 @@ export type IndexedDbUnavailableEvent = {
   trackId?: string | null;
 };
 
-const getSafeText = (value: string | null | undefined): string | undefined => {
-  const text = value?.trim();
-  return text && text.length > 0 ? text : undefined;
-};
-
-const getCurrentBrowserRoute = (): string => {
-  if (typeof window === "undefined") {
-    return "unknown";
-  }
-
-  return window.location.pathname || "/";
-};
-
 export function captureIndexedDbUnavailableEvent(
   event: IndexedDbUnavailableEvent,
 ): void {
-  const route = getSafeText(event.route) ?? getCurrentBrowserRoute();
-  const runtime = event.runtime ?? "browser";
+  const { route, runtime } = resolveBrowserEventFields(event);
   const trackId = getSafeText(event.trackId);
 
   try {
