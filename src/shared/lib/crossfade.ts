@@ -1,4 +1,5 @@
 type CrossfadeDirection = "fadeIn" | "fadeOut";
+export type CrossfadeCurve = "linear" | "equalPower";
 
 export type CrossfadePoint = {
   atTime: number;
@@ -9,6 +10,7 @@ type CrossfadeOptions = {
   direction: CrossfadeDirection;
   startTime: number;
   durationSec: number;
+  curve?: CrossfadeCurve;
 };
 
 const MIN_GAIN = 0;
@@ -26,6 +28,7 @@ export function computeFade({
   direction,
   startTime,
   durationSec,
+  curve = "linear",
 }: CrossfadeOptions): readonly CrossfadePoint[] {
   const from = direction === "fadeIn" ? MIN_GAIN : MAX_GAIN;
   const to = direction === "fadeIn" ? MAX_GAIN : MIN_GAIN;
@@ -38,6 +41,23 @@ export function computeFade({
       {
         atTime: normalizedStart,
         gain: to,
+      },
+    ];
+  }
+
+  if (curve === "equalPower") {
+    return [
+      {
+        atTime: normalizedStart,
+        gain: clampGain(from),
+      },
+      {
+        atTime: normalizedStart + normalizedDuration / 2,
+        gain: Math.SQRT1_2,
+      },
+      {
+        atTime: normalizedEnd,
+        gain: clampGain(to),
       },
     ];
   }

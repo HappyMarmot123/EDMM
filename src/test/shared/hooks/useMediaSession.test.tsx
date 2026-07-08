@@ -37,7 +37,7 @@ const createMediaSessionMock = () => {
       },
     ),
     setPositionState: jest.fn(),
-  } as MediaSession & {
+  } as unknown as MediaSession & {
     handlers?: Record<MediaSessionActionType, MediaSessionActionHandler>;
   };
 
