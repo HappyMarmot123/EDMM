@@ -107,14 +107,102 @@ describe("equalizer", () => {
     spy.mockRestore();
   });
 
-  it("defines a transparent brickwall limiter", () => {
+  it("defines soft limiter settings", () => {
     expect(LIMITER_SETTINGS).toEqual({
-      threshold: -1,
-      knee: 0,
-      ratio: 20,
-      attack: 0.003,
-      release: 0.25,
+      threshold: -4,
+      knee: 12,
+      ratio: 8,
+      attack: 0.008,
+      release: 0.18,
     });
+  });
+
+  it("ramps equalizer gain changes when ramp options are supplied", () => {
+    const warnSpy = jest.spyOn(logger, "warn").mockImplementation(() => {});
+    const gain = {
+      value: 0,
+      cancelScheduledValues: jest.fn(),
+      setValueAtTime: jest.fn(),
+      linearRampToValueAtTime: jest.fn(),
+    };
+    const filter = { gain } as unknown as BiquadFilterNode;
+
+    applyEqualizerPreset("bass", [filter], {
+      currentTime: 2,
+      durationSec: 0.1,
+    });
+    warnSpy.mockRestore();
+
+    expect(gain.cancelScheduledValues).toHaveBeenCalledWith(2);
+    expect(gain.setValueAtTime).toHaveBeenCalledWith(0, 2);
+    expect(gain.linearRampToValueAtTime).toHaveBeenCalledWith(8, 2.1);
+  });
+
+  it("ramps preamp gain changes when ramp options are supplied", () => {
+    const gain = {
+      value: 1,
+      cancelScheduledValues: jest.fn(() => {
+        gain.value = 0.25;
+      }),
+      setValueAtTime: jest.fn(),
+      linearRampToValueAtTime: jest.fn(),
+    };
+    const node = { gain };
+
+    applyPreampForPreset("bass", node, {
+      currentTime: 3,
+      durationSec: 0.12,
+    });
+
+    expect(gain.cancelScheduledValues).toHaveBeenCalledWith(3);
+    expect(gain.setValueAtTime).toHaveBeenCalledWith(1, 3);
+    expect(gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      dbToLinearGain(-5),
+      3.12,
+    );
+  });
+
+  it("holds active automation before ramping when supported", () => {
+    const gain = {
+      value: 1,
+      cancelAndHoldAtTime: jest.fn(),
+      cancelScheduledValues: jest.fn(),
+      setValueAtTime: jest.fn(),
+      linearRampToValueAtTime: jest.fn(),
+    };
+    const node = { gain };
+
+    applyPreampForPreset("bass", node, {
+      currentTime: 3,
+      durationSec: 0.12,
+    });
+
+    expect(gain.cancelAndHoldAtTime).toHaveBeenCalledWith(3);
+    expect(gain.cancelScheduledValues).not.toHaveBeenCalled();
+    expect(gain.setValueAtTime).not.toHaveBeenCalled();
+    expect(gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      dbToLinearGain(-5),
+      3.12,
+    );
+    expect(
+      gain.cancelAndHoldAtTime.mock.invocationCallOrder[0],
+    ).toBeLessThan(gain.linearRampToValueAtTime.mock.invocationCallOrder[0]);
+  });
+
+  it("uses default ramp duration when duration is omitted", () => {
+    const gain = {
+      value: 0.5,
+      cancelScheduledValues: jest.fn(),
+      setValueAtTime: jest.fn(),
+      linearRampToValueAtTime: jest.fn(),
+    };
+    const node = { gain };
+
+    applyPreampForPreset("flat", node, { currentTime: 4 });
+
+    expect(gain.cancelScheduledValues).toHaveBeenCalledWith(4);
+    expect(gain.setValueAtTime).toHaveBeenCalledWith(0.5, 4);
+    expect(gain.linearRampToValueAtTime).toHaveBeenCalledWith(1, 4.08);
   });
 });
 
