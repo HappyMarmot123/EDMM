@@ -10,6 +10,10 @@ type DustySnowProps = {
 const DEFAULT_STAR_COUNT = 42;
 const REDUCED_MOTION_STAR_CAP = 54;
 const DEPTH_CLASSES = ["far", "mid", "near"] as const;
+const STARFIELD_CLASS_NAMES = {
+  default: "rose-starfield",
+  reduced: "rose-starfield rose-starfield--reduced",
+} as const;
 
 function createStarStyle(index: number): StarStyle {
   const left = (index * 37) % 100;
@@ -50,6 +54,10 @@ function createStarStyle(index: number): StarStyle {
   };
 }
 
+function getStarClassName(index: number) {
+  return `rose-star rose-star--${DEPTH_CLASSES[index % DEPTH_CLASSES.length]}`;
+}
+
 export function DustySnow({
   count = DEFAULT_STAR_COUNT,
   reducedMotion = false,
@@ -57,17 +65,20 @@ export function DustySnow({
   const starCount = reducedMotion
     ? Math.min(count, REDUCED_MOTION_STAR_CAP)
     : count;
+  const starfieldClassName = reducedMotion
+    ? STARFIELD_CLASS_NAMES.reduced
+    : STARFIELD_CLASS_NAMES.default;
 
   return (
     <div
-      className={`rose-starfield${reducedMotion ? " rose-starfield--reduced" : ""}`}
+      className={starfieldClassName}
       data-testid="rose-starfield"
       aria-hidden="true"
     >
       {Array.from({ length: starCount }, (_, index) => (
         <span
           key={index}
-          className={`rose-star rose-star--${DEPTH_CLASSES[index % DEPTH_CLASSES.length]}`}
+          className={getStarClassName(index)}
           data-depth={(index % 3) + 1}
           style={createStarStyle(index)}
         />

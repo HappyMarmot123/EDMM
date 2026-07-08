@@ -1,5 +1,4 @@
 import Link from "next/link";
-import React from "react";
 import { RouteFeedbackShell } from "@/shared/components/routeFeedbackShell";
 
 export default function NotFound() {

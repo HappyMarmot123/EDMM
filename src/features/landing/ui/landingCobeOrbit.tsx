@@ -7,6 +7,11 @@ import type { COBEOptions, Globe } from "cobe";
 const INITIAL_PHI = 0.55;
 const INITIAL_THETA = 0.28;
 const AUTO_ROTATION_SPEED = 0.006;
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+const ORBIT_CLASS_NAMES = {
+  visible: "rose-cobe-orbit rose-cobe-orbit--visible",
+  deferred: "rose-cobe-orbit rose-cobe-orbit--deferred",
+} as const;
 
 const ROSE_MARKERS = [
   { location: [37.5665, 126.978], size: 0.055 },
@@ -36,15 +41,15 @@ const getCanvasSize = (canvas: HTMLCanvasElement, pixelRatio: number) => {
   return displaySize;
 };
 
+const prefersReducedMotion = () =>
+  window.matchMedia?.(REDUCED_MOTION_QUERY).matches ?? false;
+
 export default function LandingCobeOrbit() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const prefersReducedMotion =
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-
-    if (prefersReducedMotion) {
+    if (prefersReducedMotion()) {
       const timer = window.setTimeout(() => {
         setIsVisible(true);
       }, 0);
@@ -62,8 +67,8 @@ export default function LandingCobeOrbit() {
   }, []);
 
   const orbitClassName = isVisible
-    ? "rose-cobe-orbit rose-cobe-orbit--visible"
-    : "rose-cobe-orbit rose-cobe-orbit--deferred";
+    ? ORBIT_CLASS_NAMES.visible
+    : ORBIT_CLASS_NAMES.deferred;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -72,7 +77,7 @@ export default function LandingCobeOrbit() {
       return undefined;
     }
 
-    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    const reducedMotion = prefersReducedMotion();
     const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
     let phi = INITIAL_PHI;
     let globe: Globe | undefined;
@@ -126,7 +131,9 @@ export default function LandingCobeOrbit() {
     };
 
     const observer =
-      typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(resize);
+      typeof ResizeObserver === "undefined"
+        ? undefined
+        : new ResizeObserver(resize);
 
     if (!reducedMotion) {
       frameId = window.requestAnimationFrame(animate);

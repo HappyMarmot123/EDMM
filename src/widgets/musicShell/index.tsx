@@ -216,7 +216,6 @@ export function MusicShell({
     : null;
 
   const [query, setQuery] = useState("");
-  const setSearchQuery = setQuery;
   const [view, setView] = useState<MusicView>(normalizedInitialView);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(
     normalizedInitialTrackId,
@@ -819,7 +818,7 @@ export function MusicShell({
               isLoading={isVisibleLoading}
               emptyMessage={emptyMessage}
               canClearSearch={catalogFallbackState.status === "search_empty"}
-              onClearSearch={() => setSearchQuery("")}
+              onClearSearch={() => setQuery("")}
               playOnSelect={shouldPlayOnTrackSelect}
               onSelect={handleSelect}
               onPlay={handlePlay}
