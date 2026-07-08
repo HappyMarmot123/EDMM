@@ -11,6 +11,9 @@ interface AlbumArtworkProps {
   currentTrackInfo: Track | null;
 }
 
+const FALLBACK_ARTWORK_CLASS_NAME =
+  "absolute inset-0 flex items-center justify-center bg-white/10 text-[#fd6d94]";
+
 const AlbumArtwork: React.FC<AlbumArtworkProps> = ({
   isPlaying,
   isBuffering,
@@ -53,7 +56,7 @@ const AlbumArtwork: React.FC<AlbumArtworkProps> = ({
       disabled={!currentTrackInfo}
     >
       {!currentTrackInfo ? (
-        <span className="absolute inset-0 flex items-center justify-center bg-white/10 text-[#fd6d94]">
+        <span className={FALLBACK_ARTWORK_CLASS_NAME}>
           <Music2 width={26} height={26} aria-hidden="true" />
         </span>
       ) : shouldRenderArtwork ? (
@@ -78,7 +81,7 @@ const AlbumArtwork: React.FC<AlbumArtworkProps> = ({
           }
         />
       ) : (
-        <span className="absolute inset-0 flex items-center justify-center bg-white/10 text-[#fd6d94]">
+        <span className={FALLBACK_ARTWORK_CLASS_NAME}>
           <Music2 width={26} height={26} aria-hidden="true" />
         </span>
       )}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { logger } from "@/shared/lib/logger";
 import { RouteFeedbackShell } from "@/shared/components/routeFeedbackShell";

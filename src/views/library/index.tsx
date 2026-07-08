@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Track } from "@/entities/track";
-import { useFavorites } from "@/features/library";
-import { useRecentPlays } from "@/features/library";
+import { useFavorites, useRecentPlays } from "@/features/library";
 import { getCachedTracks } from "@/shared/db";
 import { TrackList } from "@/widgets/trackList";
 
