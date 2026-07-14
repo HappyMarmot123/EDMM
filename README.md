@@ -4,22 +4,8 @@
   </a>
 </p>
 
-<table>
-  <tr>
-    <td width="50%">
-      <img src="public/v2_mobile_fullscreen.png" alt="EDMM V2 모바일 전체 화면 플레이어" width="100%" style="max-height: 400px; object-fit: contain;" />
-    </td>
-    <td width="50%">
-      <img src="public/v2_desktop_fullscreen.png" alt="EDMM V2 데스크톱 전체 화면 플레이어" width="100%" style="max-height: 400px; object-fit: contain;" />
-    </td>
-  </tr>
-</table>
-
 <h1 align="center">EDMM</h1>
 
-<h3 align="center">
-  Electronic Dance Music Marmot
-</h3>
 <h4 align="center">
   정해진 흐름대로 흘러가는 쇼에서 즐기는 사람이 되어보세요. <br/> 매화꽃 기운이 당신과 함께하기를.
 </h4>
