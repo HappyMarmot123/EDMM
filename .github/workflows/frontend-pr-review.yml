@@ -63,7 +63,7 @@ jobs:
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           prompt-file: .github/codex/prompts/clean-code-review.md
-          model: gpt-5.3-codex-spark
+          model: gpt-5.6
           output-file: codex-review.md
           sandbox: read-only
 
