@@ -24,6 +24,7 @@ docs/performance/lighthouse-reports/*
 skills-lock.json
 .agents/
 .claude/
+feature/
 
 # env files (can opt-in for committing if needed)
 .env*
