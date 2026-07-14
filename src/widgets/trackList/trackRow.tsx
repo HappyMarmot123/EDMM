@@ -1,6 +1,6 @@
 "use client";
 
-import { Track } from "@/entities/track";
+import type { Track } from "@/entities/track";
 import Link from "next/link";
 
 export interface TrackRowProps {

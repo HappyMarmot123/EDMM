@@ -1,10 +1,6 @@
-import {
-  type EQPresetName,
-} from "@/shared/lib/equalizer";
+import type { EQPresetName } from "@/shared/lib/equalizer";
 import { useEqualizerPresetController } from "../hooks/useEqualizerPresetController";
 import MyTooltip from "@/shared/components/myTooltip";
-
-const EQ_ENABLED_QUERY = "(min-width: 768px)";
 
 const PRESET_LABELS: Record<EQPresetName, string> = {
   flat: "Flat",

@@ -40,7 +40,7 @@ export default function AndroidAppInstallModal() {
       />
 
       {/* Dialog sits as a sibling of the backdrop so aria-hidden does not affect it */}
-      <div className="flex h-full items-center justify-center p-4">
+      <div className="flex h-full items-center justify-center p-4 relative z-[1001]">
         <div
           role="dialog"
           aria-modal="true"

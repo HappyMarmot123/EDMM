@@ -25,6 +25,8 @@ export type DesktopFullscreenPlayerProps = {
 // 느린 크로스페이드 유지 — 이미지 두 장이 블렌딩되며 생기는 시각 피로를 제거한다.
 const ARTWORK_FADE_MS = 280;
 const BACKDROP_FADE_MS = 450;
+const SHORTCUT_KEY_CLASS_NAME =
+  "rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white";
 
 export default function DesktopFullscreenPlayer({
   currentTrackInfo,
@@ -160,27 +162,27 @@ export default function DesktopFullscreenPlayer({
             Keyboard controls
           </p>
           <div className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs font-bold text-white/82">
-            <kbd className="rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white">
+            <kbd className={SHORTCUT_KEY_CLASS_NAME}>
               Space
             </kbd>
             <span>Play / pause</span>
-            <kbd className="rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white">
+            <kbd className={SHORTCUT_KEY_CLASS_NAME}>
               Left / Right
             </kbd>
             <span>Seek 10 seconds</span>
-            <kbd className="rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white">
+            <kbd className={SHORTCUT_KEY_CLASS_NAME}>
               Up / Down
             </kbd>
             <span>Volume</span>
-            <kbd className="rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white">
+            <kbd className={SHORTCUT_KEY_CLASS_NAME}>
               P
             </kbd>
             <span>Previous track</span>
-            <kbd className="rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white">
+            <kbd className={SHORTCUT_KEY_CLASS_NAME}>
               N
             </kbd>
             <span>Next track</span>
-            <kbd className="rounded border border-white/12 bg-black/34 px-2 py-0.5 text-white">
+            <kbd className={SHORTCUT_KEY_CLASS_NAME}>
               Esc
             </kbd>
             <span>Close shortcuts / exit fullscreen</span>
