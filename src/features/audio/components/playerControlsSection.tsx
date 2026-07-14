@@ -24,6 +24,8 @@ interface PlayerControlsSectionProps {
 }
 
 const MIN_UNMUTE_VOLUME = 0.1;
+const CONTROL_ICON_CLASS_NAME = "m-auto block transition-colors duration-200 ease-out";
+const TRACK_NAV_BUTTON_CLASS_NAME = "h-10 w-10 text-white/70 hover:text-white";
 
 export const PlayerVolumeControls: React.FC = () => {
   const { volume, isMuted, setVolume, setLiveVolume, toggleMute } =
@@ -126,7 +128,7 @@ const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = ({
             disabled={!hasPlayableTrack}
           >
             <Shuffle
-              className="m-auto block transition-colors duration-200 ease-out"
+              className={CONTROL_ICON_CLASS_NAME}
               width={17}
               fill="currentColor"
               aria-hidden="true"
@@ -147,11 +149,11 @@ const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = ({
             title="Previous track"
             pressFeedback
             blurOnPointerClick
-            className="h-10 w-10 text-white/70 hover:text-white"
+            className={TRACK_NAV_BUTTON_CLASS_NAME}
             disabled={!hasPlayableQueue}
           >
             <SkipBack
-              className="m-auto block transition-colors duration-200 ease-out"
+              className={CONTROL_ICON_CLASS_NAME}
               width={20}
               fill="currentColor"
               aria-hidden="true"
@@ -186,11 +188,11 @@ const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = ({
             title="Next track"
             pressFeedback
             blurOnPointerClick
-            className="h-10 w-10 text-white/70 hover:text-white"
+            className={TRACK_NAV_BUTTON_CLASS_NAME}
             disabled={!hasPlayableQueue}
           >
             <SkipForward
-              className="m-auto block transition-colors duration-200 ease-out"
+              className={CONTROL_ICON_CLASS_NAME}
               width={20}
               fill="currentColor"
               aria-hidden="true"
@@ -207,7 +209,7 @@ const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = ({
               className="ml-auto grid h-9 w-9 text-white/60 hover:text-white"
             >
               <FullscreenIcon
-                className="m-auto block transition-colors duration-200 ease-out"
+                className={CONTROL_ICON_CLASS_NAME}
                 width={18}
                 height={18}
                 fill="currentColor"

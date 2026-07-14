@@ -2,6 +2,8 @@
 
 import { useRef } from "react";
 import { Clock3, Library, Search, Sparkles, X } from "lucide-react";
+import AppDownloadButton from "@/features/appPromo/appDownloadButton";
+import { useIsAndroidPhone } from "@/shared/hooks/useIsAndroidPhone";
 import type { MusicView } from "./musicView";
 
 export type { MusicView } from "./musicView";
@@ -35,6 +37,7 @@ export function MusicShellHeader({
 }: MusicShellHeaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const hasQuery = query.length > 0;
+  const isAndroidPhone = useIsAndroidPhone();
 
   const handleClearSearch = () => {
     onQueryChange("");
@@ -53,11 +56,14 @@ export function MusicShellHeader({
           </h1>
         </div>
 
-        <form
-          role="search"
-          className="max-w-md min-h-12 flex min-w-0 flex-1 items-center gap-3 rounded-md border border-white/12 bg-white/[0.065] px-3 shadow-[0_0_32px_rgba(255,105,135,0.10)] focus-within:border-[#ff98a2]/70"
-          onSubmit={(event) => event.preventDefault()}
-        >
+        {isAndroidPhone ? (
+          <AppDownloadButton />
+        ) : (
+          <form
+            role="search"
+            className="max-w-md min-h-12 flex min-w-0 flex-1 items-center gap-3 rounded-md border border-white/12 bg-white/[0.065] px-3 shadow-[0_0_32px_rgba(255,105,135,0.10)] focus-within:border-[#ff98a2]/70"
+            onSubmit={(event) => event.preventDefault()}
+          >
           <Search
             aria-hidden="true"
             className="shrink-0 text-[#ff98a2]"
@@ -86,7 +92,8 @@ export function MusicShellHeader({
               <X size={17} strokeWidth={2.4} aria-hidden="true" />
             </button>
           ) : null}
-        </form>
+          </form>
+        )}
       </div>
 
       <nav className="flex flex-wrap gap-2" aria-label="Music views">

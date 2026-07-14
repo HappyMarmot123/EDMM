@@ -47,6 +47,7 @@ const DEFAULT_AUDIO_CAPABILITIES: AudioCapabilities = {
 };
 
 const DEFAULT_CROSSFADE_DURATION_SEC = 0;
+const DEFAULT_EQ_PARAM_RAMP_DURATION_SEC = 0.08;
 const DEFAULT_PAUSE_FADE_DURATION_SEC = 0.22;
 const DEFAULT_RESUME_FADE_DURATION_SEC = 0.16;
 const MIN_GAIN = 0;
@@ -229,9 +230,14 @@ class AudioSingletonInstance {
   }
 
   public applyPresetToEngine(preset: EQPresetName): void {
-    applyEqualizerPreset(preset, this.equalizerFilters);
+    const rampOptions = {
+      currentTime: this.audioContext?.currentTime ?? 0,
+      durationSec: DEFAULT_EQ_PARAM_RAMP_DURATION_SEC,
+    };
+
+    applyEqualizerPreset(preset, this.equalizerFilters, rampOptions);
     if (this.preamp) {
-      applyPreampForPreset(preset, this.preamp);
+      applyPreampForPreset(preset, this.preamp, rampOptions);
     }
   }
 
@@ -411,6 +417,7 @@ class AudioSingletonInstance {
           direction: "fadeIn",
           startTime: now,
           durationSec: crossfadeDuration,
+          curve: "equalPower",
         }),
       );
 
@@ -420,6 +427,7 @@ class AudioSingletonInstance {
           direction: "fadeOut",
           startTime: now,
           durationSec: crossfadeDuration,
+          curve: "equalPower",
         }),
       );
     } else {

@@ -32,10 +32,12 @@ const formatDuration = (durationMs: number) => {
 };
 
 const SOURCE_LABEL = "Cloudinary";
+const TRACK_DETAIL_PAGE_CLASS =
+  "min-h-screen bg-[#050306] px-4 pb-40 pt-6 text-white sm:px-6 lg:px-8";
 
 function TrackDetailSkeleton() {
   return (
-    <main className="min-h-screen bg-[#050306] px-4 pb-40 pt-6 text-white sm:px-6 lg:px-8">
+    <main className={TRACK_DETAIL_PAGE_CLASS}>
       <section className="mx-auto max-w-6xl space-y-6">
         <div className="h-10 w-32 animate-pulse rounded-md bg-white/10" />
         <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
@@ -54,7 +56,7 @@ function TrackDetailSkeleton() {
 
 function MissingTrackState({ trackId }: { trackId: string }) {
   return (
-    <main className="min-h-screen bg-[#050306] px-4 pb-40 pt-6 text-white sm:px-6 lg:px-8">
+    <main className={TRACK_DETAIL_PAGE_CLASS}>
       <section className="mx-auto flex min-h-[70vh] max-w-3xl flex-col justify-center">
         <Link
           href="/search"
@@ -196,7 +198,7 @@ export function TrackDetailView({ trackId, onPlay }: TrackDetailViewProps) {
   const albumLabel = track.albumName || "Single";
 
   return (
-    <main className="min-h-screen bg-[#050306] px-4 pb-40 pt-6 text-white sm:px-6 lg:px-8">
+    <main className={TRACK_DETAIL_PAGE_CLASS}>
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-8">
         <nav className="flex flex-wrap items-center justify-between gap-3">
           <Link
