@@ -36,6 +36,9 @@ const fadeStyle = (opacity: number, durationMs: number): CSSProperties => ({
   opacity,
   transition: `opacity ${durationMs}ms ease-out`,
 });
+const MOBILE_FULLSCREEN_NAV_BUTTON_CLASS_NAME =
+  "h-12 w-12 text-white/78 hover:text-white";
+const MOBILE_FULLSCREEN_NAV_ICON_CLASS_NAME = "m-auto block";
 
 export default function MobileFullscreenPlayer({
   currentTrackInfo,
@@ -233,10 +236,15 @@ export default function MobileFullscreenPlayer({
             onClick={prevTrack}
             aria-label="Previous track"
             pressFeedback
-            className="h-12 w-12 text-white/78 hover:text-white"
+            className={MOBILE_FULLSCREEN_NAV_BUTTON_CLASS_NAME}
             disabled={!hasPlayableTrack}
           >
-            <SkipBack className="m-auto block" size={30} fill="currentColor" aria-hidden="true" />
+            <SkipBack
+              className={MOBILE_FULLSCREEN_NAV_ICON_CLASS_NAME}
+              size={30}
+              fill="currentColor"
+              aria-hidden="true"
+            />
           </PlayerControlButton>
           <IconToggleButton
             id="mobile-fullscreen-play-pause"
@@ -261,10 +269,15 @@ export default function MobileFullscreenPlayer({
             onClick={nextTrack}
             aria-label="Next track"
             pressFeedback
-            className="h-12 w-12 text-white/78 hover:text-white"
+            className={MOBILE_FULLSCREEN_NAV_BUTTON_CLASS_NAME}
             disabled={!hasPlayableTrack}
           >
-            <SkipForward className="m-auto block" size={30} fill="currentColor" aria-hidden="true" />
+            <SkipForward
+              className={MOBILE_FULLSCREEN_NAV_ICON_CLASS_NAME}
+              size={30}
+              fill="currentColor"
+              aria-hidden="true"
+            />
           </PlayerControlButton>
         </section>
       </div>

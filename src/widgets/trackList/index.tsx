@@ -1,7 +1,7 @@
 "use client";
 
 import { useFavorites } from "@/features/library";
-import { Track } from "@/entities/track";
+import type { Track } from "@/entities/track";
 import { TrackRow } from "./trackRow";
 
 export interface TrackListProps {
@@ -9,6 +9,8 @@ export interface TrackListProps {
   onPlay: (track: Track) => void;
   isLoading?: boolean;
 }
+
+const TRACK_LIST_MESSAGE_CLASS = "text-sm text-gray-400";
 
 export function TrackList({
   tracks,
@@ -19,11 +21,11 @@ export function TrackList({
   const { isFavorite, toggle } = useFavorites();
 
   if (isLoading) {
-    return <p className="text-sm text-gray-400">Loading...</p>;
+    return <p className={TRACK_LIST_MESSAGE_CLASS}>Loading...</p>;
   }
 
   if (list.length === 0) {
-    return <p className="text-sm text-gray-400">트랙이 없습니다.</p>;
+    return <p className={TRACK_LIST_MESSAGE_CLASS}>트랙이 없습니다.</p>;
   }
 
   return (

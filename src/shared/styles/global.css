@@ -212,12 +212,6 @@ h1 {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .rose-star {
-    animation: none;
-  }
-}
-
 .rose-landing {
   position: relative;
   width: 100%;
@@ -582,12 +576,6 @@ h1 {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .rose-cobe-orbit__halo {
-    animation: none;
-  }
-}
-
 .parallax {
   overflow: hidden;
   letter-spacing: 0;
@@ -929,12 +917,6 @@ h1 {
     display: none;
   }
 
-  /* Chrome, Edge, and Safari */
-  .custom-scrollbar::-webkit-scrollbar {
-    /* width: 8px;
-    height: 8px; */
-  }
-
   .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
   }
@@ -966,31 +948,6 @@ h1 {
     scrollbar-color: var(--scrollbar-pink-end) transparent;
   }
 }
-
-/* Tippy.js Custom Gradient Theme - REMOVED or COMMENTED OUT
-.tippy-box[data-theme~='gradient'] {
-  background-image: linear-gradient(to right, #6a11cb 0%, #2575fc 100%);
-  color: white;
-  font-weight: bold;
-  border-radius: 4px;
-}
-
-.tippy-box[data-theme~='gradient'][data-placement^='top'] > .tippy-arrow::before {
-  border-top-color: #6a11cb;
-}
-
-.tippy-box[data-theme~='gradient'][data-placement^='bottom'] > .tippy-arrow::before {
-  border-bottom-color: #2575fc;
-}
-
-.tippy-box[data-theme~='gradient'][data-placement^='left'] > .tippy-arrow::before {
-  border-left-color: #6a11cb;
-}
-
-.tippy-box[data-theme~='gradient'][data-placement^='right'] > .tippy-arrow::before {
-  border-right-color: #2575fc;
-}
-*/
 
 /* Radix UI Tooltip EDMM Theme */
 .radix-tooltip-content-edmm {
@@ -1099,6 +1056,10 @@ h1 {
   .rose-star {
     animation: none;
     transform: translate3d(0, 0, 0) scale(var(--scale, 1));
+  }
+
+  .rose-cobe-orbit__halo {
+    animation: none;
   }
 
   .parallax .scroller {

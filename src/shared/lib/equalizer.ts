@@ -2,6 +2,7 @@ import { logger } from "@/shared/lib/logger";
 
 const MIN_DB_GAIN = -24;
 const MAX_DB_GAIN = 24;
+const DEFAULT_AUDIO_PARAM_RAMP_DURATION_SEC = 0.08;
 
 export type EQPresetName = "flat" | "bass";
 
@@ -27,6 +28,19 @@ export interface LimiterSettings {
   release: number;
 }
 
+export interface AudioParamRampOptions {
+  currentTime: number;
+  durationSec?: number;
+}
+
+type EqualizerAudioParam = {
+  value: number;
+  cancelAndHoldAtTime?: (cancelTime: number) => unknown;
+  cancelScheduledValues?: (startTime: number) => unknown;
+  setValueAtTime?: (value: number, startTime: number) => unknown;
+  linearRampToValueAtTime?: (value: number, endTime: number) => unknown;
+};
+
 export const EQ_BANDS: readonly Omit<EQBand, "gain">[] = [
   { frequency: 32, type: "lowshelf", q: 0.7 },
   { frequency: 64, type: "peaking", q: 1.1 },
@@ -51,11 +65,11 @@ export const EQ_PRESET_PREAMP_DB: Record<EQPresetName, number> = {
 };
 
 export const LIMITER_SETTINGS: LimiterSettings = {
-  threshold: -1,
-  knee: 0,
-  ratio: 20,
-  attack: 0.003,
-  release: 0.25,
+  threshold: -4,
+  knee: 12,
+  ratio: 8,
+  attack: 0.008,
+  release: 0.18,
 };
 
 export const EQ_CONFIG: EqualizerConfig = {
@@ -115,9 +129,46 @@ export function getDefaultPreset(): EQPresetName {
   return "flat";
 }
 
+function applyAudioParamValue(
+  param: EqualizerAudioParam,
+  value: number,
+  rampOptions?: AudioParamRampOptions,
+): void {
+  if (!rampOptions) {
+    param.value = value;
+    return;
+  }
+
+  if (!param.linearRampToValueAtTime) {
+    param.value = value;
+    return;
+  }
+
+  const { currentTime } = rampOptions;
+  const durationSec =
+    rampOptions.durationSec ?? DEFAULT_AUDIO_PARAM_RAMP_DURATION_SEC;
+
+  if (param.cancelAndHoldAtTime) {
+    param.cancelAndHoldAtTime(currentTime);
+    param.linearRampToValueAtTime(value, currentTime + durationSec);
+    return;
+  }
+
+  if (!param.cancelScheduledValues || !param.setValueAtTime) {
+    param.value = value;
+    return;
+  }
+
+  const startValue = param.value;
+  param.cancelScheduledValues(currentTime);
+  param.setValueAtTime(startValue, currentTime);
+  param.linearRampToValueAtTime(value, currentTime + durationSec);
+}
+
 export function applyEqualizerPreset(
   preset: EQPresetName,
   filters: BiquadFilterNode[],
+  rampOptions?: AudioParamRampOptions,
 ): void {
   const gains = getPresetGainValues(preset);
   if (filters.length !== EQ_BANDS.length) {
@@ -129,13 +180,18 @@ export function applyEqualizerPreset(
 
   filters.forEach((filter, index) => {
     const gain = gains[index] ?? 0;
-    filter.gain.value = clampGain(gain);
+    applyAudioParamValue(filter.gain, clampGain(gain), rampOptions);
   });
 }
 
 export function applyPreampForPreset(
   preset: EQPresetName,
   preamp: { gain: { value: number } },
+  rampOptions?: AudioParamRampOptions,
 ): void {
-  preamp.gain.value = dbToLinearGain(getPresetPreampDb(preset));
+  applyAudioParamValue(
+    preamp.gain,
+    dbToLinearGain(getPresetPreampDb(preset)),
+    rampOptions,
+  );
 }

@@ -13,6 +13,9 @@ interface MAlbumArtworkProps {
   currentTrackInfo: Track | null;
 }
 
+const FALLBACK_ARTWORK_CLASS_NAME =
+  "absolute inset-0 flex items-center justify-center bg-white/10 text-[#fd6d94]";
+
 const MAlbumArtwork: React.FC<MAlbumArtworkProps> = ({
   isBuffering,
   currentTrackInfo,
@@ -54,7 +57,7 @@ const MAlbumArtwork: React.FC<MAlbumArtworkProps> = ({
       }
     >
       {!currentTrackInfo ? (
-        <span className="absolute inset-0 flex items-center justify-center bg-white/10 text-[#fd6d94]">
+        <span className={FALLBACK_ARTWORK_CLASS_NAME}>
           <Music2 width={22} height={22} aria-hidden="true" />
         </span>
       ) : shouldRenderArtwork ? (
@@ -79,7 +82,7 @@ const MAlbumArtwork: React.FC<MAlbumArtworkProps> = ({
           }
         />
       ) : (
-        <span className="absolute inset-0 flex items-center justify-center bg-white/10 text-[#fd6d94]">
+        <span className={FALLBACK_ARTWORK_CLASS_NAME}>
           <Music2 width={22} height={22} aria-hidden="true" />
         </span>
       )}
