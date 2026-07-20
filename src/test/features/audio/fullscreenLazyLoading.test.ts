@@ -15,6 +15,7 @@ describe("fullscreen player lazy loading boundaries", () => {
     expect(source).not.toMatch(
       /^import\s+DesktopFullscreenPlayer\s+from\s+["']@\/features\/audio\/components\/desktopFullscreenPlayer["'];/m,
     );
+    expect(source).not.toContain("@/features/lyrics/");
   });
 
   it("loads the mobile fullscreen player through next/dynamic instead of a static import", () => {
@@ -24,6 +25,23 @@ describe("fullscreen player lazy loading boundaries", () => {
     expect(source).toContain("dynamic<MobileFullscreenPlayerProps>");
     expect(source).not.toMatch(
       /^import\s+MobileFullscreenPlayer\s+from\s+["']@\/features\/audio\/components\/mobile\/mobileFullscreenPlayer["'];/m,
+    );
+    expect(source).not.toContain("@/features/lyrics/");
+  });
+
+  it("keeps the lyrics experience inside the lazy fullscreen chunks", () => {
+    const desktopSource = readSource(
+      "src/features/audio/components/desktopFullscreenPlayer.tsx",
+    );
+    const mobileSource = readSource(
+      "src/features/audio/components/mobile/mobileFullscreenPlayer.tsx",
+    );
+
+    expect(desktopSource).toContain(
+      "@/features/lyrics/components/fullscreenLyricsExperience",
+    );
+    expect(mobileSource).toContain(
+      "@/features/lyrics/components/fullscreenLyricsExperience",
     );
   });
 });

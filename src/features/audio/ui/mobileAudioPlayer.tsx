@@ -58,6 +58,9 @@ export default function MobileAudioPlayer() {
           currentTrackInfo={currentTrack}
           duration={duration}
           seek={seek}
+          lyricsEligible={
+            currentTrack?.albumName?.trim().toLowerCase() === "pop"
+          }
           onClose={() => setIsFullscreenOpen(false)}
         />
       ) : null}

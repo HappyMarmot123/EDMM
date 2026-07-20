@@ -3,6 +3,7 @@ import { fireEvent } from "@testing-library/react";
 import { AudioPlayer, MobileAudioPlayer } from "@/features/audio";
 import AudioPlayerWidget from "@/widgets/audioPlayer";
 import type { Track } from "@/entities/track";
+import { dispatchEdmmEvent, EDMM_EVENTS } from "@/shared/lib/edmmEvents";
 
 const track: Track = {
   id: "track-1",
@@ -82,6 +83,22 @@ jest.mock("next/navigation", () => ({
 
 jest.mock("@/shared/providers/audioPlayerProvider", () => ({
   useAudioPlayer: () => mockAudioPlayerState,
+}));
+jest.mock("@/features/lyrics/components/fullscreenLyricsExperience", () => ({
+  __esModule: true,
+  default: ({
+    track: lyricsTrack,
+    currentTimeSeconds,
+  }: {
+    track: Track;
+    currentTimeSeconds: number;
+  }) => (
+    <div
+      data-testid="fullscreen-lyrics-experience"
+      data-track-id={lyricsTrack.id}
+      data-current-time={currentTimeSeconds}
+    />
+  ),
 }));
 
 describe("AudioPlayer", () => {
@@ -307,6 +324,51 @@ describe("AudioPlayer", () => {
     jest.useRealTimers();
   });
 
+  it("disables lyrics for a preview override until that POP track becomes current", async () => {
+    const currentPopTrack: Track = {
+      ...track,
+      albumName: "pop",
+    };
+    const previewPopTrack: Track = {
+      ...currentPopTrack,
+      id: "track-preview",
+      title: "Preview Track",
+      artworkUrl: "https://example.com/preview.jpg",
+    };
+    mockAudioPlayerState.currentTrack = currentPopTrack;
+
+    const view = render(<AudioPlayer />);
+
+    act(() => {
+      dispatchEdmmEvent(window, EDMM_EVENTS.openPlayerFullscreen, {
+        track: previewPopTrack,
+      });
+    });
+
+    const fullscreenDialog = await screen.findByRole("dialog", {
+      name: "Fullscreen player",
+    });
+    expect(
+      within(fullscreenDialog).getByAltText("Preview Track fullscreen artwork"),
+    ).toBeInTheDocument();
+    expect(
+      within(fullscreenDialog).queryByTestId("fullscreen-lyrics-experience"),
+    ).toBeNull();
+
+    mockAudioPlayerState.currentTrack = previewPopTrack;
+    mockAudioPlayerState.currentTime = 42;
+    view.rerender(<AudioPlayer />);
+
+    await waitFor(() =>
+      expect(
+        within(fullscreenDialog).getByTestId("fullscreen-lyrics-experience"),
+      ).toHaveAttribute("data-track-id", "track-preview"),
+    );
+    expect(
+      within(fullscreenDialog).getByTestId("fullscreen-lyrics-experience"),
+    ).toHaveAttribute("data-current-time", "42");
+  });
+
   it("fades the fullscreen player in on open", () => {
     jest.useFakeTimers();
     try {
@@ -513,6 +575,34 @@ describe("AudioPlayer", () => {
     );
     expect(screen.getByText("No track selected")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Play" })).toBeDisabled();
+  });
+
+  it("mounts POP lyrics only after the mobile fullscreen surface opens", async () => {
+    mockAudioPlayerState.currentTrack = {
+      ...track,
+      albumName: "pop",
+    };
+    mockAudioPlayerState.currentTime = 24;
+
+    render(<MobileAudioPlayer />);
+
+    expect(screen.queryByTestId("fullscreen-lyrics-experience")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open fullscreen player" }));
+
+    const fullscreenDialog = await screen.findByRole("dialog", {
+      name: "Mobile fullscreen player",
+    });
+    expect(
+      within(fullscreenDialog).getByTestId("fullscreen-lyrics-experience"),
+    ).toHaveAttribute("data-track-id", track.id);
+    expect(
+      within(fullscreenDialog).getByTestId("fullscreen-lyrics-experience"),
+    ).toHaveAttribute("data-current-time", "24");
+    expect(within(fullscreenDialog).getByText("Track One")).toBeInTheDocument();
+    expect(
+      within(fullscreenDialog).getByRole("button", { name: "Play" }),
+    ).toBeInTheDocument();
   });
 
   it("renders playback errors as a fixed mobile popup outside the compact player", () => {

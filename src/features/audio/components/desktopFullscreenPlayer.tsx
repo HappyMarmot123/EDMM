@@ -11,6 +11,7 @@ import FullscreenAudioVisualizer from "@/features/audio/components/fullscreenAud
 import FullscreenBackdrop from "@/features/audio/components/fullscreenBackdrop";
 import { useAlbumColorPalette } from "@/features/audio/components/visualizers/albumColorPalette";
 import { useArtworkCrossfade } from "@/features/audio/hooks/useArtworkCrossfade";
+import FullscreenLyricsExperience from "@/features/lyrics/components/fullscreenLyricsExperience";
 import type { Track } from "@/entities/track";
 import MyTooltip from "@/shared/components/myTooltip";
 
@@ -18,6 +19,8 @@ export type DesktopFullscreenPlayerProps = {
   currentTrackInfo: Track | null;
   analyser: AnalyserNode | null;
   isPlaying: boolean;
+  currentTime: number;
+  lyricsEligible: boolean;
   onClose: () => void;
 };
 
@@ -32,6 +35,8 @@ export default function DesktopFullscreenPlayer({
   currentTrackInfo,
   analyser,
   isPlaying,
+  currentTime,
+  lyricsEligible,
   onClose,
 }: DesktopFullscreenPlayerProps) {
   const dialogRef = useRef<HTMLElement>(null);
@@ -46,6 +51,9 @@ export default function DesktopFullscreenPlayer({
     fadeDurationMs: BACKDROP_FADE_MS,
   });
   const topArtworkLayer = layers.length ? layers[layers.length - 1] : null;
+  const shouldShowLyrics =
+    lyricsEligible &&
+    currentTrackInfo?.albumName?.trim().toLowerCase() === "pop";
 
   const albumPaletteStyle = {
     "--album-primary-rgb": topPalette.primary,
@@ -203,8 +211,21 @@ export default function DesktopFullscreenPlayer({
       </MyTooltip>
 
       <div className="relative z-[1] flex min-h-screen min-h-dvh flex-col items-center justify-center px-12 pb-[calc(130px+max(env(safe-area-inset-bottom),12px))] pt-20">
-        <div className="grid w-full max-w-[560px] justify-items-center">
-          <div className="relative">
+        <div
+          data-testid="desktop-fullscreen-content"
+          className={
+            shouldShowLyrics
+              ? "grid w-full max-w-[1180px] grid-cols-[minmax(0,0.9fr)_minmax(18rem,1.1fr)] items-center gap-[clamp(2rem,5vw,5rem)]"
+              : "grid w-full max-w-[560px] justify-items-center"
+          }
+        >
+          <div
+            className={
+              shouldShowLyrics
+                ? "relative justify-self-center origin-center scale-[0.74] lg:scale-[0.8] xl:scale-100"
+                : "relative"
+            }
+          >
             {/* 스냅 아웃: top 레이어만 렌더한다. key가 바뀌면 이전 아트워크는
                 즉시 unmount되고, 새 레이어는 훅의 활성화 타이머로 페이드 인한다. */}
             {topArtworkLayer ? (
@@ -223,6 +244,13 @@ export default function DesktopFullscreenPlayer({
               </div>
             ) : null}
           </div>
+          {shouldShowLyrics && currentTrackInfo ? (
+            <FullscreenLyricsExperience
+              track={currentTrackInfo}
+              currentTimeSeconds={currentTime}
+              className="justify-self-end"
+            />
+          ) : null}
         </div>
       </div>
     </section>

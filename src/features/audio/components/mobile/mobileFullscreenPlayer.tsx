@@ -19,11 +19,13 @@ import MSeekBar from "@/features/audio/components/mobile/mSeekBar";
 import MFullscreenBackdrop from "@/features/audio/components/mobile/mFullscreenBackdrop";
 import { useAlbumColorPalette } from "@/features/audio/components/visualizers/albumColorPalette";
 import { useArtworkCrossfade } from "@/features/audio/hooks/useArtworkCrossfade";
+import FullscreenLyricsExperience from "@/features/lyrics/components/fullscreenLyricsExperience";
 
 export type MobileFullscreenPlayerProps = {
   currentTrackInfo: Track | null;
   duration: number;
   seek: (time: number) => void;
+  lyricsEligible: boolean;
   onClose: () => void;
 };
 
@@ -44,6 +46,7 @@ export default function MobileFullscreenPlayer({
   currentTrackInfo,
   duration,
   seek,
+  lyricsEligible,
   onClose,
 }: MobileFullscreenPlayerProps) {
   const { isPlaying, togglePlayPause, prevTrack, nextTrack, currentTime } =
@@ -63,6 +66,9 @@ export default function MobileFullscreenPlayer({
     fadeDurationMs: BACKDROP_FADE_MS,
   });
   const topArtworkLayer = layers.length ? layers[layers.length - 1] : null;
+  const shouldShowLyrics =
+    lyricsEligible &&
+    currentTrackInfo?.albumName?.trim().toLowerCase() === "pop";
 
   const closeWithSlide = () => {
     setIsClosing(true);
@@ -187,33 +193,49 @@ export default function MobileFullscreenPlayer({
       </button>
 
       <div className="relative z-[1] flex min-h-0 flex-1 flex-col justify-center px-6 pb-[calc(28px+max(env(safe-area-inset-bottom),12px))]">
-        <div className="relative mx-auto aspect-square w-full max-w-[300px] overflow-hidden rounded-lg bg-white/10 shadow-[0_34px_90px_rgba(0,0,0,0.5)]">
-          {/* 스냅 아웃: top 레이어만 렌더 — key 교체로 이전 아트워크는 즉시 제거되고
-              새 레이어만 짧게 페이드 인한다 (겹침 블렌딩 없음) */}
-          {topArtworkLayer?.hasArtwork && currentTrackInfo ? (
-            <div
-              key={topArtworkLayer.key}
-              className="absolute inset-0"
-              style={fadeStyle(topArtworkLayer.opacity, ARTWORK_FADE_MS)}
-            >
-              <Image
-                src={topArtworkLayer.artworkSrc}
-                alt={currentTrackInfo.albumName ?? currentTrackInfo.source}
-                fill
-                sizes="300px"
-                unoptimized={shouldUnoptimizeArtworkImage(topArtworkLayer.artworkSrc)}
-                className="object-cover"
-                draggable={false}
-              />
-            </div>
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-[#fd6d94]">
-              <Music2 size={56} strokeWidth={1.8} aria-hidden="true" />
-            </div>
-          )}
-        </div>
+        {shouldShowLyrics && currentTrackInfo ? (
+          <div className="relative mx-auto h-[min(40dvh,20rem)] w-full max-w-[34rem] [@media(max-height:560px)]:h-[min(28dvh,10rem)] [@media(max-height:420px)]:h-24">
+            <FullscreenLyricsExperience
+              track={currentTrackInfo}
+              currentTimeSeconds={currentTime}
+              className="h-full! max-w-none! rounded-lg!"
+            />
+          </div>
+        ) : (
+          <div className="relative mx-auto aspect-square w-full max-w-[300px] overflow-hidden rounded-lg bg-white/10 shadow-[0_34px_90px_rgba(0,0,0,0.5)]">
+            {/* 스냅 아웃: top 레이어만 렌더 — key 교체로 이전 아트워크는 즉시 제거되고
+                새 레이어만 짧게 페이드 인한다 (겹침 블렌딩 없음) */}
+            {topArtworkLayer?.hasArtwork && currentTrackInfo ? (
+              <div
+                key={topArtworkLayer.key}
+                className="absolute inset-0"
+                style={fadeStyle(topArtworkLayer.opacity, ARTWORK_FADE_MS)}
+              >
+                <Image
+                  src={topArtworkLayer.artworkSrc}
+                  alt={currentTrackInfo.albumName ?? currentTrackInfo.source}
+                  fill
+                  sizes="300px"
+                  unoptimized={shouldUnoptimizeArtworkImage(topArtworkLayer.artworkSrc)}
+                  className="object-cover"
+                  draggable={false}
+                />
+              </div>
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-[#fd6d94]">
+                <Music2 size={56} strokeWidth={1.8} aria-hidden="true" />
+              </div>
+            )}
+          </div>
+        )}
 
-        <div className="mt-8 min-w-0">
+        <div
+          className={
+            shouldShowLyrics
+              ? "mt-5 min-w-0 [@media(max-height:560px)]:mt-2"
+              : "mt-8 min-w-0"
+          }
+        >
           <h2 className="truncate text-2xl font-black tracking-tight text-white">
             {currentTrackInfo?.title ?? "No track selected"}
           </h2>
@@ -222,12 +244,23 @@ export default function MobileFullscreenPlayer({
           </p>
         </div>
 
-        <div className="mt-6" aria-label="Track progress">
+        <div
+          className={
+            shouldShowLyrics
+              ? "mt-4 [@media(max-height:560px)]:mt-2"
+              : "mt-6"
+          }
+          aria-label="Track progress"
+        >
           <MSeekBar currentTime={currentTime} duration={duration} seek={seek} />
         </div>
 
         <section
-          className="mt-4 flex items-center justify-center gap-6"
+          className={
+            shouldShowLyrics
+              ? "mt-3 flex items-center justify-center gap-6 [@media(max-height:560px)]:mt-1"
+              : "mt-4 flex items-center justify-center gap-6"
+          }
           aria-label={`${currentTrackInfo?.title ?? "Current track"} fullscreen controls`}
         >
           {/* shuffle은 모바일뷰에서 비활성화 (사용자 결정) — 전역 shuffle 상태 자체는 유지 */}
