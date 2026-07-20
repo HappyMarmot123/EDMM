@@ -161,6 +161,11 @@ export default function AudioPlayer() {
             currentTrackInfo={fullscreenTrackInfo}
             analyser={isFullscreenTrackCurrent ? audioAnalyser : null}
             isPlaying={isFullscreenTrackCurrent && isPlaying}
+            currentTime={currentTime}
+            lyricsEligible={
+              isFullscreenTrackCurrent &&
+              fullscreenTrackInfo?.albumName?.trim().toLowerCase() === "pop"
+            }
             onClose={closeFullscreen}
           />
         </div>

@@ -19,11 +19,13 @@ import MSeekBar from "@/features/audio/components/mobile/mSeekBar";
 import MFullscreenBackdrop from "@/features/audio/components/mobile/mFullscreenBackdrop";
 import { useAlbumColorPalette } from "@/features/audio/components/visualizers/albumColorPalette";
 import { useArtworkCrossfade } from "@/features/audio/hooks/useArtworkCrossfade";
+import FullscreenLyricsExperience from "@/features/lyrics/components/fullscreenLyricsExperience";
 
 export type MobileFullscreenPlayerProps = {
   currentTrackInfo: Track | null;
   duration: number;
   seek: (time: number) => void;
+  lyricsEligible: boolean;
   onClose: () => void;
 };
 
@@ -39,11 +41,22 @@ const fadeStyle = (opacity: number, durationMs: number): CSSProperties => ({
 const MOBILE_FULLSCREEN_NAV_BUTTON_CLASS_NAME =
   "h-12 w-12 text-white/78 hover:text-white";
 const MOBILE_FULLSCREEN_NAV_ICON_CLASS_NAME = "m-auto block";
+const MOBILE_FULLSCREEN_CONTENT_CLASS_NAME =
+  "relative z-[1] flex min-h-0 flex-1 flex-col px-6 pb-[calc(28px+max(env(safe-area-inset-bottom),12px))]";
+const STANDARD_ARTWORK_CLASS_NAME =
+  "relative mx-auto aspect-square w-full max-w-[300px] overflow-hidden rounded-lg bg-white/10 shadow-[0_34px_90px_rgba(0,0,0,0.5)]";
+const LYRICS_ARTWORK_CLASS_NAME =
+  "relative h-full min-h-0 w-full overflow-hidden rounded-lg bg-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.45)]";
+const LYRICS_MEDIA_LAYOUT_CLASS_NAME =
+  "mx-auto grid min-h-0 w-full max-w-[34rem] flex-1 grid-rows-[minmax(0,7fr)_minmax(0,3fr)] gap-3 pt-1 [@media(max-height:560px)]:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] [@media(max-height:560px)]:grid-rows-none";
+const LYRICS_ARTWORK_REGION_CLASS_NAME =
+  "relative flex min-h-0 w-full items-center justify-center overflow-hidden";
 
 export default function MobileFullscreenPlayer({
   currentTrackInfo,
   duration,
   seek,
+  lyricsEligible,
   onClose,
 }: MobileFullscreenPlayerProps) {
   const { isPlaying, togglePlayPause, prevTrack, nextTrack, currentTime } =
@@ -63,6 +76,9 @@ export default function MobileFullscreenPlayer({
     fadeDurationMs: BACKDROP_FADE_MS,
   });
   const topArtworkLayer = layers.length ? layers[layers.length - 1] : null;
+  const shouldShowLyrics =
+    lyricsEligible &&
+    currentTrackInfo?.albumName?.trim().toLowerCase() === "pop";
 
   const closeWithSlide = () => {
     setIsClosing(true);
@@ -130,6 +146,51 @@ export default function MobileFullscreenPlayer({
     setDragY(0);
   };
 
+  const artworkStage = (
+    <div
+      data-testid="mobile-fullscreen-artwork"
+      className={
+        shouldShowLyrics
+          ? LYRICS_ARTWORK_CLASS_NAME
+          : STANDARD_ARTWORK_CLASS_NAME
+      }
+    >
+      {/* 스냅 아웃: top 레이어만 렌더 — key 교체로 이전 아트워크는 즉시 제거되고
+          새 레이어만 짧게 페이드 인한다 (겹침 블렌딩 없음) */}
+      {topArtworkLayer?.hasArtwork && currentTrackInfo ? (
+        <div
+          key={topArtworkLayer.key}
+          className="absolute inset-0"
+          style={fadeStyle(topArtworkLayer.opacity, ARTWORK_FADE_MS)}
+        >
+          <Image
+            src={topArtworkLayer.artworkSrc}
+            alt={currentTrackInfo.albumName ?? currentTrackInfo.source}
+            fill
+            sizes={
+              shouldShowLyrics
+                ? "(max-width: 767px) 70vw, 300px"
+                : "300px"
+            }
+            unoptimized={shouldUnoptimizeArtworkImage(
+              topArtworkLayer.artworkSrc,
+            )}
+            className={shouldShowLyrics ? "object-contain" : "object-cover"}
+            draggable={false}
+          />
+        </div>
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-[#fd6d94]">
+          <Music2
+            size={shouldShowLyrics ? 32 : 56}
+            strokeWidth={1.8}
+            aria-hidden="true"
+          />
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div
       role="dialog"
@@ -186,34 +247,44 @@ export default function MobileFullscreenPlayer({
         <ChevronDown size={28} strokeWidth={2.2} aria-hidden="true" />
       </button>
 
-      <div className="relative z-[1] flex min-h-0 flex-1 flex-col justify-center px-6 pb-[calc(28px+max(env(safe-area-inset-bottom),12px))]">
-        <div className="relative mx-auto aspect-square w-full max-w-[300px] overflow-hidden rounded-lg bg-white/10 shadow-[0_34px_90px_rgba(0,0,0,0.5)]">
-          {/* 스냅 아웃: top 레이어만 렌더 — key 교체로 이전 아트워크는 즉시 제거되고
-              새 레이어만 짧게 페이드 인한다 (겹침 블렌딩 없음) */}
-          {topArtworkLayer?.hasArtwork && currentTrackInfo ? (
+      <div
+        className={`${MOBILE_FULLSCREEN_CONTENT_CLASS_NAME} ${
+          shouldShowLyrics ? "" : "justify-center"
+        }`.trim()}
+      >
+        {shouldShowLyrics && currentTrackInfo ? (
+          <div
+            data-testid="mobile-fullscreen-media-layout"
+            className={LYRICS_MEDIA_LAYOUT_CLASS_NAME}
+          >
             <div
-              key={topArtworkLayer.key}
-              className="absolute inset-0"
-              style={fadeStyle(topArtworkLayer.opacity, ARTWORK_FADE_MS)}
+              data-testid="mobile-fullscreen-artwork-region"
+              className={LYRICS_ARTWORK_REGION_CLASS_NAME}
             >
-              <Image
-                src={topArtworkLayer.artworkSrc}
-                alt={currentTrackInfo.albumName ?? currentTrackInfo.source}
-                fill
-                sizes="300px"
-                unoptimized={shouldUnoptimizeArtworkImage(topArtworkLayer.artworkSrc)}
-                className="object-cover"
-                draggable={false}
+              {artworkStage}
+            </div>
+            <div
+              data-testid="mobile-fullscreen-lyrics-region"
+              className="relative min-h-0 w-full"
+            >
+              <FullscreenLyricsExperience
+                track={currentTrackInfo}
+                currentTimeSeconds={currentTime}
+                layout="fill"
               />
             </div>
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-[#fd6d94]">
-              <Music2 size={56} strokeWidth={1.8} aria-hidden="true" />
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          artworkStage
+        )}
 
-        <div className="mt-8 min-w-0">
+        <div
+          className={
+            shouldShowLyrics
+              ? "mt-5 min-w-0 [@media(max-height:560px)]:mt-2"
+              : "mt-8 min-w-0"
+          }
+        >
           <h2 className="truncate text-2xl font-black tracking-tight text-white">
             {currentTrackInfo?.title ?? "No track selected"}
           </h2>
@@ -222,12 +293,23 @@ export default function MobileFullscreenPlayer({
           </p>
         </div>
 
-        <div className="mt-6" aria-label="Track progress">
+        <div
+          className={
+            shouldShowLyrics
+              ? "mt-4 [@media(max-height:560px)]:mt-2"
+              : "mt-6"
+          }
+          aria-label="Track progress"
+        >
           <MSeekBar currentTime={currentTime} duration={duration} seek={seek} />
         </div>
 
         <section
-          className="mt-4 flex items-center justify-center gap-6"
+          className={
+            shouldShowLyrics
+              ? "mt-3 flex items-center justify-center gap-6 [@media(max-height:560px)]:mt-1"
+              : "mt-4 flex items-center justify-center gap-6"
+          }
           aria-label={`${currentTrackInfo?.title ?? "Current track"} fullscreen controls`}
         >
           {/* shuffle은 모바일뷰에서 비활성화 (사용자 결정) — 전역 shuffle 상태 자체는 유지 */}
