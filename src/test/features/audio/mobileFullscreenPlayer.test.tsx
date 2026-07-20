@@ -39,16 +39,22 @@ jest.mock("@/features/lyrics/components/fullscreenLyricsExperience", () => ({
     track,
     currentTimeSeconds,
     onSeek,
+    layout,
+    className,
   }: {
     track: Track;
     currentTimeSeconds: number;
     onSeek?: (timeSeconds: number) => void;
+    layout?: string;
+    className?: string;
   }) => (
     <div
       data-testid="fullscreen-lyrics-experience"
       data-track-id={track.id}
       data-current-time={currentTimeSeconds}
       data-has-on-seek={String(typeof onSeek === "function")}
+      data-layout={layout}
+      data-class-name={className ?? ""}
     >
       Lyrics
     </div>
@@ -146,7 +152,7 @@ describe("MobileFullscreenPlayer artwork transition", () => {
     expect(completeLayer).toHaveBeenCalledWith(2);
   });
 
-  it("replaces only the artwork area with lyrics for an eligible POP track", () => {
+  it("keeps a 7:3 artwork-to-lyrics layout for POP", () => {
     const seek = jest.fn();
     mockUseArtworkCrossfade.mockReturnValue({
       layers: [makeLayer(2, track.artworkUrl, 1)],
@@ -172,7 +178,42 @@ describe("MobileFullscreenPlayer artwork transition", () => {
       "data-current-time",
       "30",
     );
-    expect(screen.queryByAltText("Album One")).toBeNull();
+    expect(screen.getByAltText("POP")).toHaveAttribute(
+      "src",
+      expect.stringContaining("b.jpg"),
+    );
+    expect(screen.getByTestId("mobile-fullscreen-artwork")).toHaveClass(
+      "h-full",
+      "w-full",
+    );
+    expect(screen.getByTestId("mobile-fullscreen-media-layout")).toHaveClass(
+      "min-h-0",
+      "flex-1",
+      "grid",
+      "grid-rows-[minmax(0,7fr)_minmax(0,3fr)]",
+      "[@media(max-height:560px)]:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]",
+      "[@media(max-height:560px)]:grid-rows-none",
+    );
+    expect(
+      screen.getByTestId("mobile-fullscreen-artwork-region"),
+    ).toHaveClass(
+      "min-h-0",
+      "overflow-hidden",
+    );
+    expect(screen.getByTestId("mobile-fullscreen-lyrics-region")).toHaveClass(
+      "min-h-0",
+    );
+    expect(screen.getByTestId("mobile-fullscreen-lyrics-region")).not.toHaveClass(
+      "h-[min(40dvh,20rem)]",
+    );
+    expect(screen.getByTestId("fullscreen-lyrics-experience")).toHaveAttribute(
+      "data-layout",
+      "fill",
+    );
+    expect(screen.getByTestId("fullscreen-lyrics-experience")).toHaveAttribute(
+      "data-class-name",
+      "",
+    );
     expect(screen.getByText("Track Two")).toBeInTheDocument();
     expect(screen.getByRole("slider")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Previous track" })).toBeInTheDocument();

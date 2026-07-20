@@ -1,5 +1,6 @@
 "use client";
 
+import clsx from "clsx";
 import { useMemo } from "react";
 import type { SyncedLyricLine, SyncedLyricsDocument } from "@/shared/lib/lyrics";
 import { findActiveLyricIndex } from "../model/findActiveLyricIndex";
@@ -10,10 +11,13 @@ export type LyricsQueryState =
   | "error"
   | "success";
 
+export type FullscreenLyricsPanelLayout = "default" | "fill";
+
 export type FullscreenLyricsPanelProps = {
   queryState: LyricsQueryState;
   document: SyncedLyricsDocument | null | undefined;
   currentTimeSeconds: number;
+  layout?: FullscreenLyricsPanelLayout;
   className?: string;
 };
 
@@ -25,8 +29,13 @@ const STATE_COPY = {
   error: "Lyrics couldn’t be loaded. Playback is still available.",
 } as const;
 
-const panelClassName =
-  "relative h-[min(34rem,56dvh)] w-full max-w-[34rem] shrink-0 overflow-hidden rounded-2xl border border-white/15 bg-black/35 text-white shadow-[0_24px_80px_rgba(0,0,0,0.38)] backdrop-blur-xl";
+const PANEL_CLASS_NAME =
+  "relative w-full overflow-hidden border border-white/15 bg-black/35 text-white shadow-[0_24px_80px_rgba(0,0,0,0.38)] backdrop-blur-xl";
+const PANEL_LAYOUT_CLASS_NAMES: Record<FullscreenLyricsPanelLayout, string> = {
+  default:
+    "h-[min(34rem,56dvh)] max-w-[34rem] shrink-0 rounded-2xl",
+  fill: "h-full min-h-0 max-w-none rounded-lg",
+};
 
 const StateMessage = ({ children }: { children: string }) => (
   <div className="flex h-full items-center justify-center px-6 text-center">
@@ -64,7 +73,8 @@ export default function FullscreenLyricsPanel({
   queryState,
   document: lyricsDocument,
   currentTimeSeconds,
-  className = "",
+  layout = "default",
+  className,
 }: FullscreenLyricsPanelProps) {
   const lines =
     queryState === "success" &&
@@ -138,7 +148,11 @@ export default function FullscreenLyricsPanel({
   return (
     <section
       aria-label="Synchronized lyrics"
-      className={`${panelClassName} ${className}`.trim()}
+      className={clsx(
+        PANEL_CLASS_NAME,
+        PANEL_LAYOUT_CLASS_NAMES[layout],
+        className,
+      )}
     >
       {content}
     </section>

@@ -2,6 +2,7 @@
 
 import type { Track } from "@/entities/track";
 import FullscreenLyricsPanel, {
+  type FullscreenLyricsPanelLayout,
   type LyricsQueryState,
 } from "./fullscreenLyricsPanel";
 import { useLyrics } from "../hooks/useLyrics";
@@ -9,12 +10,14 @@ import { useLyrics } from "../hooks/useLyrics";
 export type FullscreenLyricsExperienceProps = {
   track: Track;
   currentTimeSeconds: number;
+  layout?: FullscreenLyricsPanelLayout;
   className?: string;
 };
 
 export default function FullscreenLyricsExperience({
   track,
   currentTimeSeconds,
+  layout = "default",
   className,
 }: FullscreenLyricsExperienceProps) {
   const lyricsQuery = useLyrics(track, { enabled: true, eligible: true });
@@ -35,6 +38,7 @@ export default function FullscreenLyricsExperience({
       queryState={queryState}
       document={lyricsQuery.data}
       currentTimeSeconds={currentTimeSeconds}
+      layout={layout}
       className={className}
     />
   );

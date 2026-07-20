@@ -91,6 +91,7 @@ describe("FullscreenLyricsExperience", () => {
       <FullscreenLyricsExperience
         track={track}
         currentTimeSeconds={1.5}
+        layout="fill"
         className="mobile-height"
       />,
     );
@@ -98,6 +99,13 @@ describe("FullscreenLyricsExperience", () => {
     expect(screen.getByText("Instrumental track")).toBeInTheDocument();
     expect(screen.getByLabelText("Synchronized lyrics")).toHaveClass(
       "mobile-height",
+      "h-full",
+      "min-h-0",
+      "max-w-none",
+      "rounded-lg",
+    );
+    expect(screen.getByLabelText("Synchronized lyrics")).not.toHaveClass(
+      "h-[min(34rem,56dvh)]",
     );
 
     mockUseLyrics.mockReturnValue(queryResult({ data: lyricsDocument }));
@@ -111,6 +119,11 @@ describe("FullscreenLyricsExperience", () => {
     expect(screen.getByText("First lyric")).toHaveAttribute(
       "aria-current",
       "true",
+    );
+    expect(screen.getByLabelText("Synchronized lyrics")).toHaveClass(
+      "h-[min(34rem,56dvh)]",
+      "max-w-[34rem]",
+      "rounded-2xl",
     );
     expect(screen.queryAllByRole("button")).toHaveLength(0);
   });

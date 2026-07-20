@@ -118,4 +118,21 @@ describe("FullscreenLyricsPanel", () => {
       "h-[min(34rem,56dvh)]",
     );
   });
+
+  it("fills a parent layout without caller-side style overrides", () => {
+    renderPanel({ layout: "fill" });
+
+    const panel = screen.getByLabelText("Synchronized lyrics");
+    expect(panel).toHaveClass(
+      "h-full",
+      "min-h-0",
+      "max-w-none",
+      "rounded-lg",
+    );
+    expect(panel).not.toHaveClass(
+      "h-[min(34rem,56dvh)]",
+      "max-w-[34rem]",
+      "rounded-2xl",
+    );
+  });
 });

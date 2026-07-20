@@ -1,5 +1,6 @@
 export { default as FullscreenLyricsPanel } from "./components/fullscreenLyricsPanel";
 export type {
+  FullscreenLyricsPanelLayout,
   FullscreenLyricsPanelProps,
   LyricsQueryState,
 } from "./components/fullscreenLyricsPanel";
