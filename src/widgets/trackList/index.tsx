@@ -21,11 +21,11 @@ export function TrackList({
   const { isFavorite, toggle } = useFavorites();
 
   if (isLoading) {
-    return <p className={TRACK_LIST_MESSAGE_CLASS}>Loading...</p>;
+    return <p className={TRACK_LIST_MESSAGE_CLASS}>트랙을 불러오는 중입니다.</p>;
   }
 
   if (list.length === 0) {
-    return <p className={TRACK_LIST_MESSAGE_CLASS}>트랙이 없습니다.</p>;
+    return <p className={TRACK_LIST_MESSAGE_CLASS}>표시할 트랙이 없습니다.</p>;
   }
 
   return (

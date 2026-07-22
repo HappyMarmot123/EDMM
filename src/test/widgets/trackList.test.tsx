@@ -69,13 +69,13 @@ describe("TrackList", () => {
   it("renders loading message when loading", () => {
     render(<TrackList tracks={tracks} onPlay={mockOnPlay} isLoading />);
 
-    expect(screen.getByText("Loading...")).toBeInTheDocument();
+    expect(screen.getByText("트랙을 불러오는 중입니다.")).toBeInTheDocument();
   });
 
   it("renders empty message when track list is empty", () => {
     render(<TrackList tracks={[]} onPlay={mockOnPlay} />);
 
-    expect(screen.getByText(/트랙이 없습니다/)).toBeInTheDocument();
+    expect(screen.getByText(/표시할 트랙이 없습니다/)).toBeInTheDocument();
   });
 
   it.each([undefined, null])(
@@ -87,7 +87,7 @@ describe("TrackList", () => {
         render(<TrackList tracks={null} onPlay={mockOnPlay} />);
       }
 
-      expect(screen.getByText(/트랙이 없습니다/)).toBeInTheDocument();
+      expect(screen.getByText(/표시할 트랙이 없습니다/)).toBeInTheDocument();
     }
   );
 });

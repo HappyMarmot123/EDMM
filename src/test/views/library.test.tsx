@@ -159,7 +159,7 @@ describe("LibraryView", () => {
 
     renderLibrary();
 
-    expect(screen.getAllByText("Loading...")).toHaveLength(2);
+    expect(screen.getAllByText("트랙을 불러오는 중입니다.")).toHaveLength(2);
 
     await act(async () => {
       favoriteResolve([track("fav-1", "Favorite Loading")]);
